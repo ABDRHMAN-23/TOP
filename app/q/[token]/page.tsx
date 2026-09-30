@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/admin';
+import DownloadPdf from './DownloadPdf';
 
 export default async function PublicQuotePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -23,7 +24,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
     <div className="mx-auto max-w-3xl overflow-hidden rounded-[2rem] bg-white shadow-xl">
       <div className="border-b p-7 sm:p-10">
         <div className="flex items-start justify-between gap-6">
-          <div><p className="text-sm font-bold text-blue-600">QUOTE</p><h1 className="mt-2 text-3xl font-black">{quote.quote_number}</h1></div>
+          <div><div className="flex items-center gap-4"><div><p className="text-sm font-bold text-blue-600">QUOTE</p><h1 className="mt-2 text-3xl font-black">{quote.quote_number}</h1></div>
           {business?.logo_url ? <img src={business.logo_url} alt={business.business_name || 'Business logo'} className="h-14 w-14 rounded-xl object-contain"/> : null}
         </div>
         {business?.business_name && <p className="mt-5 font-bold">{business.business_name}</p>}
