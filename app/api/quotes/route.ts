@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -36,15 +37,20 @@ export async function POST(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  const periodStart = new Date();
-  periodStart.setUTCDate(1);
-  const month = periodStart.toISOString().slice(0, 10);
-  const { data: usage } = await supabase.from('usage').select('quotes_count').eq('user_id', user.id).eq('period_start', month).maybeSingle();
-  await supabase.from('usage').upsert({
-    user_id: user.id,
-    period_start: month,
-    quotes_count: Number(usage?.quotes_count || 0) + 1
-  }, { onConflict: 'user_id,period_start' });
+  try {
+    const admin = createAdminClient();
+    const periodStart = new Date();
+    periodStart.setUTCDate(1);
+    const month = periodStart.toISOString().slice(0, 10);
+    const { data: usage } = await admin.from('usage').select('quotes_count').eq('user_id', user.id).eq('period_start', month).maybeSingle();
+    await admin.from('usage').upsert({
+      user_id: user.id,
+      period_start: month,
+      quotes_count: Number(usage?.quotes_count || 0) + 1
+    }, { onConflict: 'user_id,period_start' });
+  } catch {
+    // Quote creation must remain available even before the server secret is configured.
+  }
 
   return NextResponse.json(data);
 }
