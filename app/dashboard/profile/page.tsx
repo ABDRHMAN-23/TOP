@@ -30,6 +30,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       .maybeSingle();
 
     const plan = (currentSubscription?.status === 'active' || currentSubscription?.status === 'trialing') ? currentSubscription?.plan : 'free';
+    const requestedColor = String(formData.get('primary_color') || '#2563EB');
+    const primaryColor = /^#[0-9a-fA-F]{6}$/.test(requestedColor) ? requestedColor : '#2563EB';
     const business_name = String(formData.get('business_name') || '').trim();
     if (!business_name) redirect('/dashboard/profile?error=business-name');
 
@@ -58,7 +60,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       user_id: currentUser.id,
       business_name,
       logo_url: logoUrl,
-      primary_color: plan === 'pro' || plan === 'team' ? String(formData.get('primary_color') || '#2563EB') : '#2563EB',
+      primary_color: plan === 'pro' || plan === 'team' ? primaryColor : '#2563EB',
       phone: String(formData.get('phone') || '').trim() || null,
       email: String(formData.get('email') || '').trim() || null,
       website: String(formData.get('website') || '').trim() || null,
