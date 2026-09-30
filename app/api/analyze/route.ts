@@ -58,20 +58,27 @@ async function extractWithGemma(transcript: string) {
     method: 'POST',
     headers,
     body: JSON.stringify({
-      model: process.env.GEMMA_MODEL || 'gemma-4-31b',
+      model: process.env.GEMMA_MODEL || 'gemma-4-31b-it',
       temperature: 0,
       response_format: { type: 'json_object' },
       system,
       prompt: transcript,
       transcript,
-      schema
+      schema,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: transcript }
+      ]
     })
   });
   if (!response.ok) throw new Error('Gemma 4 31B extraction service returned an error.');
 
   const raw = await response.json();
-  let payload = raw?.output ?? raw?.text ?? raw?.response ?? raw;
-  if (typeof payload === 'string') { try { payload = JSON.parse(payload); } catch { payload = {}; } }
+  let payload = raw?.output ?? raw?.text ?? raw?.response ?? raw?.choices?.[0]?.message?.content ?? raw;
+  if (typeof payload === 'string') {
+    const cleaned = payload.replace(/^\\s*\\x60\\x60\\x60(?:json)?/i, '').replace(/\\x60\\x60\\x60\\s*$/i, '').trim();
+    try { payload = JSON.parse(cleaned); } catch { payload = {}; }
+  }
   return normalizeExtraction(payload, transcript);
 }
 
