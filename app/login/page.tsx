@@ -1,0 +1,10 @@
+'use client';
+import { useState } from 'react';
+import { Loader2, Mail } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+
+export default function LoginPage(){
+  const [email,setEmail]=useState(''); const [loading,setLoading]=useState(false); const [message,setMessage]=useState(''); const [error,setError]=useState('');
+  const submit=async(e:React.FormEvent)=>{e.preventDefault();setLoading(true);setError('');setMessage('');const supabase=createClient();const {error}=await supabase.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.origin+'/auth/callback?next=/app'}});if(error)setError(error.message);else setMessage('Check your email for your secure VoiceQuote sign-in link.');setLoading(false)};
+  return <main className="min-h-screen bg-slate-50 px-5 py-16"><div className="mx-auto max-w-md"><a href="/" className="text-xl font-black">Voice<span className="text-blue-600">Quote</span></a><div className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-7 shadow-sm"><div className="mb-6"><p className="text-xs font-bold tracking-widest text-blue-600">MAGIC LINK</p><h1 className="mt-2 text-3xl font-black">Sign in to VoiceQuote</h1><p className="mt-2 text-slate-500">No password. We will email you a one-time secure link.</p></div><form onSubmit={submit} className="space-y-4"><input required type="email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full rounded-xl border border-slate-200 p-3.5 outline-none focus:border-blue-500" placeholder="you@company.com"/><button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 font-bold text-white disabled:opacity-60">{loading?<Loader2 className="animate-spin" size={18}/>:<Mail size={18}/>}Email me a sign-in link</button></form>{message&&<p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p>}{error&&<p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}</div></div></main>
+}
