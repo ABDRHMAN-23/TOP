@@ -21,7 +21,9 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
         .select('business_name,logo_url,primary_color,phone,email,address,payment_terms,warranty_terms')
         .eq('user_id', quote.user_id)
         .maybeSingle();
-      business = profile;
+      const { data: subscription } = await admin.from('subscriptions').select('plan,status').eq('user_id', quote.user_id).maybeSingle();
+      const activePlan = (subscription?.status === 'active' || subscription?.status === 'trialing') ? subscription?.plan : 'free';
+      business = { ...profile, allow_custom_logo: activePlan !== 'free' };
     }
   } catch {}
 
@@ -39,7 +41,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
           </div>
           <div className="flex shrink-0 flex-col items-end gap-3">
             {business?.logo_url ? <img src={business.logo_url} alt={business.business_name || 'Business logo'} className="h-14 w-14 rounded-xl object-contain" /> : null}
-            <DownloadPdf quote={quote} business={business} />
+            <DownloadPdf quote={quote} business={business} removeBrand={business?.allow_custom_logo || false} />
           </div>
         </div>
         <div className="mt-6 grid gap-2 text-sm text-slate-500 sm:grid-cols-2">
