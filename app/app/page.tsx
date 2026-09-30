@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronRight, FileText, Loader2, Mic, Plus, RotateCcw, Save, Square, Trash2 } from 'lucide-react';
+import { Check, ChevronRight, FileText, Loader2, Lock, Mic, Plus, RotateCcw, Save, Square, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 type Item = { description: string; quantity: number; unit: string; price: number };
@@ -10,6 +10,18 @@ type Analysis = {
   client?: { name?: string; email?: string; phone?: string; address?: string };
   items?: Item[];
   notes?: string[];
+  currency?: string;
+};
+
+type PlanInfo = {
+  plan: string;
+  label: string;
+  used: number;
+  quota: number | null;
+  templates: string[];
+  currencies: string[];
+  languages: string[];
+  features: { customLogo: boolean; removeBrand: boolean; tracking: boolean; fullStats: boolean; csv: boolean; customization: boolean; teamUsers: number };
 };
 
 export default function AppPage() {
@@ -27,11 +39,28 @@ export default function AppPage() {
   const [clientPhone, setClientPhone] = useState('');
   const [clientAddress, setClientAddress] = useState('');
   const [items, setItems] = useState<Item[]>([]);
+  const [template, setTemplate] = useState('modern');
+  const [currency, setCurrency] = useState('GBP');
+  const [language, setLanguage] = useState('en');
+  const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null);
   const media = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => () => timer.current && clearInterval(timer.current), []);
+
+  useEffect(() => {
+    fetch('/api/billing')
+      .then(async (response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (!data) return;
+        setPlanInfo(data);
+        if (!data.templates.includes(template)) setTemplate(data.templates[0] || 'modern');
+        if (!data.currencies.includes(currency)) setCurrency(data.currencies[0] || 'GBP');
+        if (!data.languages.includes(language)) setLanguage(data.languages[0] || 'en');
+      })
+      .catch(() => {});
+  }, [template, currency, language]);
 
   const start = async () => {
     try {
@@ -72,6 +101,9 @@ export default function AppPage() {
     setClientEmail('');
     setClientPhone('');
     setClientAddress('');
+    setTemplate(planInfo?.templates.includes('modern') ? 'modern' : 'modern');
+    setCurrency('GBP');
+    setLanguage('en');
     setError('');
     setSaved('');
   };
@@ -124,9 +156,9 @@ export default function AppPage() {
           client_address: clientAddress,
           items,
           notes: analysis?.notes?.length ? analysis.notes : manualNotes ? [manualNotes] : [],
-          currency: 'GBP',
-          template: 'modern',
-          language: 'en'
+          currency,
+          template,
+          language
         })
       });
       const data = await response.json();
@@ -154,9 +186,10 @@ export default function AppPage() {
   return (
     <main className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
           <a href="/" className="text-xl font-black tracking-tight">Voice<span className="text-blue-600">Quote</span></a>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {planInfo && <a href="/pricing" className="hidden rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 sm:inline-flex">{planInfo.label} · {planInfo.quota === null ? 'Unlimited' : planInfo.used + '/' + planInfo.quota}</a>}
             <button onClick={signIn} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50">Sign in</button>
             <button onClick={reset} className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"><RotateCcw size={15}/>New</button>
           </div>
@@ -234,7 +267,38 @@ export default function AppPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4"><span className="font-semibold">Subtotal</span><span className="text-2xl font-black">£{subtotal.toFixed(2)}</span></div>
+                <div className="rounded-2xl border border-slate-200 p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="font-bold">Quote style & billing options</span>
+                    {planInfo && <span className="text-xs font-semibold text-slate-400">{planInfo.label} plan</span>}
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <label className="text-xs font-bold text-slate-500">PDF template
+                      <select value={template} onChange={(e) => setTemplate(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900">
+                        {[['modern','Modern'],['classic','Classic'],['bold','Bold'],['minimal','Minimal'],['technical','Technical']].map(([id,label]) =>
+                          <option key={id} value={id} disabled={!!planInfo && !planInfo.templates.includes(id)}>{label}{planInfo && !planInfo.templates.includes(id) ? ' · Locked' : ''}</option>
+                        )}
+                      </select>
+                    </label>
+                    <label className="text-xs font-bold text-slate-500">Currency
+                      <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900">
+                        {['GBP','USD','EUR','AED','SAR','CAD','AUD','CHF','SEK','NOK'].map((code) =>
+                          <option key={code} value={code} disabled={!!planInfo && !planInfo.currencies.includes(code)}>{code}{planInfo && !planInfo.currencies.includes(code) ? ' · Locked' : ''}</option>
+                        )}
+                      </select>
+                    </label>
+                    <label className="text-xs font-bold text-slate-500">Language
+                      <select value={language} onChange={(e) => setLanguage(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900">
+                        {[['en','English'],['ar','Arabic'],['es','Spanish'],['fr','French']].map(([id,label]) =>
+                          <option key={id} value={id} disabled={!!planInfo && !planInfo.languages.includes(id)}>{label}{planInfo && !planInfo.languages.includes(id) ? ' · Locked' : ''}</option>
+                        )}
+                      </select>
+                    </label>
+                  </div>
+                  {planInfo && <div className="mt-3 flex items-center gap-2 text-xs text-slate-500"><Lock size={13}/><span>Locked options stay unavailable when the quote is saved.</span><a href="/pricing" className="ml-auto font-bold text-blue-600">See plans</a></div>}
+                </div>
+
+                <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4"><span className="font-semibold">Subtotal</span><span className="text-2xl font-black">{currency} {subtotal.toFixed(2)}</span></div>
 
                 <div className="rounded-2xl bg-slate-900 p-5 text-white">
                   <div className="flex items-center gap-2 text-sm font-semibold text-slate-300"><Check size={17}/>Ready for the next step</div>
