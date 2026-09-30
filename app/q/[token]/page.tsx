@@ -1,0 +1,16 @@
+import { notFound } from 'next/navigation';
+import { createAdminClient } from '@/lib/supabase/admin';
+
+export default async function PublicQuotePage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  let quote: any = null;
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin.from('quotes').select('quote_number,client_name,client_address,items,subtotal,vat_rate,vat_amount,discount,total,currency,status,created_at,business_profiles:business_profiles(business_name,logo_url,phone,email,address)').eq('public_token', token).maybeSingle();
+    quote = data;
+  } catch {}
+  if (!quote) notFound();
+
+  const items = Array.isArray(quote.items) ? quote.items : [];
+  return <main className="min-h-screen bg-slate-100 px-4 py-10"><div className="mx-auto max-w-3xl overflow-hidden rounded-[2rem] bg-white shadow-xl"><div className="border-b p-7 sm:p-10"><p className="text-sm font-bold text-blue-600">QUOTE</p><h1 className="mt-2 text-3xl font-black">{quote.quote_number}</h1><div className="mt-4 grid gap-2 text-sm text-slate-500 sm:grid-cols-2"><div>Client: <span className="font-semibold text-slate-800">{quote.client_name || '—'}</span></div><div>Issued: <span className="font-semibold text-slate-800">{new Date(quote.created_at).toLocaleDateString()}</span></div></div></div><div className="p-7 sm:p-10"><div className="overflow-hidden rounded-2xl border"><div className="grid grid-cols-[1fr_80px_110px] gap-3 bg-slate-50 p-4 text-xs font-bold uppercase text-slate-500"><span>Description</span><span>Qty</span><span className="text-right">Amount</span></div>{items.map((item:any,i:number)=><div key={i} className="grid grid-cols-[1fr_80px_110px] gap-3 border-t p-4 text-sm"><span>{item.description || 'Item'}</span><span>{item.quantity || 0} {item.unit || ''}</span><span className="text-right font-semibold">{quote.currency} {(Number(item.quantity||0)*Number(item.price||0)).toFixed(2)}</span></div>)}</div><div className="ml-auto mt-6 max-w-xs space-y-2 text-sm"><div className="flex justify-between"><span>Subtotal</span><span>{quote.currency} {Number(quote.subtotal).toFixed(2)}</span></div>{Number(quote.vat_amount)>0&&<div className="flex justify-between"><span>VAT ({quote.vat_rate}%)</span><span>{quote.currency} {Number(quote.vat_amount).toFixed(2)}</span></div>}<div className="flex justify-between border-t pt-3 text-xl font-black"><span>Total</span><span>{quote.currency} {Number(quote.total).toFixed(2)}</span></div></div></div></div></main>;
+}
