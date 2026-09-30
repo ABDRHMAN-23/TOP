@@ -60,7 +60,7 @@ export default function AppPage() {
         if (!data.languages.includes(language)) setLanguage(data.languages[0] || 'en');
       })
       .catch(() => {});
-  }, [template, currency, language]);
+  }, []);
 
   const start = async () => {
     try {
@@ -101,7 +101,7 @@ export default function AppPage() {
     setClientEmail('');
     setClientPhone('');
     setClientAddress('');
-    setTemplate(planInfo?.templates.includes('modern') ? 'modern' : 'modern');
+    setTemplate('modern');
     setCurrency('GBP');
     setLanguage('en');
     setError('');

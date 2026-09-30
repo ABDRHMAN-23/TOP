@@ -76,7 +76,7 @@ async function extractWithGemma(transcript: string) {
   const raw = await response.json();
   let payload = raw?.output ?? raw?.text ?? raw?.response ?? raw?.choices?.[0]?.message?.content ?? raw;
   if (typeof payload === 'string') {
-    const cleaned = payload.replace(/^\\s*\\x60\\x60\\x60(?:json)?/i, '').replace(/\\x60\\x60\\x60\\s*$/i, '').trim();
+    const cleaned = payload.replace(/^\s*\x60\x60\x60(?:json)?/i, '').replace(/\x60\x60\x60\s*$/i, '').trim();
     try { payload = JSON.parse(cleaned); } catch { payload = {}; }
   }
   return normalizeExtraction(payload, transcript);
