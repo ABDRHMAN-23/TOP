@@ -7,8 +7,34 @@ const steps = [
   ['03','Send','Download a polished A4 quote and share it.']
 ];
 
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'SoftwareApplication',
+      name: 'VoiceQuote',
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Web',
+      description: 'AI voice quoting software for independent contractors that turns field voice notes into editable professional quotes.',
+      url: 'https://voicequote.com',
+      offers: [
+        { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD' },
+        { '@type': 'Offer', name: 'Starter', price: '19', priceCurrency: 'USD' },
+        { '@type': 'Offer', name: 'Pro', price: '39', priceCurrency: 'USD' },
+        { '@type': 'Offer', name: 'Team', price: '79', priceCurrency: 'USD' }
+      ]
+    },
+    {
+      '@type': 'WebSite',
+      name: 'VoiceQuote',
+      url: 'https://voicequote.com',
+      description: 'Create professional contractor quotes from your voice.'
+    }
+  ]
+};
+
 export default function Home() {
-  return <main className="min-h-screen bg-white text-slate-950">
+  return <main className="min-h-screen bg-white text-slate-950"><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
     <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
       <Link href="/" className="text-2xl font-black tracking-tight">Voice<span className="text-blue-600">Quote</span></Link>
       <div className="flex items-center gap-2 sm:gap-5"><Link href="/pricing" className="hidden text-sm font-semibold text-slate-600 sm:block">Pricing</Link><Link href="/login" className="hidden text-sm font-semibold text-slate-600 sm:block">Sign in</Link><Link href="/app" className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-bold text-white">Start free</Link></div>
