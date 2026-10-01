@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { sourcesForMarket } from '@/lib/advisor/market-sources';
 
 async function getFx(base: string, quote: string) {
   if (!base || !quote || base === quote) return { base, date: new Date().toISOString().slice(0, 10), rates: { [quote]: 1 } };
@@ -14,12 +15,12 @@ async function askGemma(prompt: string) {
   if (!url) throw new Error('The QUVOTO Advisor AI is not configured yet. Add GEMMA_API_URL and GEMMA_API_KEY in the server environment.');
   const headers: Record<string,string> = { 'Content-Type': 'application/json' };
   if (process.env.GEMMA_API_KEY) headers.Authorization = 'Bearer ' + process.env.GEMMA_API_KEY;
-  const system = ['You are QUVOTO Advisor, a professional quoting and pricing assistant for contractors.','The default market is the United Kingdom unless the user specifies another market.','Never invent live prices, exchange rates, regulations, suppliers, or sources.','Use only supplied market data and quote history as factual inputs.','If a requested product price is not supplied by a real source, explicitly say that a verified product price was not available and do not fabricate one.','Distinguish sourced facts from estimates and recommendations.','For UK work, use GBP and metric units by default. Do not invent a VAT rate.','Return concise, practical advice for a working contractor.','Return JSON only with keys: answer, warnings, actions, facts, confidence.','warnings/actions/facts must be arrays of strings; confidence must be low, medium, or high.'].join('\n');
+  const system = ['You are QUVOTO Advisor, a professional quoting and pricing assistant for contractors.','The default market is the United Kingdom unless the user specifies another market.','Never invent live prices, exchange rates, regulations, suppliers, or sources.','Use only supplied market data and quote history as factual inputs.','A market source can provide an index or trend without providing a retail product price. Never turn an index into a product price.','If a requested product price is not supplied by a real source, explicitly say that a verified product price was not available and do not fabricate one.','Distinguish sourced facts from estimates and recommendations.','For UK work, use GBP and metric units by default. Do not invent a VAT rate.','Return concise, practical advice for a working contractor.','Return JSON only with keys: answer, warnings, actions, facts, confidence.','warnings/actions/facts must be arrays of strings; confidence must be low, medium, or high.'].join('\\n');
   const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ model: process.env.GEMMA_MODEL || 'gemma-4-31b-it', temperature: 0.1, response_format: { type: 'json_object' }, system, prompt, messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }] }) });
   if (!response.ok) throw new Error('The Advisor AI provider returned an error.');
   const raw = await response.json();
   let payload = raw?.output ?? raw?.text ?? raw?.response ?? raw?.choices?.[0]?.message?.content ?? raw;
-  if (typeof payload === 'string') { try { payload = JSON.parse(payload.replace(/^\s*```(?:json)?/i,'').replace(/```\s*$/,'').trim()); } catch { throw new Error('The Advisor returned invalid structured data.'); } }
+  if (typeof payload === 'string') { try { payload = JSON.parse(payload.replace(/^\\s*\`\`\`(?:json)?/i,'').replace(/\`\`\`\\s*$/,'').trim()); } catch { throw new Error('The Advisor returned invalid structured data.'); } }
   return { answer: String(payload?.answer || ''), warnings: Array.isArray(payload?.warnings) ? payload.warnings.map(String) : [], actions: Array.isArray(payload?.actions) ? payload.actions.map(String) : [], facts: Array.isArray(payload?.facts) ? payload.facts.map(String) : [], confidence: ['low','medium','high'].includes(payload?.confidence) ? payload.confidence : 'low' };
 }
 
@@ -36,8 +37,25 @@ export async function POST(req: Request) {
     const { data: business } = await supabase.from('business_profiles').select('business_name,default_currency,address').eq('user_id', user.id).maybeSingle();
     const { data: quotes } = await supabase.from('quotes').select('quote_number,client_name,items,subtotal,total,currency,status,created_at').eq('user_id', user.id).order('created_at',{ ascending:false }).limit(20);
     const fx = currency !== 'GBP' ? await getFx('GBP', currency) : { base:'GBP', date:new Date().toISOString().slice(0,10), rates:{ GBP:1 } };
-    const context = { business: business || {}, market, requested_currency: currency, fx, quote_history: quotes || [], product_price_sources: 'No verified product-price source is claimed unless a real source is supplied by the server.', question };
+    const marketSources = sourcesForMarket(market);
+    const context = {
+      business: business || {},
+      market,
+      requested_currency: currency,
+      fx,
+      quote_history: quotes || [],
+      verified_market_sources: marketSources,
+      product_price_sources: 'No verified retail product-price source is connected by default. Source registry entries may provide official indices or market trends, not individual supplier prices.',
+      question
+    };
     const result = await askGemma(JSON.stringify(context));
-    return NextResponse.json({ ...result, market, currency, fx_source: 'Frankfurter reference rates', fx_date: fx?.date || null });
+    return NextResponse.json({
+      ...result,
+      market,
+      currency,
+      fx_source: 'Frankfurter reference rates',
+      fx_date: fx?.date || null,
+      sources: marketSources,
+    });
   } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : 'Advisor request failed.' }, { status: 500 }); }
 }
