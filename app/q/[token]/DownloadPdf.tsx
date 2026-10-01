@@ -17,7 +17,9 @@ function makeStyles(template: string, accent = '#2563eb') {
     qty: { width: 78 },
     amount: { width: 95, textAlign: 'right' as const },
     total: { marginTop: 18, marginLeft: 'auto' as const, width: 220 },
-    totalRow: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginTop: 5 }
+    totalRow: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginTop: 5 },
+    section: { marginTop: 18, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#e2e8f0' },
+    sectionTitle: { fontSize: 8, color: '#64748b', marginBottom: 5 }
   };
 
   switch (template) {
