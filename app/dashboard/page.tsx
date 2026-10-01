@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
 import { FileText, Plus, ExternalLink } from 'lucide-react';
+
+function Brand(){return <div className="flex items-center gap-2.5"><img src="/logo.svg" alt="QUVOTO" className="h-9 w-9"/><span className="text-xl font-black tracking-[-0.04em] text-[#0A1E3D]">QUVOTO</span></div>;}
 import { createClient } from '@/lib/supabase/server';
 
 export default async function DashboardPage() {
@@ -14,7 +16,7 @@ export default async function DashboardPage() {
     .limit(50);
 
   return <main className="min-h-screen bg-[#f7faff]">
-    <header className="border-b bg-white"><div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8"><a href="/" className="text-xl font-black">Voice<span className="text-[#1769E0]">Quote</span></a><a href="/app" className="flex items-center gap-2 rounded-xl bg-[#1769E0] px-4 py-2 text-sm font-bold text-white"><Plus size={16}/>New quote</a></div></header>
+    <header className="border-b bg-white"><div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8"><a href="/" aria-label="QUVOTO home"><Brand/></a><a href="/app" className="flex items-center gap-2 rounded-xl bg-[#1769E0] px-4 py-2 text-sm font-bold text-white"><Plus size={16}/>New quote</a></div></header>
     <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
       <div><p className="text-sm font-extrabold tracking-[0.16em] text-[#1769E0]">WORKSPACE</p><h1 className="mt-1 text-4xl font-extrabold tracking-[-0.04em]">Your quotes</h1><p className="mt-2 text-slate-500">{quotes?.length || 0} recent quotes in your QUVOTO workspace.</p></div>
       <div className="mt-8 overflow-hidden rounded-[1.7rem] border bg-white shadow-sm">
