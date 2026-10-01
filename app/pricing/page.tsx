@@ -20,7 +20,7 @@ export default function Pricing() {
     </header>
     <section className="mx-auto max-w-6xl px-5 py-14 sm:px-8 sm:py-20">
       <div className="mx-auto max-w-3xl text-center">
-        <div className="inline-flex items-center gap-2 rounded-full bg-[#2F8CFF]/10 px-3 py-1.5 text-xs font-bold text-[#1769E0]"><Sparkles size={14}/>Simple by design</div>
+        <div className="inline-flex items-center gap-2 rounded-full bg-[#1769E0]/5 px-3 py-1.5 text-xs font-bold text-[#1769E0]">Simple by design</div>
         <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-6xl">Choose the amount of workflow you need.</h1>
         <p className="mt-4 text-lg leading-8 text-slate-500">Every paid plan keeps the same fast voice-first flow. Higher plans unlock more output formats, currencies, branding and workspace capacity.</p>
       </div>
