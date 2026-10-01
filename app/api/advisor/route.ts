@@ -46,6 +46,6 @@ export async function POST(req: Request) {
     const priceComparisons = comparePriceOffers(productPrices);
     const context = { business: business || {}, market, requested_currency: currency, fx, quote_history: quotes || [], verified_market_sources: marketSources, verified_market_data: marketData, commercial_product_prices: productPrices, price_comparisons: priceComparisons, product_price_status: process.env.PRICE_INTELLIGENCE_API_URL ? 'connected' : 'not_connected', requested_quantity: requiredQuantity, requested_unit: requiredUnit, question };
     const result = await askGemma(JSON.stringify(context));
-    return NextResponse.json({ ...result, market, currency, fx_source: 'Frankfurter reference rates', fx_date: fx?.date || null, sources: marketSources, market_data: marketData, product_prices: productPrices, price_comparisons: priceComparisons, requested_quantity: requiredQuantity, requested_unit: requiredUnit, product_price_connected: Boolean(process.env.PRICE_INTELLIGENCE_API_URL) });
+    return NextResponse.json({ ...result, market, currency, fx_source: 'Frankfurter reference rates', fx_date: fx?.date || null, sources: marketSources, market_data: marketData, product_prices: productPrices, price_comparisons: priceComparisons, requested_quantity: requiredQuantity, requested_unit: requiredUnit, product_price_connected: Boolean(process.env.PRICE_INTELLIGENCE_API_URL) || isUk });
   } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : 'Advisor request failed.' }, { status: 500 }); }
 }
