@@ -5,8 +5,8 @@ import { ArrowLeft, CheckCircle2, CircleAlert, ExternalLink, Globe2, Loader2, Me
 
 type Source = { id:string; name:string; scope:string; coverage:string; frequency:string; kind:'official'|'reference'; url:string };
 type MarketDatum = { id:string; label:string; value:number; unit:string; period:string; source:string; sourceUrl:string; publishedAt:string; note:string };
-type ProductPrice = { productName:string; retailer:string; url:string; price:number; currency:string; unit?:string; observedAt:string; sourceType:string; confidence:string };
-type Result = { answer:string; warnings:string[]; actions:string[]; facts:string[]; confidence:string; market:string; currency:string; fx_source?:string; fx_date?:string|null; sources?:Source[]; market_data?:MarketDatum[]; product_prices?:ProductPrice[]; product_price_connected?:boolean };
+type ProductPrice = { productName:string; retailer:string; url:string; price:number; currency:string; unit?:string; observedAt:string; sourceType:string; confidence:string };\ntype PriceComparison = { productName:string; comparable:boolean; reason?:string; currency?:string; unit?:string; offers:ProductPrice[]; lowest?:ProductPrice; highest?:ProductPrice; average?:number; spreadPercent?:number };
+type Result = { answer:string; warnings:string[]; actions:string[]; facts:string[]; confidence:string; market:string; currency:string; fx_source?:string; fx_date?:string|null; sources?:Source[]; market_data?:MarketDatum[]; product_prices?:ProductPrice[]; price_comparisons?:PriceComparison[]; product_price_connected?:boolean };
 
 export default function AdvisorPage() {
   const [question,setQuestion]=useState('');
@@ -63,6 +63,20 @@ export default function AdvisorPage() {
                 {result.product_prices.map((item,i)=><a key={i} href={item.url} target="_blank" rel="noreferrer" className="block rounded-xl border border-slate-100 bg-slate-50 p-3 hover:border-[#2F8CFF]"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-sm font-bold">{item.productName}</p><p className="mt-1 text-xs text-slate-500">{item.retailer}{item.unit ? ' · ' + item.unit : ''}</p></div><p className="shrink-0 text-sm font-black text-[#1769E0]">{item.currency} {item.price.toFixed(2)}</p></div><p className="mt-1 text-[11px] text-slate-400">Observed {new Date(item.observedAt).toLocaleDateString()} · {item.sourceType}</p></a>)}
               </div>
             </div> : result.product_price_connected === false ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500"><span className="font-bold text-[#0A1E3D]">Product prices not connected.</span> QUVOTO will not invent a retail price. Connect a commercial provider to show live product offers here.</div> : null}
+            {result.price_comparisons?.some(x=>x.comparable)?<div className="rounded-2xl border border-[#1769E0]/15 bg-[#1769E0]/5 p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">Price comparison</h3><p className="mt-1 text-xs leading-5 text-slate-500">Directly comparable offers are grouped by product, currency and unit. QUVOTO does not rank mismatched sizes or units.</p></div><span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#1769E0]">Comparable</span></div>
+              <div className="mt-4 space-y-4">
+                {(result.price_comparisons || []).filter(x=>x.comparable).map((comparison,i)=><div key={i} className="rounded-2xl border border-white bg-white p-4">
+                  <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-sm font-bold">{comparison.productName}</p><p className="mt-1 text-xs text-slate-500">{comparison.unit ? 'Price per ' + comparison.unit : 'Same unit'} · {comparison.offers.length} offers</p></div>{comparison.lowest?<div className="text-right"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Lowest comparable</p><p className="text-xl font-black text-[#1769E0]">{comparison.currency} {comparison.lowest.price.toFixed(2)}</p></div>:null}</div>
+                  <div className="mt-4 space-y-2">
+                    {comparison.offers.map((offer,j)=><a key={j} href={offer.url} target="_blank" rel="noreferrer" className="block rounded-xl border border-slate-100 p-3 hover:border-[#2F8CFF]">
+                      <div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-bold">{offer.retailer}</p><p className="mt-1 text-[11px] text-slate-400">{offer.unit || 'unit'} · {offer.confidence} confidence</p></div><p className="shrink-0 text-sm font-black text-[#0A1E3D]">{offer.currency} {offer.price.toFixed(2)}</p></div>
+                    </a>)}
+                  </div>
+                  {typeof comparison.spreadPercent === 'number'?<p className="mt-3 text-xs text-slate-500">Price spread between lowest and highest comparable offers: <span className="font-bold">{comparison.spreadPercent.toFixed(1)}%</span>.</p>:null}
+                </div>)}
+              </div>
+            </div>:null}
             {result.market_data?.length?<div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
               <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">Verified market signals</h3><p className="mt-1 text-xs leading-5 text-slate-500">Official UK indicators supplied to the Advisor for this question.</p></div><span className="rounded-full bg-[#1769E0]/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#1769E0]">Official</span></div>
               <div className="mt-4 grid gap-2">
