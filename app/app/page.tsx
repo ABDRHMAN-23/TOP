@@ -189,32 +189,32 @@ export default function AppPage() {
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-          <a href="/" className="inline-flex items-center gap-3"><img src="/logo.svg" alt="QUVOTO" className="h-8 w-8"/><span className="text-xl font-extrabold tracking-[-0.04em] text-[#0A1E3D]">QUVOTO</span></a>
-          <div className="flex items-center gap-2 sm:gap-3">
-            {planInfo && <a href="/pricing" className="hidden rounded-full bg-[#2F8CFF]/10 px-3 py-1.5 text-xs font-bold text-[#1769E0] sm:inline-flex">{planInfo.label} · {planInfo.quota === null ? 'Unlimited' : planInfo.used + '/' + planInfo.quota}</a>}
-            <button onClick={signIn} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50">Sign in</button>
-            <button onClick={reset} className="flex items-center gap-2 rounded-xl bg-[#0A1E3D] px-4 py-2 text-sm font-semibold text-white"><RotateCcw size={15}/>New</button>
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
+          <a href="/" aria-label="QUVOTO home" className="inline-flex items-center gap-2.5"><img src="/logo.svg" alt="QUVOTO" className="h-9 w-9"/><span className="text-lg font-black tracking-[-0.04em] text-[#0A1E3D] sm:text-xl">QUVOTO</span></a>
+          <div className="flex items-center gap-2">
+            {planInfo && <a href="/pricing" className="hidden rounded-full bg-[#2F8CFF]/10 px-3 py-2 text-xs font-bold text-[#1769E0] sm:inline-flex">{planInfo.label} · {planInfo.quota === null ? 'Unlimited' : planInfo.used + '/' + planInfo.quota}</a>}
+            <button onClick={signIn} className="min-h-11 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold hover:bg-slate-50">Sign in</button>
+            <button onClick={reset} aria-label="Start a new quote" className="flex min-h-11 items-center gap-2 rounded-xl bg-[#0A1E3D] px-3.5 text-sm font-semibold text-white"><RotateCcw size={15}/><span className="hidden sm:inline">New</span></button>
           </div>
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
-        <div className="mb-8">
+      <section className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
+        <div className="mb-6 sm:mb-8">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#2F8CFF]/10 px-3 py-1 text-xs font-bold text-[#1769E0]"><Mic size={14}/>VOICE-FIRST QUOTING</div>
-          <h1 className="text-3xl font-black tracking-tight sm:text-5xl">Turn a field note into a professional quote.</h1>
-          <p className="mt-3 max-w-2xl text-slate-500">Speak naturally, review the extracted details, then save the quote to your workspace.</p>
+          <h1 className="text-[2rem] font-black leading-[1.05] tracking-[-0.03em] sm:text-5xl">Turn a field note into a professional quote.</h1>
+          <p className="mt-3 max-w-2xl text-[15px] leading-6 text-slate-500 sm:text-base sm:leading-7">Speak naturally, review the extracted details, then save the quote to your workspace.</p>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_1.15fr]">
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <section className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-[2rem] sm:p-8">
             <div className="flex items-center justify-between">
               <div><p className="text-sm font-semibold text-slate-400">STEP 1</p><h2 className="mt-1 text-2xl font-bold">Capture the job</h2></div>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{String(seconds / 60 | 0).padStart(2,'0')}:{String(seconds % 60).padStart(2,'0')}</span>
             </div>
 
-            <div className="mt-6 rounded-[1.7rem] bg-slate-50 p-7 text-center">
+            <div className="mt-5 rounded-[1.5rem] bg-slate-50 p-5 text-center sm:mt-6 sm:rounded-[1.7rem] sm:p-7">
               <button onClick={recording ? stop : start} className={'mx-auto flex h-24 w-24 items-center justify-center rounded-full text-white shadow-xl transition ' + (recording ? 'bg-red-500 animate-pulse' : 'bg-[#1769E0] hover:bg-blue-700')}>
                 {recording ? <Square size={28}/> : <Mic size={34}/>}
               </button>
@@ -230,7 +230,7 @@ export default function AppPage() {
             {error && <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
             {saved && <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700">{saved}</div>}
 
-            <button onClick={analyze} disabled={loading || (!audio && !manualNotes.trim())} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1769E0] py-4 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
+            <button onClick={analyze} disabled={loading || (!audio && !manualNotes.trim())} className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#1769E0] py-4 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
               {loading ? <><Loader2 className="animate-spin" size={18}/>Analyzing…</> : <><ChevronRight size={18}/>Analyze job</>}
             </button>
           </section>
