@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sourcesForMarket } from '@/lib/advisor/market-sources';
+import { findUKMarketData } from '@/lib/advisor/uk-market-data';
 
 async function getFx(base: string, quote: string) {
   if (!base || !quote || base === quote) return { base, date: new Date().toISOString().slice(0, 10), rates: { [quote]: 1 } };
@@ -38,24 +39,9 @@ export async function POST(req: Request) {
     const { data: quotes } = await supabase.from('quotes').select('quote_number,client_name,items,subtotal,total,currency,status,created_at').eq('user_id', user.id).order('created_at',{ ascending:false }).limit(20);
     const fx = currency !== 'GBP' ? await getFx('GBP', currency) : { base:'GBP', date:new Date().toISOString().slice(0,10), rates:{ GBP:1 } };
     const marketSources = sourcesForMarket(market);
-    const context = {
-      business: business || {},
-      market,
-      requested_currency: currency,
-      fx,
-      quote_history: quotes || [],
-      verified_market_sources: marketSources,
-      product_price_sources: 'No verified retail product-price source is connected by default. Source registry entries may provide official indices or market trends, not individual supplier prices.',
-      question
-    };
+    const marketData = /^(united kingdom|uk|great britain)$/i.test(market) ? findUKMarketData(question) : [];
+    const context = { business: business || {}, market, requested_currency: currency, fx, quote_history: quotes || [], verified_market_sources: marketSources, verified_market_data: marketData, product_price_sources: 'No verified retail product-price source is connected by default. Market indicators are not individual supplier prices.', question };
     const result = await askGemma(JSON.stringify(context));
-    return NextResponse.json({
-      ...result,
-      market,
-      currency,
-      fx_source: 'Frankfurter reference rates',
-      fx_date: fx?.date || null,
-      sources: marketSources,
-    });
+    return NextResponse.json({ ...result, market, currency, fx_source: 'Frankfurter reference rates', fx_date: fx?.date || null, sources: marketSources, market_data: marketData });
   } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : 'Advisor request failed.' }, { status: 500 }); }
 }
