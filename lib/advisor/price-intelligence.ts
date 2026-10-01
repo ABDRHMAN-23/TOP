@@ -199,21 +199,61 @@ export async function getBuildWatchPriceHistory(query: string, days = 30): Promi
   const data = await fetchBuildWatch(`/products/${encodeURIComponent(result.slug)}/prices`);
   const history = Array.isArray(data?.history) ? data.history : [];
   const cutoff = Date.now() - days * 86400000;
+
   const points = history.filter((x: any) => {
-    const date = new Date(x?.scraped_at || 0).getTime();
-    return date >= cutoff && Number.isFinite(Number(x?.price_inc_vat));
+    const timestamp = new Date(x?.scraped_at || 0).getTime();
+    return timestamp >= cutoff && Number.isFinite(Number(x?.price_inc_vat));
   }).map((x: any) => ({
     date: String(x.scraped_at),
     retailer: String(x.merchant_name || 'Unknown retailer'),
     price: Number(x.price_inc_vat),
     currency: String(x.currency || 'GBP').toUpperCase(),
     inStock: typeof x.in_stock === 'boolean' ? x.in_stock : undefined,
-  })).sort((a: PriceHistoryPoint,b: PriceHistoryPoint) => new Date(a.date).getTime() - new Date(b.date).getTime()).slice(-60);
+  })).sort((a: PriceHistoryPoint,b: PriceHistoryPoint) =>
+    new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
   if (!points.length) return null;
-  const latest = points[points.length - 1].price;
-  const previous = points.length > 1 ? points[points.length - 2].price : undefined;
-  const changePercent = previous && previous > 0 ? ((latest - previous) / previous) * 100 : undefined;
-  return { productName: String(result.name || query), currency: points[points.length - 1].currency, points, current: latest, previous, changePercent, direction: changePercent === undefined ? 'unknown' : changePercent > 0.05 ? 'up' : changePercent < -0.05 ? 'down' : 'flat', source: 'BuildWatch' };
+
+  // Compare like-for-like within the same retailer so a retailer switch
+  // cannot be mistaken for a price increase/decrease.
+  const byRetailer = new Map<string, PriceHistoryPoint[]>();
+  for (const point of points) {
+    const list = byRetailer.get(point.retailer) || [];
+    list.push(point);
+    byRetailer.set(point.retailer, list);
+  }
+
+  const retailerSignals = Array.from(byRetailer.entries()).map(([retailer, items]) => {
+    const first = items[0];
+    const latest = items[items.length - 1];
+    const changePercent = first.price > 0 ? ((latest.price - first.price) / first.price) * 100 : undefined;
+    return { retailer, first, latest, changePercent };
+  }).filter((x) => x.changePercent !== undefined);
+
+  const current = points[points.length - 1].price;
+  const currency = points[points.length - 1].currency;
+  const comparableSignals = retailerSignals.filter((x) => x.latest.currency === currency);
+  const averageChange = comparableSignals.length
+    ? comparableSignals.reduce((sum, x) => sum + (x.changePercent || 0), 0) / comparableSignals.length
+    : undefined;
+
+  const direction = averageChange === undefined
+    ? 'unknown'
+    : averageChange > 0.05 ? 'up'
+    : averageChange < -0.05 ? 'down'
+    : 'flat';
+
+  return {
+    productName: String(result.name || query),
+    currency,
+    points: points.slice(-60),
+    current,
+    previous: points.length > 1 ? points[points.length - 2].price : undefined,
+    changePercent: averageChange,
+    direction,
+    source: 'BuildWatch',
+  };
 }
 
 export async function searchProductPrices(query: string, market: string, currency: string): Promise<PriceQuote[]> {
