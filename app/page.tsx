@@ -47,7 +47,7 @@ export default function Home() {
     <section className="relative overflow-hidden border-t border-[#1769E0]/10 bg-white">
       <div className="mx-auto grid max-w-6xl gap-12 px-5 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
         <div>
-          <div className="mb-7"><Brand tagline /></div><div className="inline-flex items-center gap-2 rounded-full border border-[#2F8CFF]/20 bg-[#2F8CFF]/10 px-3 py-1.5 text-xs font-bold text-[#1769E0]"><Sparkles size={14}/>Built for independent contractors</div>
+          <div className="mb-7"><Brand tagline /></div><div className="inline-flex items-center gap-2 rounded-full border border-[#1769E0]/15 bg-[#1769E0]/5 px-3 py-1.5 text-xs font-bold text-[#1769E0]">Built for independent contractors</div>
           <h1 className="mt-6 max-w-3xl text-5xl font-black leading-[.98] tracking-[-.04em] sm:text-7xl">Talk for 30 seconds.<br/><span className="text-[#1769E0]">Get a quote ready to send.</span></h1>
           <p className="mt-7 max-w-xl text-lg leading-8 text-slate-600">Capture the job while you are still on site. QUVOTO turns your field notes into structured, editable quote details without the admin grind.</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row"><Link href="/app" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1769E0] px-7 py-4 font-bold text-white shadow-lg shadow-blue-600/20">Create your first quote <ArrowRight size={18}/></Link><Link href="/pricing" className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-7 py-4 font-bold text-slate-800">See pricing</Link></div>
