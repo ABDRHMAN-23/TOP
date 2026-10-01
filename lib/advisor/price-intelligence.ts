@@ -36,6 +36,60 @@ export type PriceComparison = {
 
 type ProviderPayload = { prices?: unknown[]; data?: unknown[]; results?: unknown[] };
 
+const BUILDWATCH_API_URL = 'https://buildwatch.dev/api/v1';
+
+async function fetchBuildWatch(path: string) {
+  const response = await fetch(`${BUILDWATCH_API_URL}${path}`, {
+    headers: { Accept: 'application/json', 'User-Agent': 'QUVOTO-Advisor/1.0' },
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error(`BuildWatch returned HTTP ${response.status}.`);
+  return response.json() as Promise<any>;
+}
+
+function parsePackQuantity(unitLabel?: string, productName?: string): number | undefined {
+  const text = `${unitLabel || ''} ${productName || ''}`;
+  const match = text.match(/(\d+(?:\.\d+)?)\s*(?:m|metres?|meters?|mm|cm|kg|litres?|liters?|l)\b/i);
+  if (!match) return undefined;
+  const value = Number(match[1]);
+  return Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+async function searchBuildWatchPrices(query: string): Promise<PriceQuote[]> {
+  const search = await fetchBuildWatch(`/search?q=${encodeURIComponent(query)}`);
+  const results = Array.isArray(search?.results) ? search.results.slice(0, 4) : [];
+  const collected: PriceQuote[] = [];
+
+  for (const result of results) {
+    if (!result?.slug) continue;
+    const data = await fetchBuildWatch(`/products/${encodeURIComponent(result.slug)}`);
+    const product = data?.product || {};
+    const prices = Array.isArray(data?.prices) ? data.prices : [];
+
+    for (const offer of prices) {
+      const price = Number(offer?.price_inc_vat);
+      if (!Number.isFinite(price) || price < 0) continue;
+      const unit = String(product?.unit_label || result?.unit_label || '').trim() || undefined;
+      const packQuantity = parsePackQuantity(unit, product?.name || result?.name);
+      collected.push({
+        productName: String(product?.name || result?.name || query).trim(),
+        retailer: String(offer?.merchant_name || 'BuildWatch merchant').trim(),
+        url: String(product?.url || result?.url || `https://buildwatch.dev/products/${encodeURIComponent(result.slug)}`),
+        price,
+        currency: String(offer?.currency || 'GBP').toUpperCase(),
+        unit,
+        packQuantity,
+        observedAt: String(offer?.scraped_at || new Date().toISOString()),
+        sourceType: 'approved_aggregator',
+        confidence: 'medium',
+      });
+    }
+  }
+
+  return collected.slice(0, 8);
+}
+
+
 function normalize(item: any): PriceQuote | null {
   const price = Number(item?.price ?? item?.current_price ?? item?.price_amount);
   const name = String(item?.productName ?? item?.product_name ?? item?.name ?? '').trim();
@@ -123,7 +177,8 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
 
 export async function searchProductPrices(query: string, market: string, currency: string): Promise<PriceQuote[]> {
   const endpoint = process.env.PRICE_INTELLIGENCE_API_URL;
-  if (!endpoint) return [];
+  const isUk = /^(united kingdom|uk|great britain)$/i.test(market.trim());
+  if (!endpoint) return isUk ? searchBuildWatchPrices(query) : [];
   const headers: Record<string,string> = { 'Content-Type': 'application/json' };
   if (process.env.PRICE_INTELLIGENCE_API_KEY) headers.Authorization = 'Bearer ' + process.env.PRICE_INTELLIGENCE_API_KEY;
   const response = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify({ query, market, currency, limit: 8 }), cache: 'no-store' });
