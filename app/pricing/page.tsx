@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { Check, Lock, Mic, FileText, Sparkles } from 'lucide-react';
 
+function Brand(){return <div className="flex items-center gap-2.5"><img src="/logo.svg" alt="QUVOTO" className="h-10 w-10"/><div><div className="text-2xl font-black tracking-[-0.05em] text-[#0A1E3D]">QUVOTO</div><div className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#1769E0]">Speak. Quote. Done.</div></div></div>;}
+
 const plans = [
   { name:'Free', price:'$0', detail:'5 quotes/month', accent:'slate', features:['2 PDF templates: Modern + Classic','GBP only','English only','Public quote link','Basic workspace'] },
   { name:'Starter', price:'$19', detail:'30 quotes/month', accent:'blue', features:['All 5 PDF templates','GBP, USD, EUR','Custom logo + remove QUVOTO branding','Quote tracking + full stats','CSV export'] },
@@ -12,7 +14,7 @@ export default function Pricing() {
   return <main className="min-h-screen bg-slate-50 text-slate-950">
     <header className="border-b bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
-        <Link href="/" className="text-2xl font-black tracking-tight">Voice<span className="text-[#1769E0]">Quote</span></Link>
+        <Link href="/" aria-label="QUVOTO home"><Brand/></Link>
         <Link href="/app" className="rounded-full bg-[#0A1E3D] px-5 py-2.5 text-sm font-bold text-white">Start free</Link>
       </div>
     </header>
