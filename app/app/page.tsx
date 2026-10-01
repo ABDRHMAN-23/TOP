@@ -187,18 +187,18 @@ export default function AppPage() {
     <main className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-          <a href="/" className="text-xl font-black tracking-tight">Voice<span className="text-blue-600">Quote</span></a>
+          <a href="/" className="text-xl font-black tracking-tight">Voice<span className="text-[#1769E0]">Quote</span></a>
           <div className="flex items-center gap-2 sm:gap-3">
-            {planInfo && <a href="/pricing" className="hidden rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 sm:inline-flex">{planInfo.label} · {planInfo.quota === null ? 'Unlimited' : planInfo.used + '/' + planInfo.quota}</a>}
+            {planInfo && <a href="/pricing" className="hidden rounded-full bg-[#2F8CFF]/10 px-3 py-1.5 text-xs font-bold text-[#1769E0] sm:inline-flex">{planInfo.label} · {planInfo.quota === null ? 'Unlimited' : planInfo.used + '/' + planInfo.quota}</a>}
             <button onClick={signIn} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50">Sign in</button>
-            <button onClick={reset} className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"><RotateCcw size={15}/>New</button>
+            <button onClick={reset} className="flex items-center gap-2 rounded-xl bg-[#0A1E3D] px-4 py-2 text-sm font-semibold text-white"><RotateCcw size={15}/>New</button>
           </div>
         </div>
       </header>
 
       <section className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
         <div className="mb-8">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700"><Mic size={14}/>VOICE-FIRST QUOTING</div>
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#2F8CFF]/10 px-3 py-1 text-xs font-bold text-[#1769E0]"><Mic size={14}/>VOICE-FIRST QUOTING</div>
           <h1 className="text-3xl font-black tracking-tight sm:text-5xl">Turn a field note into a professional quote.</h1>
           <p className="mt-3 max-w-2xl text-slate-500">Speak naturally, review the extracted details, then save the quote to your workspace.</p>
         </div>
@@ -211,7 +211,7 @@ export default function AppPage() {
             </div>
 
             <div className="mt-6 rounded-[1.7rem] bg-slate-50 p-7 text-center">
-              <button onClick={recording ? stop : start} className={'mx-auto flex h-24 w-24 items-center justify-center rounded-full text-white shadow-xl transition ' + (recording ? 'bg-red-500 animate-pulse' : 'bg-blue-600 hover:bg-blue-700')}>
+              <button onClick={recording ? stop : start} className={'mx-auto flex h-24 w-24 items-center justify-center rounded-full text-white shadow-xl transition ' + (recording ? 'bg-red-500 animate-pulse' : 'bg-[#1769E0] hover:bg-blue-700')}>
                 {recording ? <Square size={28}/> : <Mic size={34}/>}
               </button>
               <p className="mt-4 font-semibold">{recording ? 'Recording… tap to stop' : audio ? 'Recording ready' : 'Tap to record'}</p>
@@ -220,13 +220,13 @@ export default function AppPage() {
 
             <div className="mt-6">
               <label className="text-sm font-bold">Manual notes</label>
-              <textarea value={manualNotes} onChange={(e) => setManualNotes(e.target.value)} className="mt-2 min-h-36 w-full rounded-2xl border border-slate-200 p-4 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50" placeholder="Replace kitchen tap. Two hours labour. Parts £85. Client is James..."/>
+              <textarea value={manualNotes} onChange={(e) => setManualNotes(e.target.value)} className="mt-2 min-h-36 w-full rounded-2xl border border-slate-200 p-4 outline-none focus:border-[#1769E0] focus:ring-4 focus:ring-blue-50" placeholder="Replace kitchen tap. Two hours labour. Parts £85. Client is James..."/>
             </div>
 
             {error && <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
             {saved && <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700">{saved}</div>}
 
-            <button onClick={analyze} disabled={loading || (!audio && !manualNotes.trim())} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
+            <button onClick={analyze} disabled={loading || (!audio && !manualNotes.trim())} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1769E0] py-4 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
               {loading ? <><Loader2 className="animate-spin" size={18}/>Analyzing…</> : <><ChevronRight size={18}/>Analyze job</>}
             </button>
           </section>
@@ -253,7 +253,7 @@ export default function AppPage() {
                 </div>
 
                 <div className="rounded-2xl border border-slate-200">
-                  <div className="flex items-center justify-between border-b p-4"><span className="font-bold">Line items</span><button onClick={addItem} className="flex items-center gap-1 text-sm font-bold text-blue-600"><Plus size={16}/>Add</button></div>
+                  <div className="flex items-center justify-between border-b p-4"><span className="font-bold">Line items</span><button onClick={addItem} className="flex items-center gap-1 text-sm font-bold text-[#1769E0]"><Plus size={16}/>Add</button></div>
                   <div className="divide-y">
                     {items.map((item, index) => (
                       <div key={index} className="grid gap-2 p-4 sm:grid-cols-[1.5fr_.6fr_.7fr_.8fr_auto]">
@@ -295,14 +295,14 @@ export default function AppPage() {
                       </select>
                     </label>
                   </div>
-                  {planInfo && <div className="mt-3 flex items-center gap-2 text-xs text-slate-500"><Lock size={13}/><span>Locked options stay unavailable when the quote is saved.</span><a href="/pricing" className="ml-auto font-bold text-blue-600">See plans</a></div>}
+                  {planInfo && <div className="mt-3 flex items-center gap-2 text-xs text-slate-500"><Lock size={13}/><span>Locked options stay unavailable when the quote is saved.</span><a href="/pricing" className="ml-auto font-bold text-[#1769E0]">See plans</a></div>}
                 </div>
 
                 <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4"><span className="font-semibold">Subtotal</span><span className="text-2xl font-black">{currency} {subtotal.toFixed(2)}</span></div>
 
-                <div className="rounded-2xl bg-slate-900 p-5 text-white">
+                <div className="rounded-2xl bg-[#0A1E3D] p-5 text-white">
                   <div className="flex items-center gap-2 text-sm font-semibold text-slate-300"><Check size={17}/>Ready for the next step</div>
-                  <p className="mt-1 text-sm text-slate-300">Save this reviewed quote to your VoiceQuote workspace.</p>
+                  <p className="mt-1 text-sm text-slate-300">Save this reviewed quote to your QUVOTO workspace.</p>
                   <button onClick={saveQuote} disabled={saving} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 font-bold text-slate-900 disabled:opacity-60">
                     {saving ? <Loader2 className="animate-spin" size={17}/> : <Save size={17}/>}Save quote
                   </button>
