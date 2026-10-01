@@ -125,8 +125,24 @@ function normalize(item: any): PriceQuote | null {
   };
 }
 
+function productSpecKey(name: string) {
+  const normalized = name.toLowerCase().replace(/×/g, 'x').replace(/\s+/g, ' ').trim();
+  // Preserve explicit dimensions/weights/volumes so similarly named but differently
+  // sized products are never treated as the same comparison group.
+  const specs = normalized.match(/\b\d+(?:\.\d+)?\s*(?:mm|cm|m|kg|g|l|ml|in|inch|inches|ft|\")\b(?:\s*x\s*\d+(?:\.\d+)?\s*(?:mm|cm|m|kg|g|l|ml|in|inch|inches|ft|\")\b)*/g) || [];
+  return specs.map((x) => x.replace(/\s+/g, '')).join('|');
+}
+
 function keyFor(item: PriceQuote) {
-  return item.productName.trim().toLowerCase().replace(/\s+/g, ' ') + '|' + (item.unit || '').trim().toLowerCase();
+  const name = item.productName.trim().toLowerCase().replace(/\s+/g, ' ');
+  const specs = productSpecKey(name);
+  return name + '|' + (item.unit || '').trim().toLowerCase() + '|' + specs;
+}
+
+function specsMatch(a: PriceQuote, b: PriceQuote) {
+  const aSpecs = productSpecKey(a.productName);
+  const bSpecs = productSpecKey(b.productName);
+  return aSpecs === bSpecs;
 }
 
 export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: number, requiredUnit?: string): PriceComparison[] {
@@ -139,6 +155,15 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
   }
 
   return Array.from(groups.values()).map((offers) => {
+    const specGroups = offers.reduce((map, offer) => {
+      const key = productSpecKey(offer.productName);
+      const list = map.get(key) || [];
+      list.push(offer);
+      map.set(key, list);
+      return map;
+    }, new Map<string, PriceQuote[]>());
+    const bestSpecGroup = Array.from(specGroups.values()).sort((a, b) => b.length - a.length)[0] || offers;
+    offers = bestSpecGroup;
     const currencies = new Set(offers.map((x) => x.currency));
     const units = new Set(offers.map((x) => (x.unit || '').trim().toLowerCase()));
     const normalizedRequiredUnit = requiredUnit?.trim().toLowerCase();
