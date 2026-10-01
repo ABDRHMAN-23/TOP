@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, CheckCircle2, CircleAlert, Globe2, Loader2, MessageSquare, TrendingUp } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, CircleAlert, ExternalLink, Globe2, Loader2, MessageSquare, TrendingUp } from 'lucide-react';
 
-type Result = { answer:string; warnings:string[]; actions:string[]; facts:string[]; confidence:string; market:string; currency:string; fx_source?:string; fx_date?:string|null };
+type Source = { id:string; name:string; scope:string; coverage:string; frequency:string; kind:'official'|'reference'; url:string };
+type Result = { answer:string; warnings:string[]; actions:string[]; facts:string[]; confidence:string; market:string; currency:string; fx_source?:string; fx_date?:string|null; sources?:Source[] };
 
 export default function AdvisorPage() {
   const [question,setQuestion]=useState('');
@@ -57,7 +58,22 @@ export default function AdvisorPage() {
             {result.facts.length?<div><h3 className="font-bold">Verified context</h3><ul className="mt-2 space-y-2">{result.facts.map((x,i)=><li key={i} className="flex gap-2 text-sm text-slate-600"><CheckCircle2 size={17} className="mt-0.5 shrink-0 text-[#1769E0]"/>{x}</li>)}</ul></div>:null}
             {result.warnings.length?<div><h3 className="font-bold">Review before sending</h3><ul className="mt-2 space-y-2">{result.warnings.map((x,i)=><li key={i} className="flex gap-2 text-sm text-slate-600"><CircleAlert size={17} className="mt-0.5 shrink-0 text-amber-500"/>{x}</li>)}</ul></div>:null}
             {result.actions.length?<div><h3 className="font-bold">Suggested actions</h3><ul className="mt-2 space-y-2">{result.actions.map((x,i)=><li key={i} className="text-sm text-slate-600">• {x}</li>)}</ul></div>:null}
-            {result.fx_date?<div className="border-t border-slate-100 pt-4 text-xs text-slate-400">Currency reference: {result.fx_source} · {result.fx_date}</div>:null}
+            <div className="rounded-2xl border border-[#1769E0]/15 bg-[#1769E0]/5 p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div><p className="text-sm font-bold">Data provenance</p><p className="mt-1 text-xs leading-5 text-slate-500">These are the sources supplied to the Advisor for this response.</p></div>
+                <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#1769E0]">Source verified</span>
+              </div>
+              <div className="mt-4 space-y-2">
+                {(result.sources || []).map(source => <a key={source.id} href={source.url} target="_blank" rel="noreferrer" className="block rounded-xl border border-white bg-white p-3 transition hover:border-[#2F8CFF]">
+                  <div className="flex items-start gap-3">
+                    <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-bold text-[#0A1E3D]">{source.name}</p><span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">{source.kind}</span></div><p className="mt-1 text-xs leading-5 text-slate-500">{source.coverage}</p><p className="mt-1 text-[11px] text-slate-400">{source.frequency} · {source.scope}</p></div><ExternalLink size={15} className="mt-0.5 shrink-0 text-[#1769E0]"/></div>
+                </a>)}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-400">
+                {result.fx_date ? <span className="rounded-full bg-white px-2.5 py-1">FX: {result.fx_source} · {result.fx_date}</span> : null}
+                <span className="rounded-full bg-white px-2.5 py-1">Product prices: not claimed unless a verified retail source is connected</span>
+              </div>
+            </div>
           </div>:null}
         </section>
       </div>
