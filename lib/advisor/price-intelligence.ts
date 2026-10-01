@@ -72,18 +72,27 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
       return { productName: offers[0].productName, comparable: false, reason: 'Offers use different currencies, units, or requested units, so QUVOTO will not rank them as directly comparable.', offers };
     }
 
-    const sorted = [...offers].sort((a, b) => a.price - b.price);
+    const projectQuantity = requiredQuantity && requiredQuantity > 0 ? requiredQuantity : undefined;
+    const purchaseCost = (offer: PriceQuote) => {
+      if (projectQuantity && offer.packQuantity && offer.unit) {
+        return Math.ceil(projectQuantity / offer.packQuantity) * offer.price;
+      }
+      return offer.price;
+    };
+
+    // When the user gives a project quantity, compare the actual number of packs
+    // required to complete the job—not just the sticker price of one pack.
+    const sorted = [...offers].sort((a, b) => purchaseCost(a) - purchaseCost(b) || a.price - b.price);
     const lowest = sorted[0];
     const highest = sorted[sorted.length - 1];
     const average = sorted.reduce((sum, item) => sum + item.price, 0) / sorted.length;
     const spreadPercent = lowest.price > 0 ? ((highest.price - lowest.price) / lowest.price) * 100 : undefined;
-    let lowestPurchaseTotal: number | undefined;
-    let lowestPackCount: number | undefined;
-
-    if (requiredQuantity && requiredQuantity > 0 && lowest.packQuantity && lowest.unit) {
-      lowestPackCount = Math.ceil(requiredQuantity / lowest.packQuantity);
-      lowestPurchaseTotal = lowestPackCount * lowest.price;
-    }
+    const lowestPackCount = projectQuantity && lowest.packQuantity && lowest.unit
+      ? Math.ceil(projectQuantity / lowest.packQuantity)
+      : undefined;
+    const lowestPurchaseTotal = lowestPackCount !== undefined
+      ? lowestPackCount * lowest.price
+      : undefined;
 
     return { productName: lowest.productName, comparable: sorted.length >= 2, currency: lowest.currency, unit: lowest.unit, requiredQuantity, requiredUnit, offers: sorted, lowest, highest, average, spreadPercent, lowestPurchaseTotal, lowestPackCount };
   });
