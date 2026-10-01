@@ -10,6 +10,19 @@ export type PriceQuote = {
   confidence: 'high' | 'medium' | 'low';
 };
 
+export type PriceComparison = {
+  productName: string;
+  comparable: boolean;
+  reason?: string;
+  currency?: string;
+  unit?: string;
+  offers: PriceQuote[];
+  lowest?: PriceQuote;
+  highest?: PriceQuote;
+  average?: number;
+  spreadPercent?: number;
+};
+
 type ProviderPayload = {
   prices?: unknown[];
   data?: unknown[];
@@ -28,11 +41,56 @@ function normalize(item: any): PriceQuote | null {
     url,
     price,
     currency: String(item?.currency ?? 'GBP').toUpperCase(),
-    unit: item?.unit ? String(item.unit) : undefined,
+    unit: item?.unit ? String(item.unit).trim() : undefined,
     observedAt: String(item?.observedAt ?? item?.observed_at ?? item?.checkedAt ?? new Date().toISOString()),
     sourceType: ['retailer_api','merchant_feed','approved_aggregator'].includes(item?.sourceType) ? item.sourceType : 'approved_aggregator',
     confidence: ['high','medium','low'].includes(item?.confidence) ? item.confidence : 'medium',
   };
+}
+
+function keyFor(item: PriceQuote) {
+  return item.productName.trim().toLowerCase().replace(/\\s+/g, ' ') + '|' + (item.unit || '').trim().toLowerCase();
+}
+
+export function comparePriceOffers(prices: PriceQuote[]): PriceComparison[] {
+  const groups = new Map<string, PriceQuote[]>();
+  for (const price of prices) {
+    const key = keyFor(price);
+    const list = groups.get(key) || [];
+    list.push(price);
+    groups.set(key, list);
+  }
+
+  return Array.from(groups.values()).map((offers) => {
+    const currencies = new Set(offers.map((x) => x.currency));
+    const units = new Set(offers.map((x) => (x.unit || '').trim().toLowerCase()));
+    if (currencies.size !== 1 || units.size !== 1) {
+      return {
+        productName: offers[0].productName,
+        comparable: false,
+        reason: 'Offers use different currencies or units, so QUVOTO will not rank them as directly comparable.',
+        offers,
+      };
+    }
+
+    const sorted = [...offers].sort((a, b) => a.price - b.price);
+    const lowest = sorted[0];
+    const highest = sorted[sorted.length - 1];
+    const average = sorted.reduce((sum, item) => sum + item.price, 0) / sorted.length;
+    const spreadPercent = lowest.price > 0 ? ((highest.price - lowest.price) / lowest.price) * 100 : undefined;
+
+    return {
+      productName: lowest.productName,
+      comparable: sorted.length >= 2,
+      currency: lowest.currency,
+      unit: lowest.unit,
+      offers: sorted,
+      lowest,
+      highest,
+      average,
+      spreadPercent,
+    };
+  });
 }
 
 export async function searchProductPrices(query: string, market: string, currency: string): Promise<PriceQuote[]> {
