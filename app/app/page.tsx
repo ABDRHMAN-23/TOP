@@ -47,7 +47,11 @@ export default function AppPage() {
   const chunks = useRef<Blob[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => () => timer.current && clearInterval(timer.current), []);
+  useEffect(() => {
+    return () => {
+      if (timer.current) clearInterval(timer.current);
+    };
+  }, []);
 
   useEffect(() => {
     fetch('/api/billing')
