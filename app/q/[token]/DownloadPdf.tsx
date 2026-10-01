@@ -180,10 +180,10 @@ export default function DownloadPdf({ quote, business, removeBrand = false }: { 
           </View>
         ) : null}
 
-        <Text style={styles.footer}>{business?.business_name || 'VoiceQuote'}{removeBrand ? '' : ' · Generated with VoiceQuote'}</Text>
+        <Text style={styles.footer}>{business?.business_name || 'QUVOTO'}{removeBrand ? '' : ' · Generated with VoiceQuote'}</Text>
       </Page>
     </Document>
   );
 
-  return <PDFDownloadLink document={document} fileName={name} className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white">{({loading}) => loading ? 'Preparing PDF…' : 'Download PDF'}</PDFDownloadLink>;
+  return <PDFDownloadLink document={document} fileName={name} className="inline-flex items-center justify-center rounded-xl bg-[#1769E0] px-5 py-3 text-sm font-bold text-white">{({loading}) => loading ? 'Preparing PDF…' : 'Download PDF'}</PDFDownloadLink>;
 }
