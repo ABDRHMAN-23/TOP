@@ -15,6 +15,7 @@ export type PriceQuote = {
   observedAt: string;
   sourceType: 'retailer_api' | 'merchant_feed' | 'approved_aggregator';
   confidence: 'high' | 'medium' | 'low';
+  availability?: 'in_stock' | 'out_of_stock' | 'unknown';
 };
 
 export type PriceComparison = {
@@ -83,6 +84,7 @@ async function searchBuildWatchPrices(query: string): Promise<PriceQuote[]> {
         observedAt: String(offer?.scraped_at || new Date().toISOString()),
         sourceType: 'approved_aggregator',
         confidence: 'medium',
+        availability: offer?.in_stock === true ? 'in_stock' : offer?.in_stock === false ? 'out_of_stock' : 'unknown',
       });
     }
   }
@@ -114,6 +116,7 @@ function normalize(item: any): PriceQuote | null {
     observedAt: String(item?.observedAt ?? item?.observed_at ?? item?.checkedAt ?? new Date().toISOString()),
     sourceType: ['retailer_api','merchant_feed','approved_aggregator'].includes(item?.sourceType) ? item.sourceType : 'approved_aggregator',
     confidence: ['high','medium','low'].includes(item?.confidence) ? item.confidence : 'medium',
+    availability: item?.in_stock === true || item?.inStock === true ? 'in_stock' : item?.in_stock === false || item?.inStock === false ? 'out_of_stock' : item?.availability === 'in_stock' || item?.availability === 'out_of_stock' ? item.availability : 'unknown',
   };
 }
 
