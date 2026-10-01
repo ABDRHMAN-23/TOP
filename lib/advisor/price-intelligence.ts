@@ -103,7 +103,10 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
       const effectiveUnitPrice = purchaseTotal !== undefined && projectQuantity
         ? purchaseTotal / projectQuantity
         : undefined;
-      return { ...offer, purchaseTotal, purchasePackCount, effectiveUnitPrice };
+      const totalWithExtras = purchaseTotal !== undefined && (offer.shipping !== undefined || offer.tax !== undefined)
+        ? purchaseTotal + (offer.shipping ?? 0) + (offer.tax ?? 0)
+        : undefined;
+      return { ...offer, purchaseTotal, purchasePackCount, effectiveUnitPrice, totalWithExtras };
     });
 
     const sorted = [...pricedOffers].sort((a, b) => purchaseCost(a) - purchaseCost(b) || a.price - b.price);
