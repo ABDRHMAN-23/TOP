@@ -33,7 +33,8 @@ export type PriceComparison = {
   spreadPercent?: number;
   lowestPurchaseTotal?: number;
   lowestPackCount?: number;
-  requestedPurchaseTotals?: { retailer: string; packs: number; total: number; currency: string }[];
+  requestedPurchaseTotals?: { retailer: string; packs: number; total: number; currency: string; availability: 'in_stock'|'out_of_stock'|'unknown' }[];
+  unavailableOffers?: { retailer: string; reason: string }[];
 };
 
 type ProviderPayload = { prices?: unknown[]; data?: unknown[]; results?: unknown[] };
@@ -179,10 +180,11 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
     const lowestPackCount = lowest.purchasePackCount;
     const lowestPurchaseTotal = lowest.purchaseTotal;
     const requestedPurchaseTotals = projectQuantity
-      ? pricedOffers.filter((offer) => offer.purchaseTotal !== undefined).map((offer) => ({ retailer: offer.retailer, packs: offer.purchasePackCount || 0, total: offer.purchaseTotal || 0, currency: offer.currency }))
+      ? pricedOffers.filter((offer) => offer.purchaseTotal !== undefined).map((offer) => ({ retailer: offer.retailer, packs: offer.purchasePackCount || 0, total: offer.purchaseTotal || 0, currency: offer.currency, availability: offer.availability || 'unknown' }))
       : undefined;
+    const unavailableOffers = pricedOffers.filter((offer) => offer.availability === 'out_of_stock').map((offer) => ({ retailer: offer.retailer, reason: 'Source reports the product as out of stock.' }));
 
-    return { productName: lowest.productName, comparable: sorted.length >= 2, currency: lowest.currency, unit: lowest.unit, requiredQuantity, requiredUnit, offers: sorted, lowest, highest, average, spreadPercent, lowestPurchaseTotal, lowestPackCount, requestedPurchaseTotals };
+    return { productName: lowest.productName, comparable: sorted.length >= 2, currency: lowest.currency, unit: lowest.unit, requiredQuantity, requiredUnit, offers: sorted, lowest, highest, average, spreadPercent, lowestPurchaseTotal, lowestPackCount, requestedPurchaseTotals, unavailableOffers };
   });
 }
 
