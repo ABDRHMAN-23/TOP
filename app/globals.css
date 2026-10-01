@@ -1,2 +1,8 @@
 @import 'tailwindcss';
-:root{--blue:#2563eb;--navy:#0f172a}*{box-sizing:border-box}body{margin:0;background:#f8fafc;color:var(--navy);font-family:Inter,ui-sans-serif,system-ui,sans-serif}button,input,textarea{font:inherit}
+:root{--quvoto-blue:#1769E0;--quvoto-bright:#2F8CFF;--quvoto-navy:#0A1E3D;--quvoto-white:#FFFFFF}
+*{box-sizing:border-box}
+html{background:#fff}
+body{margin:0;background:#fff;color:var(--quvoto-navy);font-family:Inter,ui-sans-serif,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{text-decoration:none}
+button,input,textarea{font:inherit}
+::selection{background:#2F8CFF33;color:#0A1E3D}
