@@ -194,7 +194,7 @@ export default function AppPage() {
           <a href="/" aria-label="QUVOTO home" className="inline-flex items-center gap-2.5"><img src="/logo.svg" alt="QUVOTO" className="h-9 w-9"/><span className="text-lg font-black tracking-[-0.04em] text-[#0A1E3D] sm:text-xl">QUVOTO</span></a>
           <div className="flex items-center gap-2">
             {planInfo && <a href="/pricing" className="hidden rounded-full bg-[#2F8CFF]/10 px-3 py-2 text-xs font-bold text-[#1769E0] sm:inline-flex">{planInfo.label} · {planInfo.quota === null ? 'Unlimited' : planInfo.used + '/' + planInfo.quota}</a>}
-            <button onClick={signIn} className="min-h-11 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold hover:bg-slate-50">Sign in</button>
+            <a href="/advisor" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Advisor</a><button onClick={signIn} className="min-h-11 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold hover:bg-slate-50">Sign in</button>
             <button onClick={reset} aria-label="Start a new quote" className="flex min-h-11 items-center gap-2 rounded-xl bg-[#0A1E3D] px-3.5 text-sm font-semibold text-white"><RotateCcw size={15}/><span className="hidden sm:inline">New</span></button>
           </div>
         </div>
