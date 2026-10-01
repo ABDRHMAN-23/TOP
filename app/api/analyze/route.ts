@@ -45,7 +45,7 @@ async function extractWithGemma(transcript: string) {
   };
 
   const system = [
-    'You are the VoiceQuote extraction engine.',
+    'You are the QUVOTO extraction engine.',
     'Model requirement: Gemma 4 31B.',
     'Return JSON only. Do not invent missing customer or pricing data.',
     'Extract contractor quote details from the transcript.',
