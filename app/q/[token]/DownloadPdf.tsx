@@ -118,12 +118,12 @@ export default function DownloadPdf({ quote, business, removeBrand = false }: { 
   const showLogo = Boolean(business?.logo_url && business?.allow_custom_logo);
   const name = (quote.quote_number || 'quote') + '.pdf';
   const document = (
-    <Document title={quote.quote_number} author={business?.business_name || 'VoiceQuote'}>
+    <Document title={quote.quote_number} author={business?.business_name || 'QUVOTO'}>
       <Page size="A4" style={styles.page}>
         <View style={styles.top}>
           <View>
             {showLogo ? <Image src={business.logo_url} style={styles.logo} /> : null}
-            <Text style={styles.brand}>{business?.business_name || 'VoiceQuote'}</Text>
+            <Text style={styles.brand}>{business?.business_name || 'QUVOTO'}</Text>
             {business?.email ? <Text style={styles.meta}>{business.email}</Text> : null}
             {business?.phone ? <Text style={styles.meta}>{business.phone}</Text> : null}
           </View>
