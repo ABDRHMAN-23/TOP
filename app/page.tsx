@@ -1,6 +1,10 @@
 import Link from 'next/link';
 import { ArrowRight, Check, Mic, FileText, ShieldCheck, Sparkles } from 'lucide-react';
 
+function Brand({ compact = false, tagline = false }: { compact?: boolean; tagline?: boolean }) {
+  return <div className={`flex items-center ${tagline ? 'gap-3' : 'gap-2.5'}`}><img src="/logo.svg" alt="QUVOTO" className={compact ? 'h-9 w-9' : 'h-11 w-11'} /><div className="leading-none"><span className="block text-[1.35rem] font-black tracking-[-0.045em] text-[#0A1E3D]">QUVOTO</span>{tagline && <span className="mt-1.5 block text-[9px] font-bold uppercase tracking-[0.22em] text-[#1769E0]">Speak. Quote. Done.</span>}</div></div>;
+}
+
 const steps = [
   ['01','Talk','Record a natural field note in seconds.'],
   ['02','Review','Turn the note into editable quote details.'],
@@ -36,14 +40,14 @@ const structuredData = {
 export default function Home() {
   return <main className="min-h-screen bg-white text-[#0A1E3D]"><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
     <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
-      <Link href="/" className="text-2xl font-black tracking-tight">Voice<span className="text-[#1769E0]">Quote</span></Link>
+      <Link href="/" aria-label="QUVOTO home"><Brand /></Link>
       <div className="flex items-center gap-2 sm:gap-5"><Link href="/pricing" className="hidden text-sm font-semibold text-slate-600 sm:block">Pricing</Link><Link href="/login" className="hidden text-sm font-semibold text-slate-600 sm:block">Sign in</Link><Link href="/app" className="rounded-full bg-[#0A1E3D] px-5 py-2.5 text-sm font-bold text-white">Start free</Link></div>
     </nav>
 
-    <section className="relative overflow-hidden border-t bg-gradient-to-b from-slate-50 to-white">
+    <section className="relative overflow-hidden border-t border-[#1769E0]/10 bg-white">
       <div className="mx-auto grid max-w-6xl gap-12 px-5 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#2F8CFF]/20 bg-[#2F8CFF]/10 px-3 py-1.5 text-xs font-bold text-[#1769E0]"><Sparkles size={14}/>Built for independent contractors</div>
+          <div className="mb-7"><Brand tagline /></div><div className="inline-flex items-center gap-2 rounded-full border border-[#2F8CFF]/20 bg-[#2F8CFF]/10 px-3 py-1.5 text-xs font-bold text-[#1769E0]"><Sparkles size={14}/>Built for independent contractors</div>
           <h1 className="mt-6 max-w-3xl text-5xl font-black leading-[.98] tracking-[-.04em] sm:text-7xl">Talk for 30 seconds.<br/><span className="text-[#1769E0]">Get a quote ready to send.</span></h1>
           <p className="mt-7 max-w-xl text-lg leading-8 text-slate-600">Capture the job while you are still on site. QUVOTO turns your field notes into structured, editable quote details without the admin grind.</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row"><Link href="/app" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1769E0] px-7 py-4 font-bold text-white shadow-lg shadow-blue-600/20">Create your first quote <ArrowRight size={18}/></Link><Link href="/pricing" className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-7 py-4 font-bold text-slate-800">See pricing</Link></div>
@@ -71,6 +75,6 @@ export default function Home() {
 
     <section className="mx-auto max-w-5xl px-5 py-20 text-center sm:px-8"><p className="text-sm font-bold uppercase tracking-widest text-[#1769E0]">Ready when you are</p><h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Make your next quote before you leave the job.</h2><p className="mx-auto mt-4 max-w-2xl text-slate-500">Start with five free quotes. No complicated setup.</p><Link href="/app" className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-7 py-4 font-bold text-white">Start free <ArrowRight size={18}/></Link></section>
 
-    <footer className="border-t py-8"><div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-8"><span>© 2026 QUVOTO</span><div className="flex gap-5"><Link href="/pricing">Pricing</Link><Link href="/login">Sign in</Link></div></div></footer>
+    <footer className="border-t border-slate-200 bg-white py-10"><div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 sm:px-8 md:flex-row md:items-end md:justify-between"><div><Brand tagline /><p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">AI voice quoting for contractors. Capture the job, review the details, and send a professional quote.</p></div><div className="flex gap-5 text-sm font-semibold text-slate-600"><Link href="/pricing">Pricing</Link><Link href="/login">Sign in</Link></div></div><div className="mx-auto mt-8 max-w-6xl border-t border-slate-100 px-5 pt-6 text-xs text-slate-400 sm:px-8">© 2026 QUVOTO. Speak. Quote. Done.</div></footer>
   </main>;
 }
