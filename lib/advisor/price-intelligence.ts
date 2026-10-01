@@ -20,7 +20,7 @@ export type PriceQuote = {
 
 export type PriceHistoryPoint = { date: string; retailer: string; price: number; currency: string; inStock?: boolean; };
 
-export type PriceHistorySummary = { productName: string; currency: string; points: PriceHistoryPoint[]; current?: number; previous?: number; changePercent?: number; direction: 'up'|'down'|'flat'|'unknown'; source: string; };
+export type PriceHistorySummary = { productName: string; currency: string; points: PriceHistoryPoint[]; current?: number; previous?: number; changePercent?: number; direction: 'up'|'down'|'flat'|'unknown'; anomaly: 'high'|'low'|'normal'|'unknown'; averagePrice?: number; lowestPrice?: number; highestPrice?: number; source: string; };
 
 export type PriceComparison = {
   productName: string;
@@ -238,11 +238,20 @@ export async function getBuildWatchPriceHistory(query: string, days = 30): Promi
     ? comparableSignals.reduce((sum, x) => sum + (x.changePercent || 0), 0) / comparableSignals.length
     : undefined;
 
+  const historicalPrices = points.map((point) => point.price).filter((price) => Number.isFinite(price));
+  const averagePrice = historicalPrices.length ? historicalPrices.reduce((sum, price) => sum + price, 0) / historicalPrices.length : undefined;
+  const lowestPrice = historicalPrices.length ? Math.min(...historicalPrices) : undefined;
+  const highestPrice = historicalPrices.length ? Math.max(...historicalPrices) : undefined;
   const direction = averageChange === undefined
     ? 'unknown'
     : averageChange > 0.05 ? 'up'
     : averageChange < -0.05 ? 'down'
     : 'flat';
+  const anomaly = current === undefined || averagePrice === undefined
+    ? 'unknown'
+    : current > averagePrice * 1.10 ? 'high'
+    : current < averagePrice * 0.90 ? 'low'
+    : 'normal';
 
   return {
     productName: String(result.name || query),
@@ -252,6 +261,10 @@ export async function getBuildWatchPriceHistory(query: string, days = 30): Promi
     previous: points.length > 1 ? points[points.length - 2].price : undefined,
     changePercent: averageChange,
     direction,
+    anomaly,
+    averagePrice,
+    lowestPrice,
+    highestPrice,
     source: 'BuildWatch',
   };
 }
