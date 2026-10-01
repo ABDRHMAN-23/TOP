@@ -5,13 +5,13 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://voicequote.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://quvoto.com'),
   title: {
-    default: 'VoiceQuote — AI Voice Quotes for Contractors',
-    template: '%s | VoiceQuote',
+    default: 'QUVOTO — AI Voice Quotes for Contractors',
+    template: '%s | QUVOTO',
   },
-  description: 'Turn a contractor voice note into a professional, editable quote in seconds. VoiceQuote uses speech-to-text and AI to structure job details, pricing and notes into a customer-ready quote.',
-  applicationName: 'VoiceQuote',
+  description: 'Turn a contractor voice note into a professional, editable quote in seconds. QUVOTO uses speech-to-text and AI to structure job details, pricing and notes into a customer-ready quote.',
+  applicationName: 'QUVOTO',
   keywords: [
     'voice quote software',
     'AI quote generator for contractors',
@@ -25,14 +25,14 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
-    siteName: 'VoiceQuote',
-    title: 'VoiceQuote — AI Voice Quotes for Contractors',
+    siteName: 'QUVOTO',
+    title: 'QUVOTO — AI Voice Quotes for Contractors',
     description: 'Speak your job notes. Get a professional quote ready to review and send.',
     url: '/',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'VoiceQuote — AI Voice Quotes for Contractors',
+    title: 'QUVOTO — AI Voice Quotes for Contractors',
     description: 'Turn field voice notes into professional customer-ready quotes.',
   },
   robots: {
