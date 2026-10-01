@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronRight, FileText, Loader2, Lock, Mic, Plus, RotateCcw, Save, Square, Trash2 } from 'lucide-react';
+import { Check, ChevronRight, CircleAlert, FileText, Loader2, Lock, Mic, Plus, RotateCcw, Save, Square, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 type Item = { description: string; quantity: number; unit: string; price: number };
@@ -33,6 +33,8 @@ export default function AppPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState('');
+  const [intelligence, setIntelligence] = useState<{summary:string;warnings:string[];suggestions:string[];questions:string[];confidence:string}|null>(null);
+  const [reviewing, setReviewing] = useState(false);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
@@ -144,6 +146,18 @@ export default function AppPage() {
   const addItem = () => setItems((current) => [...current, { description: '', quantity: 1, unit: 'item', price: 0 }]);
   const removeItem = (index: number) => setItems((current) => current.filter((_, i) => i !== index));
   const subtotal = items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.price || 0), 0);
+
+  const reviewQuote = async () => {
+    if (!items.length) return;
+    setReviewing(true); setIntelligence(null); setError('');
+    try {
+      const res = await fetch('/api/quote-intelligence', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ client_name:clientName, items, subtotal, total:subtotal, currency, language }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Quote review failed.');
+      setIntelligence(data);
+    } catch (e) { setError(e instanceof Error ? e.message : 'Quote review failed.'); }
+    finally { setReviewing(false); }
+  };
 
   const saveQuote = async () => {
     setSaving(true);
@@ -303,6 +317,18 @@ export default function AppPage() {
                 </div>
 
                 <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4"><span className="font-semibold">Subtotal</span><span className="text-2xl font-black">{currency} {subtotal.toFixed(2)}</span></div>
+
+                <div className="rounded-2xl border border-[#1769E0]/15 bg-[#1769E0]/5 p-4 sm:p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div><p className="text-sm font-bold text-[#0A1E3D]">Quote Intelligence</p><p className="mt-1 text-xs leading-5 text-slate-500">Review this draft against your quote history before you send it.</p></div>
+                    <button onClick={reviewQuote} disabled={reviewing} className="min-h-11 rounded-xl bg-[#1769E0] px-4 text-sm font-bold text-white disabled:opacity-60">{reviewing ? <Loader2 className="animate-spin" size={16}/> : 'Review quote'}</button>
+                  </div>
+                  {intelligence && <div className="mt-4 space-y-3">
+                    <div className="rounded-xl bg-white p-4 text-sm leading-6 text-slate-700"><span className="font-bold">Advisor:</span> {intelligence.summary}</div>
+                    {intelligence.warnings.map((x,i)=><div key={i} className="flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><CircleAlert size={17} className="mt-0.5 shrink-0"/><span>{x}</span></div>)}
+                    {intelligence.suggestions.map((x,i)=><div key={i} className="rounded-xl bg-white p-3 text-sm text-slate-600"><span className="font-bold text-[#1769E0]">Suggestion:</span> {x}</div>)}
+                  </div>}
+                </div>
 
                 <div className="rounded-2xl bg-[#0A1E3D] p-5 text-white">
                   <div className="flex items-center gap-2 text-sm font-semibold text-slate-300"><Check size={17}/>Ready for the next step</div>
