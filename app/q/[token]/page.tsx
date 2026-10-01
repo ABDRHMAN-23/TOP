@@ -30,12 +30,12 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
   if (!quote) notFound();
   const items = Array.isArray(quote.items) ? quote.items : [];
 
-  return <main className="min-h-screen bg-slate-100 px-4 py-10">
+  return <main className="min-h-screen bg-[#f7faff] px-4 py-10">
     <div className="mx-auto max-w-3xl overflow-hidden rounded-[2rem] bg-white shadow-xl">
-      <div className="border-b p-7 sm:p-10">
+      <div className="border-b border-slate-100 p-7 sm:p-10">
         <div className="flex items-start justify-between gap-6">
           <div>
-            <p className="text-sm font-bold text-blue-600">QUOTE</p>
+            <p className="text-sm font-bold text-[#1769E0]">QUOTE</p>
             <h1 className="mt-2 text-3xl font-black">{quote.quote_number}</h1>
             {business?.business_name && <p className="mt-2 font-bold">{business.business_name}</p>}
           </div>
@@ -52,7 +52,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
 
       <div className="p-7 sm:p-10">
         <div className="overflow-hidden rounded-2xl border">
-          <div className="grid grid-cols-[1fr_80px_110px] gap-3 bg-slate-50 p-4 text-xs font-bold uppercase text-slate-500"><span>Description</span><span>Qty</span><span className="text-right">Amount</span></div>
+          <div className="grid grid-cols-[1fr_80px_110px] gap-3 bg-[#f7faff] p-4 text-xs font-bold uppercase text-slate-500"><span>Description</span><span>Qty</span><span className="text-right">Amount</span></div>
           {items.map((item: any, index: number) => <div key={index} className="grid grid-cols-[1fr_80px_110px] gap-3 border-t p-4 text-sm"><span>{item.description || 'Item'}</span><span>{item.quantity || 0} {item.unit || ''}</span><span className="text-right font-semibold">{quote.currency} {(Number(item.quantity || 0) * Number(item.price || 0)).toFixed(2)}</span></div>)}
         </div>
         <div className="ml-auto mt-6 max-w-xs space-y-2 text-sm">
