@@ -5,8 +5,8 @@ import { ArrowLeft, CheckCircle2, CircleAlert, ExternalLink, Globe2, Loader2, Me
 
 type Source = { id:string; name:string; scope:string; coverage:string; frequency:string; kind:'official'|'reference'; url:string };
 type MarketDatum = { id:string; label:string; value:number; unit:string; period:string; source:string; sourceUrl:string; publishedAt:string; note:string };
-type ProductPrice = { productName:string; retailer:string; url:string; price:number; currency:string; unit?:string; observedAt:string; sourceType:string; confidence:string };\ntype PriceComparison = { productName:string; comparable:boolean; reason?:string; currency?:string; unit?:string; offers:ProductPrice[]; lowest?:ProductPrice; highest?:ProductPrice; average?:number; spreadPercent?:number };
-type Result = { answer:string; warnings:string[]; actions:string[]; facts:string[]; confidence:string; market:string; currency:string; fx_source?:string; fx_date?:string|null; sources?:Source[]; market_data?:MarketDatum[]; product_prices?:ProductPrice[]; price_comparisons?:PriceComparison[]; product_price_connected?:boolean };
+type ProductPrice = { productName:string; retailer:string; url:string; price:number; currency:string; unit?:string; packQuantity?:number; observedAt:string; sourceType:string; confidence:string };\ntype PriceComparison = { productName:string; comparable:boolean; reason?:string; currency?:string; unit?:string; requiredQuantity?:number; requiredUnit?:string; offers:ProductPrice[]; lowest?:ProductPrice; highest?:ProductPrice; average?:number; spreadPercent?:number; lowestPurchaseTotal?:number; lowestPackCount?:number };
+type Result = { answer:string; warnings:string[]; actions:string[]; facts:string[]; confidence:string; market:string; currency:string; fx_source?:string; fx_date?:string|null; sources?:Source[]; market_data?:MarketDatum[]; product_prices?:ProductPrice[]; price_comparisons?:PriceComparison[]; requested_quantity?:number; requested_unit?:string; product_price_connected?:boolean };
 
 export default function AdvisorPage() {
   const [question,setQuestion]=useState('');
@@ -74,6 +74,7 @@ export default function AdvisorPage() {
                     </a>)}
                   </div>
                   {typeof comparison.spreadPercent === 'number'?<p className="mt-3 text-xs text-slate-500">Price spread between lowest and highest comparable offers: <span className="font-bold">{comparison.spreadPercent.toFixed(1)}%</span>.</p>:null}
+                  {comparison.lowestPurchaseTotal !== undefined?<div className="mt-3 rounded-xl bg-[#0A1E3D] p-3 text-white"><p className="text-[10px] font-bold uppercase tracking-wider text-white/60">Estimated purchase cost for requested quantity</p><p className="mt-1 text-lg font-black">{comparison.currency} {comparison.lowestPurchaseTotal.toFixed(2)}</p><p className="mt-1 text-[11px] text-white/60">Based on {comparison.lowestPackCount} pack(s) of {comparison.lowest?.packQuantity} {comparison.unit} each. Delivery/tax are not included unless supplied by the source.</p></div>:null}
                 </div>)}
               </div>
             </div>:null}
