@@ -187,7 +187,7 @@ export default function AppPage() {
     <main className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-          <a href="/" className="text-xl font-black tracking-tight">Voice<span className="text-[#1769E0]">Quote</span></a>
+          <a href="/" className="inline-flex items-center gap-3"><img src="/logo.svg" alt="QUVOTO" className="h-8 w-8"/><span className="text-xl font-extrabold tracking-[-0.04em] text-[#0A1E3D]">QUVOTO</span></a>
           <div className="flex items-center gap-2 sm:gap-3">
             {planInfo && <a href="/pricing" className="hidden rounded-full bg-[#2F8CFF]/10 px-3 py-1.5 text-xs font-bold text-[#1769E0] sm:inline-flex">{planInfo.label} · {planInfo.quota === null ? 'Unlimited' : planInfo.used + '/' + planInfo.quota}</a>}
             <button onClick={signIn} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50">Sign in</button>
