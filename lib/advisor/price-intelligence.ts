@@ -9,6 +9,9 @@ export type PriceQuote = {
   purchaseTotal?: number;
   purchasePackCount?: number;
   effectiveUnitPrice?: number;
+  shipping?: number;
+  tax?: number;
+  totalWithExtras?: number;
   observedAt: string;
   sourceType: 'retailer_api' | 'merchant_feed' | 'approved_aggregator';
   confidence: 'high' | 'medium' | 'low';
@@ -39,6 +42,8 @@ function normalize(item: any): PriceQuote | null {
   const retailer = String(item?.retailer ?? item?.merchant ?? item?.store ?? '').trim();
   const url = String(item?.url ?? item?.product_url ?? item?.link ?? '').trim();
   const packQuantity = Number(item?.packQuantity ?? item?.pack_quantity ?? item?.quantity_per_pack ?? item?.unitsPerPack);
+  const shipping = Number(item?.shipping ?? item?.shipping_cost ?? item?.delivery ?? item?.delivery_cost);
+  const tax = Number(item?.tax ?? item?.tax_amount ?? item?.vat);
   if (!name || !retailer || !url || !Number.isFinite(price) || price < 0) return null;
   return {
     productName: name,
@@ -48,6 +53,9 @@ function normalize(item: any): PriceQuote | null {
     currency: String(item?.currency ?? 'GBP').toUpperCase(),
     unit: item?.unit ? String(item.unit).trim() : undefined,
     packQuantity: Number.isFinite(packQuantity) && packQuantity > 0 ? packQuantity : undefined,
+    shipping: Number.isFinite(shipping) && shipping >= 0 ? shipping : undefined,
+    tax: Number.isFinite(tax) && tax >= 0 ? tax : undefined,
+    totalWithExtras: Number.isFinite(shipping) && shipping >= 0 || Number.isFinite(tax) && tax >= 0 ? price + (Number.isFinite(shipping) && shipping >= 0 ? shipping : 0) + (Number.isFinite(tax) && tax >= 0 ? tax : 0) : undefined,
     observedAt: String(item?.observedAt ?? item?.observed_at ?? item?.checkedAt ?? new Date().toISOString()),
     sourceType: ['retailer_api','merchant_feed','approved_aggregator'].includes(item?.sourceType) ? item.sourceType : 'approved_aggregator',
     confidence: ['high','medium','low'].includes(item?.confidence) ? item.confidence : 'medium',
