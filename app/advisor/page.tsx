@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { ArrowLeft, CheckCircle2, CircleAlert, ExternalLink, Globe2, Loader2, MessageSquare, TrendingUp } from 'lucide-react';
 
 type Source = { id:string; name:string; scope:string; coverage:string; frequency:string; kind:'official'|'reference'; url:string };
-type Result = { answer:string; warnings:string[]; actions:string[]; facts:string[]; confidence:string; market:string; currency:string; fx_source?:string; fx_date?:string|null; sources?:Source[] };
+type MarketDatum = { id:string; label:string; value:number; unit:string; period:string; source:string; sourceUrl:string; publishedAt:string; note:string };
+type Result = { answer:string; warnings:string[]; actions:string[]; facts:string[]; confidence:string; market:string; currency:string; fx_source?:string; fx_date?:string|null; sources?:Source[]; market_data?:MarketDatum[] };
 
 export default function AdvisorPage() {
   const [question,setQuestion]=useState('');
@@ -55,6 +56,12 @@ export default function AdvisorPage() {
           {result?<div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-slate-400">{result.market}</p><h2 className="mt-1 text-2xl font-black">Advisor result</h2></div><span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">Confidence: {result.confidence}</span></div>
             <div className="rounded-2xl bg-[#0A1E3D] p-5 text-white"><p className="whitespace-pre-wrap text-[15px] leading-7">{result.answer}</p></div>
+            {result.market_data?.length?<div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">Verified market signals</h3><p className="mt-1 text-xs leading-5 text-slate-500">Official UK indicators supplied to the Advisor for this question.</p></div><span className="rounded-full bg-[#1769E0]/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#1769E0]">Official</span></div>
+              <div className="mt-4 grid gap-2">
+                {result.market_data.map(item=><div key={item.id} className="rounded-xl bg-slate-50 p-3"><div className="flex items-start justify-between gap-3"><p className="text-sm font-bold">{item.label}</p><span className="shrink-0 text-sm font-black text-[#1769E0]">{item.value > 0 ? '+' : ''}{item.value.toFixed(1)}%</span></div><p className="mt-1 text-[11px] text-slate-400">{item.period} · {item.note}</p></div>)}
+              </div>
+            </div>:null}
             {result.facts.length?<div><h3 className="font-bold">Verified context</h3><ul className="mt-2 space-y-2">{result.facts.map((x,i)=><li key={i} className="flex gap-2 text-sm text-slate-600"><CheckCircle2 size={17} className="mt-0.5 shrink-0 text-[#1769E0]"/>{x}</li>)}</ul></div>:null}
             {result.warnings.length?<div><h3 className="font-bold">Review before sending</h3><ul className="mt-2 space-y-2">{result.warnings.map((x,i)=><li key={i} className="flex gap-2 text-sm text-slate-600"><CircleAlert size={17} className="mt-0.5 shrink-0 text-amber-500"/>{x}</li>)}</ul></div>:null}
             {result.actions.length?<div><h3 className="font-bold">Suggested actions</h3><ul className="mt-2 space-y-2">{result.actions.map((x,i)=><li key={i} className="text-sm text-slate-600">• {x}</li>)}</ul></div>:null}
@@ -65,8 +72,7 @@ export default function AdvisorPage() {
               </div>
               <div className="mt-4 space-y-2">
                 {(result.sources || []).map(source => <a key={source.id} href={source.url} target="_blank" rel="noreferrer" className="block rounded-xl border border-white bg-white p-3 transition hover:border-[#2F8CFF]">
-                  <div className="flex items-start gap-3">
-                    <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-bold text-[#0A1E3D]">{source.name}</p><span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">{source.kind}</span></div><p className="mt-1 text-xs leading-5 text-slate-500">{source.coverage}</p><p className="mt-1 text-[11px] text-slate-400">{source.frequency} · {source.scope}</p></div><ExternalLink size={15} className="mt-0.5 shrink-0 text-[#1769E0]"/></div>
+                  <div className="flex items-start gap-3"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-bold text-[#0A1E3D]">{source.name}</p><span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">{source.kind}</span></div><p className="mt-1 text-xs leading-5 text-slate-500">{source.coverage}</p><p className="mt-1 text-[11px] text-slate-400">{source.frequency} · {source.scope}</p></div><ExternalLink size={15} className="mt-0.5 shrink-0 text-[#1769E0]"/></div>
                 </a>)}
               </div>
               <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-400">
