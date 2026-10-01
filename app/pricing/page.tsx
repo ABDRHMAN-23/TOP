@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Check, Lock, Mic, FileText, Sparkles } from 'lucide-react';
+import { Check, Lock, Mic, FileText } from 'lucide-react';
 
 function Brand(){return <div className="flex items-center gap-2.5"><img src="/logo.svg" alt="QUVOTO" className="h-10 w-10"/><div><div className="text-2xl font-black tracking-[-0.05em] text-[#0A1E3D]">QUVOTO</div><div className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#1769E0]">Speak. Quote. Done.</div></div></div>;}
 
