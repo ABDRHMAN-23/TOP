@@ -58,7 +58,7 @@ export default function AdvisorPage() {
             <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-slate-400">{result.market}</p><h2 className="mt-1 text-2xl font-black">Advisor result</h2></div><span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">Confidence: {result.confidence}</span></div>
             <div className="rounded-2xl bg-[#0A1E3D] p-5 text-white"><p className="whitespace-pre-wrap text-[15px] leading-7">{result.answer}</p></div>
             {result.product_prices?.length ? <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-              <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">Product prices</h3><p className="mt-1 text-xs leading-5 text-slate-500">Commercial prices returned by the connected source. Check the retailer before purchasing.</p></div><span className="rounded-full bg-[#1769E0]/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#1769E0]">Live source</span></div>
+              <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">Product prices</h3><p className="mt-1 text-xs leading-5 text-slate-500">Commercial prices from the connected market source. Check the retailer before purchasing; availability and final price can change.</p></div><span className="rounded-full bg-[#1769E0]/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#1769E0]">Market source</span></div>
               <div className="mt-4 space-y-2">
                 {result.product_prices.map((item,i)=><a key={i} href={item.url} target="_blank" rel="noreferrer" className="block rounded-xl border border-slate-100 bg-slate-50 p-3 hover:border-[#2F8CFF]"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-sm font-bold">{item.productName}</p><p className="mt-1 text-xs text-slate-500">{item.retailer}{item.unit ? ' · ' + item.unit : ''}</p></div><p className="shrink-0 text-sm font-black text-[#1769E0]">{item.currency} {item.price.toFixed(2)}</p></div><p className="mt-1 text-[11px] text-slate-400">Observed {new Date(item.observedAt).toLocaleDateString()} · {item.sourceType}</p></a>)}
               </div>
@@ -99,7 +99,7 @@ export default function AdvisorPage() {
               </div>
               <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-400">
                 {result.fx_date ? <span className="rounded-full bg-white px-2.5 py-1">FX: {result.fx_source} · {result.fx_date}</span> : null}
-                <span className="rounded-full bg-white px-2.5 py-1">Product prices: not claimed unless a verified retail source is connected</span>
+                <span className="rounded-full bg-white px-2.5 py-1">Product prices: sourced offers only; final retailer price and availability must be verified</span>
               </div>
             </div>
           </div>:null}
