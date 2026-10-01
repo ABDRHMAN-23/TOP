@@ -6,6 +6,9 @@ export type PriceQuote = {
   currency: string;
   unit?: string;
   packQuantity?: number;
+  purchaseTotal?: number;
+  purchasePackCount?: number;
+  effectiveUnitPrice?: number;
   observedAt: string;
   sourceType: 'retailer_api' | 'merchant_feed' | 'approved_aggregator';
   confidence: 'high' | 'medium' | 'low';
@@ -82,17 +85,26 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
 
     // When the user gives a project quantity, compare the actual number of packs
     // required to complete the job—not just the sticker price of one pack.
-    const sorted = [...offers].sort((a, b) => purchaseCost(a) - purchaseCost(b) || a.price - b.price);
+    const pricedOffers = offers.map((offer) => {
+      const purchasePackCount = projectQuantity && offer.packQuantity && offer.unit
+        ? Math.ceil(projectQuantity / offer.packQuantity)
+        : undefined;
+      const purchaseTotal = purchasePackCount !== undefined
+        ? purchasePackCount * offer.price
+        : undefined;
+      const effectiveUnitPrice = purchaseTotal !== undefined && projectQuantity
+        ? purchaseTotal / projectQuantity
+        : undefined;
+      return { ...offer, purchaseTotal, purchasePackCount, effectiveUnitPrice };
+    });
+
+    const sorted = [...pricedOffers].sort((a, b) => purchaseCost(a) - purchaseCost(b) || a.price - b.price);
     const lowest = sorted[0];
     const highest = sorted[sorted.length - 1];
     const average = sorted.reduce((sum, item) => sum + item.price, 0) / sorted.length;
     const spreadPercent = lowest.price > 0 ? ((highest.price - lowest.price) / lowest.price) * 100 : undefined;
-    const lowestPackCount = projectQuantity && lowest.packQuantity && lowest.unit
-      ? Math.ceil(projectQuantity / lowest.packQuantity)
-      : undefined;
-    const lowestPurchaseTotal = lowestPackCount !== undefined
-      ? lowestPackCount * lowest.price
-      : undefined;
+    const lowestPackCount = lowest.purchasePackCount;
+    const lowestPurchaseTotal = lowest.purchaseTotal;
 
     return { productName: lowest.productName, comparable: sorted.length >= 2, currency: lowest.currency, unit: lowest.unit, requiredQuantity, requiredUnit, offers: sorted, lowest, highest, average, spreadPercent, lowestPurchaseTotal, lowestPackCount };
   });
