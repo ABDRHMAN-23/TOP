@@ -16,7 +16,7 @@ export const MARKET_SOURCES: MarketSource[] = [
     coverage: 'Construction material price indices and selected materials/components',
     frequency: 'Monthly / quarterly / annual depending on series',
     kind: 'official',
-    url: 'https://www.gov.uk/government/statistics/building-materials-and-components-statistics-june-2026',
+    url: 'https://www.gov.uk/government/statistics/building-materials-and-components-statistics-august-2026--2',
   },
   {
     id: 'uk-construction-opi',
