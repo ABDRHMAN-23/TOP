@@ -18,6 +18,10 @@ export type PriceQuote = {
   availability?: 'in_stock' | 'out_of_stock' | 'unknown';
 };
 
+export type PriceHistoryPoint = { date: string; retailer: string; price: number; currency: string; inStock?: boolean; };
+
+export type PriceHistorySummary = { productName: string; currency: string; points: PriceHistoryPoint[]; current?: number; previous?: number; changePercent?: number; direction: 'up'|'down'|'flat'|'unknown'; source: string; };
+
 export type PriceComparison = {
   productName: string;
   comparable: boolean;
@@ -186,6 +190,30 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
 
     return { productName: lowest.productName, comparable: sorted.length >= 2, currency: lowest.currency, unit: lowest.unit, requiredQuantity, requiredUnit, offers: sorted, lowest, highest, average, spreadPercent, lowestPurchaseTotal, lowestPackCount, requestedPurchaseTotals, unavailableOffers };
   });
+}
+
+export async function getBuildWatchPriceHistory(query: string, days = 30): Promise<PriceHistorySummary | null> {
+  const search = await fetchBuildWatch(`/search?q=${encodeURIComponent(query)}`);
+  const result = Array.isArray(search?.results) ? search.results[0] : null;
+  if (!result?.slug) return null;
+  const data = await fetchBuildWatch(`/products/${encodeURIComponent(result.slug)}/prices`);
+  const history = Array.isArray(data?.history) ? data.history : [];
+  const cutoff = Date.now() - days * 86400000;
+  const points = history.filter((x: any) => {
+    const date = new Date(x?.scraped_at || 0).getTime();
+    return date >= cutoff && Number.isFinite(Number(x?.price_inc_vat));
+  }).map((x: any) => ({
+    date: String(x.scraped_at),
+    retailer: String(x.merchant_name || 'Unknown retailer'),
+    price: Number(x.price_inc_vat),
+    currency: String(x.currency || 'GBP').toUpperCase(),
+    inStock: typeof x.in_stock === 'boolean' ? x.in_stock : undefined,
+  })).sort((a: PriceHistoryPoint,b: PriceHistoryPoint) => new Date(a.date).getTime() - new Date(b.date).getTime()).slice(-60);
+  if (!points.length) return null;
+  const latest = points[points.length - 1].price;
+  const previous = points.length > 1 ? points[points.length - 2].price : undefined;
+  const changePercent = previous && previous > 0 ? ((latest - previous) / previous) * 100 : undefined;
+  return { productName: String(result.name || query), currency: points[points.length - 1].currency, points, current: latest, previous, changePercent, direction: changePercent === undefined ? 'unknown' : changePercent > 0.05 ? 'up' : changePercent < -0.05 ? 'down' : 'flat', source: 'BuildWatch' };
 }
 
 export async function searchProductPrices(query: string, market: string, currency: string): Promise<PriceQuote[]> {
