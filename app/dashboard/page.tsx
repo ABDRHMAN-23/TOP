@@ -16,7 +16,7 @@ export default async function DashboardPage() {
     .limit(50);
 
   return <main className="min-h-screen bg-[#f7faff]">
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur"><div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-8 sm:py-4"><a href="/" aria-label="QUVOTO home"><Brand/></a><a href="/app" className="flex min-h-11 items-center gap-2 rounded-xl bg-[#1769E0] px-3.5 text-sm font-bold text-white"><Plus size={16}/><span>New quote</span></a></div></header>
+    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur"><div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-8 sm:py-4"><a href="/" aria-label="QUVOTO home"><Brand/></a><a href="/advisor" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Advisor</a><a href="/app" className="flex min-h-11 items-center gap-2 rounded-xl bg-[#1769E0] px-3.5 text-sm font-bold text-white"><Plus size={16}/><span>New quote</span></a></div></header>
     <section className="mx-auto max-w-6xl px-4 py-7 sm:px-8 sm:py-10">
       <div><p className="text-sm font-extrabold tracking-[0.16em] text-[#1769E0]">WORKSPACE</p><h1 className="mt-1 text-[2rem] font-extrabold leading-tight tracking-[-0.04em] sm:text-4xl">Your quotes</h1><p className="mt-2 text-slate-500">{quotes?.length || 0} recent quotes in your QUVOTO workspace.</p></div>
       <div className="mt-6 overflow-hidden rounded-[1.5rem] sm:mt-8 sm:rounded-[1.7rem] border bg-white shadow-sm">
