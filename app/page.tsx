@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Check, Mic, FileText, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, Check, Mic, FileText, ShieldCheck } from 'lucide-react';
 
 function Brand({ compact = false, tagline = false }: { compact?: boolean; tagline?: boolean }) {
   return <div className={`flex items-center ${tagline ? 'gap-3' : 'gap-2.5'}`}><img src="/logo.svg" alt="QUVOTO" className={compact ? 'h-9 w-9' : 'h-11 w-11'} /><div className="leading-none"><span className="block text-[1.35rem] font-black tracking-[-0.045em] text-[#0A1E3D]">QUVOTO</span>{tagline && <span className="mt-1.5 block text-[9px] font-bold uppercase tracking-[0.22em] text-[#1769E0]">Speak. Quote. Done.</span>}</div></div>;
