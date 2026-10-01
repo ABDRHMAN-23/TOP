@@ -26,6 +26,22 @@ async function askGemma(prompt: string) {
   return { answer: String(payload?.answer || ''), warnings: Array.isArray(payload?.warnings) ? payload.warnings.map(String) : [], actions: Array.isArray(payload?.actions) ? payload.actions.map(String) : [], facts: Array.isArray(payload?.facts) ? payload.facts.map(String) : [], confidence: ['low','medium','high'].includes(payload?.confidence) ? payload.confidence : 'low' };
 }
 
+
+function extractProjectRequirement(question: string) {
+  const match = question.match(/(?:need|requires?|want|for)\s+(\d+(?:\.\d+)?)\s*(m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/i)
+    || question.match(/\b(\d+(?:\.\d+)?)\s*(m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/i);
+  const requiredQuantity = match ? Number(match[1]) : undefined;
+  const rawUnit = match?.[2]?.toLowerCase();
+  const requiredUnit = rawUnit ? (rawUnit.startsWith('m') ? 'm' : rawUnit.startsWith('kg') ? 'kg' : rawUnit.startsWith('l') ? 'l' : 'pcs') : undefined;
+  const productText = question
+    .replace(match?.[0] || '', ' ')
+    .replace(/\b(?:need|requires?|want|for|of)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const searchQuery = [productText, requiredUnit && requiredQuantity ? `${requiredQuantity} ${requiredUnit}` : ''].filter(Boolean).join(' ').trim();
+  return { requiredQuantity, requiredUnit, searchQuery: searchQuery || question };
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
@@ -42,10 +58,19 @@ export async function POST(req: Request) {
     const isUk = /^(united kingdom|uk|great britain)$/i.test(market);
     const marketSources = sourcesForMarket(market);
     const marketData = isUk ? findUKMarketData(question) : [];
-    const productPrices = isUk ? await searchProductPrices(question, market, currency) : [];
-    const priceComparisons = comparePriceOffers(productPrices);
+    const { requiredQuantity, requiredUnit, searchQuery } = extractProjectRequirement(question);
+    const productPrices = isUk ? await searchProductPrices(searchQuery, market, currency) : [];
+    const priceComparisons = comparePriceOffers(productPrices, requiredQuantity, requiredUnit);
+    const priceHistory = isUk ? await getBuildWatchPriceHistory(searchQuery, 30).catch(() => null) : null;
+    const priceSignal = priceHistory?.anomaly === 'high'
+      ? 'Current observed price is unusually high versus the recent observed average.'
+      : priceHistory?.anomaly === 'low'
+        ? 'Current observed price is unusually low versus the recent observed average.'
+        : priceHistory?.anomaly === 'normal'
+          ? 'Current observed price is within the recent observed range.'
+          : 'There is not enough recent history to classify the current price.';
     const context = { business: business || {}, market, requested_currency: currency, fx, quote_history: quotes || [], verified_market_sources: marketSources, verified_market_data: marketData, commercial_product_prices: productPrices, price_comparisons: priceComparisons,
-  price_history: priceHistory, product_price_status: process.env.PRICE_INTELLIGENCE_API_URL ? 'connected' : 'not_connected', requested_quantity: requiredQuantity, requested_unit: requiredUnit, question };
+  price_history: priceHistory, price_signal: priceSignal, product_price_status: process.env.PRICE_INTELLIGENCE_API_URL ? 'connected' : 'built_in_uk_source', requested_quantity: requiredQuantity, requested_unit: requiredUnit, product_search_query: searchQuery, question };
     const result = await askGemma(JSON.stringify(context));
     return NextResponse.json({ ...result, market, currency, fx_source: 'Frankfurter reference rates', fx_date: fx?.date || null, sources: marketSources, market_data: marketData, product_prices: productPrices, price_comparisons: priceComparisons, requested_quantity: requiredQuantity, requested_unit: requiredUnit, product_price_connected: Boolean(process.env.PRICE_INTELLIGENCE_API_URL) || isUk });
   } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : 'Advisor request failed.' }, { status: 500 }); }
