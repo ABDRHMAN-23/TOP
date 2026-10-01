@@ -56,10 +56,26 @@ async function fetchBuildWatch(path: string) {
 
 function parsePackQuantity(unitLabel?: string, productName?: string): number | undefined {
   const text = `${unitLabel || ''} ${productName || ''}`;
-  const match = text.match(/(\d+(?:\.\d+)?)\s*(?:m|metres?|meters?|mm|cm|kg|litres?|liters?|l)\b/i);
-  if (!match) return undefined;
-  const value = Number(match[1]);
+  const explicitPack = text.match(/(?:pack|box|roll|coil|bundle)\s*(?:of)?\s*(\d+(?:\.\d+)?)\s*(m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/i)
+    || text.match(/(\d+(?:\.\d+)?)\s*(m|metres?|meters?|kg|kilograms?|l|litres?|liters?)\s*(?:roll|coil|reel|pack|box)\b/i);
+  if (!explicitPack) return undefined;
+  const value = Number(explicitPack[1]);
   return Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+function extractSpecs(text: string) {
+  const normalized = text.toLowerCase().replace(/×/g, 'x');
+  const values = [...normalized.matchAll(/\b\d+(?:\.\d+)?\s*(?:mm|cm|m|kg|g|l|ml|in|inch|inches|ft)\b/g)]
+    .map((match) => match[0].replace(/\s+/g, ''));
+  return [...new Set(values)].sort();
+}
+
+function specMatchScore(query: string, productName: string) {
+  const required = extractSpecs(query);
+  if (!required.length) return 1;
+  const actual = new Set(extractSpecs(productName));
+  const matched = required.filter((spec) => actual.has(spec)).length;
+  return matched / required.length;
 }
 
 async function searchBuildWatchPrices(query: string): Promise<PriceQuote[]> {
@@ -72,14 +88,17 @@ async function searchBuildWatchPrices(query: string): Promise<PriceQuote[]> {
     const data = await fetchBuildWatch(`/products/${encodeURIComponent(result.slug)}`);
     const product = data?.product || {};
     const prices = Array.isArray(data?.prices) ? data.prices : [];
+    const productName = String(product?.name || result?.name || query).trim();
+    const matchScore = specMatchScore(query, productName);
+    if (matchScore < 1) continue;
 
     for (const offer of prices) {
       const price = Number(offer?.price_inc_vat);
       if (!Number.isFinite(price) || price < 0) continue;
       const unit = String(product?.unit_label || result?.unit_label || '').trim() || undefined;
-      const packQuantity = parsePackQuantity(unit, product?.name || result?.name);
+      const packQuantity = parsePackQuantity(unit, productName);
       collected.push({
-        productName: String(product?.name || result?.name || query).trim(),
+        productName,
         retailer: String(offer?.merchant_name || 'BuildWatch merchant').trim(),
         url: String(product?.url || result?.url || `https://buildwatch.dev/products/${encodeURIComponent(result.slug)}`),
         price,
