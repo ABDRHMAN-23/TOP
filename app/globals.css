@@ -6,3 +6,11 @@ body{margin:0;background:#fff;color:var(--quvoto-navy);font-family:Inter,ui-sans
 a{text-decoration:none}
 button,input,textarea{font:inherit}
 ::selection{background:#2F8CFF33;color:#0A1E3D}
+
+
+/* QUVOTO responsive foundation */
+@media (max-width: 640px){
+  body{overflow-x:hidden}
+  button,a{ -webkit-tap-highlight-color: transparent }
+  input,textarea,select{font-size:16px}
+}
