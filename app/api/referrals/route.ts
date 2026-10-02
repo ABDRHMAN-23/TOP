@@ -33,6 +33,13 @@ export async function POST(req:Request){
  if(!['earned','scheduled'].includes(reward.status)){
    return NextResponse.json({error:'This reward is no longer available for selection.'},{status:409});
  }
+ const {data:sub}=await supabase.from('subscriptions').select('plan,status,billing_interval').eq('user_id',user.id).maybeSingle();
+ if(!sub || !['starter','pro','team'].includes(sub.plan) || sub.status!=='active'){
+   return NextResponse.json({error:'An active paid plan is required to redeem this reward.'},{status:409});
+ }
+ if(reward.plan!==sub.plan){
+   return NextResponse.json({error:'This reward must stay on the same QUVOTO plan.'},{status:409});
+ }
  if(reward.status==='scheduled' && reward.redemption_interval && reward.redemption_interval===redemptionInterval){
    return NextResponse.json({ok:true,message:'Your reward is already scheduled for this billing track.'});
  }
