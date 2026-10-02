@@ -43,8 +43,9 @@ export async function POST(req:Request){
  const {count:inviteCount}=await a.supabase!.from('team_invites').select('*',{count:'exact',head:true}).eq('owner_id',a.user!.id).is('accepted_at',null).gt('expires_at',new Date().toISOString());
  if((count||0)+(inviteCount||0)>=2)return NextResponse.json({error:'Your Team can have up to 3 users total, including pending invitations.'},{status:409});
  const admin=createAdminClient();
- const {data:targetData}=await admin.auth.admin.getUserByEmail(email);
- const target=targetData.user;
+ const {data:targetId,error:targetLookupError}=await admin.rpc('app_find_user_id_by_email',{p_email:email});
+ if(targetLookupError)return NextResponse.json({error:targetLookupError.message},{status:500});
+ const target=targetId ? {id:targetId} : null;
  if(target){
    const {data:membership,error:membershipError}=await admin
      .from('team_memberships')
