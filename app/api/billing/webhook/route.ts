@@ -121,11 +121,7 @@ async function qualifyForUser(admin:any, uid:string){
   });
   if(rewardError)continue;
 
-  await admin.from('subscriptions').update({
-   current_period_end:addMonths(referrerSub.current_period_end,rewardMonths),
-   updated_at:now
-  }).eq('user_id',ref.referrer_user_id);
-
+  // The reward is earned but NOT applied yet. The referrer must choose Monthly or Annual in the Reward Wallet.
   await admin.from('referrals').update({status:'rewarded',updated_at:now}).eq('id',ref.id);
   await admin.from('referral_events').insert({
    referral_id:ref.id,
