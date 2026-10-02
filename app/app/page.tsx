@@ -47,6 +47,7 @@ export default function AppPage() {
   const [language, setLanguage] = useState('en');
   const [siteNotes, setSiteNotes] = useState('');
   const [savedItems, setSavedItems] = useState<Item[]>([]);
+  const [quoteTemplates, setQuoteTemplates] = useState<any[]>([]);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [labourHours, setLabourHours] = useState('');
   const [labourRate, setLabourRate] = useState('');
