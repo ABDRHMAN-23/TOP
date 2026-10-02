@@ -18,7 +18,11 @@ export async function GET(request: Request) {
         return NextResponse.redirect(new URL('/login?error=legal-required', url.origin));
       }
       const admin = createAdminClient();
-      await admin.from('legal_consents').insert({user_id:data.user.id,terms_version:'2026-10-02',privacy_version:'2026-10-02',source:'login',user_agent:request.headers.get('user-agent')});
+      const {error:consentError}=await admin.from('legal_consents').insert({user_id:data.user.id,terms_version:'2026-10-02',privacy_version:'2026-10-02',source:'login',user_agent:request.headers.get('user-agent')});
+      if(consentError){
+        await supabase.auth.signOut();
+        return NextResponse.redirect(new URL('/login?error=consent-save', url.origin));
+      }
       const refCode = request.headers.get('cookie')?.match(/(?:^|;\s*)quvoto_ref=([^;]+)/)?.[1];
       if (refCode) {
         const admin=createAdminClient();
