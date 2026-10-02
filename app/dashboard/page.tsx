@@ -27,7 +27,7 @@ export default async function DashboardPage() {
           <a href="/advisor" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Advisor</a>
           <a href="/settings" className="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-3.5 text-sm font-bold text-slate-600"><Settings size={16}/><span className="hidden sm:inline">Settings</span></a>
           {isTeam && <a href="/team" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Team</a>}
-          <a href="/workspace" className="hidden min-h-11 items-center rounded-xl border border-slate-200 px-3.5 text-sm font-bold text-slate-600 sm:inline-flex">Workspace</a><a href="/app" className="flex min-h-11 items-center gap-2 rounded-xl bg-[#1769E0] px-3.5 text-sm font-bold text-white"><Plus size={16}/><span>New quote</span></a>
+          <a href="/rewards" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Rewards</a><a href="/workspace" className="hidden min-h-11 items-center rounded-xl border border-slate-200 px-3.5 text-sm font-bold text-slate-600 sm:inline-flex">Workspace</a><a href="/app" className="flex min-h-11 items-center gap-2 rounded-xl bg-[#1769E0] px-3.5 text-sm font-bold text-white"><Plus size={16}/><span>New quote</span></a>
         </div>
       </div>
     </header>
