@@ -28,7 +28,7 @@ export function extractProjectRequirement(question: string): ProjectRequirement 
   // A bare quantity is accepted only when it is not embedded in a likely
   // product specification. For example, "30m of 22mm pipe" is a quantity,
   // while "3m copper pipe" is a product length.
-  if (!match) {
+  if (!match && !/\b\d+(?:\.\d+)?\s*x\s*\d+(?:\.\d+)?\s*(?:m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/i.test(normalized)) {
     const bare = normalized.match(/\b(\d+(?:\.\d+)?)\s*(m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/i);
     if (bare) {
       const after = normalized.slice((bare.index ?? 0) + bare[0].length).trim();
