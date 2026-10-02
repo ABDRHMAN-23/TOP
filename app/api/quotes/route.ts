@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     type: 'quote_created',
     link: '/workspace',
     tag: 'quote-created',
-    dedupeKey: 'quote-created:' + String(data?.id || data?.quote_number || crypto.randomUUID())
+    dedupeKey: data?.id ? 'quote-created:' + String(data.id) : undefined
   });
 
   return NextResponse.json(data);
