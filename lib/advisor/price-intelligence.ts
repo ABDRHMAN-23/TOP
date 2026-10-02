@@ -275,15 +275,10 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
   }
 
   return Array.from(groups.values()).map((offers) => {
-    const specGroups = offers.reduce((map, offer) => {
-      const key = productSpecKey(offer.productName);
-      const list = map.get(key) || [];
-      list.push(offer);
-      map.set(key, list);
-      return map;
-    }, new Map<string, PriceQuote[]>());
-    const bestSpecGroup = Array.from(specGroups.values()).sort((a, b) => b.length - a.length)[0] || offers;
-    offers = bestSpecGroup;
+    // comparisonKey already preserves product-defining specs (for example 22mm)
+    // while intentionally removing equivalent pack formats such as 10×3m vs 30m.
+    // Do not re-split by the raw product spec string here, or equivalent pack formats
+    // would be separated again before purchase-cost normalization.
     const currencies = new Set(offers.map((x) => x.currency));
     const units = new Set(offers.map((x) => normalizeUnit(x.unit) || ''));
     const normalizedRequiredUnit = normalizeUnit(requiredUnit);
