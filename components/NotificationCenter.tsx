@@ -16,7 +16,8 @@ export default function NotificationCenter(){
   const [permission,setPermission]=useState<NotificationPermission|'unsupported'>('default');
   const [prompt,setPrompt]=useState(false);
   const [busy,setBusy]=useState(false);
-  const load=async()=>{const r=await fetch('/api/notifications',{cache:'no-store'});if(r.ok){const d=await r.json();setItems(d.notifications||[])}};
+  const [serverUnread,setServerUnread]=useState(0);
+  const load=async()=>{const r=await fetch('/api/notifications',{cache:'no-store'});if(r.ok){const d=await r.json();setItems(d.notifications||[]);setServerUnread(Number(d.unreadCount||0))}};
 
   useEffect(()=>{
     if(typeof window==='undefined')return;
@@ -56,9 +57,9 @@ export default function NotificationCenter(){
     }finally{setBusy(false)}
   };
 
-  const markAll=async()=>{await fetch('/api/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({all:true})});setItems(x=>x.map(n=>({...n,read_at:n.read_at||new Date().toISOString()})))};
-  const mark=async(n:any)=>{if(!n.read_at){await fetch('/api/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:n.id})});setItems(x=>x.map(i=>i.id===n.id?{...i,read_at:new Date().toISOString()}:i))}};
-  const unread=items.filter(n=>!n.read_at).length;
+  const markAll=async()=>{await fetch('/api/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({all:true})});setItems(x=>x.map(n=>({...n,read_at:n.read_at||new Date().toISOString()})));setServerUnread(0)};
+  const mark=async(n:any)=>{if(!n.read_at){await fetch('/api/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:n.id})});setItems(x=>x.map(i=>i.id===n.id?{...i,read_at:new Date().toISOString()}:i));setServerUnread(v=>Math.max(0,v-1))}};
+  const unread=serverUnread;
 
   return <>
     {prompt&&<div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md rounded-2xl border border-[#1769E0]/20 bg-white p-5 shadow-2xl sm:left-auto sm:right-6"><div className="flex items-start gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1769E0]/10 text-[#1769E0]"><BellRing size={21}/></div><div className="min-w-0 flex-1"><p className="font-black text-[#0A1E3D]">Never miss a QUVOTO update.</p><p className="mt-1 text-sm leading-5 text-slate-500">Get fast alerts when your quote is created, viewed, accepted, or you unlock a referral reward.</p><div className="mt-4 flex gap-2"><button disabled={busy} onClick={enable} className="rounded-xl bg-[#1769E0] px-4 py-2.5 text-sm font-black text-white disabled:opacity-60">{busy?'Enabling…':'Turn on notifications'}</button><button onClick={()=>setPrompt(false)} className="rounded-xl border px-3 py-2.5 text-slate-500"><X size={17}/></button></div></div></div></div>}
