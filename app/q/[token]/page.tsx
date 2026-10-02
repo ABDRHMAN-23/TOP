@@ -22,7 +22,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
       const { data: viewed } = await admin.from('quotes').update({
         viewed_at: now,
         status: quote.status === 'sent' ? 'viewed' : quote.status
-      }).eq('id', quote.id).is('viewed_at', null).select('id,user_id,quote_number,client_name').maybeSingle();
+      }).eq('id', quote.id).is('viewed_at', null).neq('status', 'accepted').select('id,user_id,quote_number,client_name').maybeSingle();
       if (viewed) {
         quote.viewed_at = now;
         if (quote.status === 'sent') quote.status = 'viewed';
