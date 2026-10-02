@@ -27,5 +27,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Email provider rejected the message.', detail: detail.slice(0,300) }, { status: 502 });
   }
   await supabase.from('quotes').update({ status:'sent', sent_at:new Date().toISOString(), updated_at:new Date().toISOString() }).eq('id', id).eq('user_id', user.id);
+  const { notifyUser } = await import('@/lib/notifications');
+  await notifyUser(user.id, {
+    title: 'Quote sent',
+    body: (quote.quote_number ? 'Quote #' + quote.quote_number : 'Your quote') + ' was emailed to ' + quote.client_email + '.',
+    type: 'quote_sent',
+    link: '/workspace',
+    tag: 'quote-sent',
+    dedupeKey: 'quote-sent:' + id
+  });
   return NextResponse.json({ ok:true, status:'sent', recipient:quote.client_email });
 }
