@@ -7,54 +7,17 @@ const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://quvoto.com'),
-  title: {
-    default: 'QUVOTO — AI Voice Quotes for Contractors',
-    template: '%s | QUVOTO',
-  },
+  title: { default: 'QUVOTO — AI Voice Quotes for Contractors', template: '%s | QUVOTO' },
   description: 'Turn a contractor voice note into a professional, editable quote in seconds. QUVOTO uses speech-to-text and AI to structure job details, pricing and notes into a customer-ready quote.',
   applicationName: 'QUVOTO',
-  keywords: [
-    'voice quote software',
-    'AI quote generator for contractors',
-    'contractor quoting software',
-    'plumber quote software',
-    'electrician quote software',
-    'voice to quote',
-    'AI estimating software',
-    'quote PDF generator',
-  ],
+  keywords: ['voice quote software','AI quote generator for contractors','contractor quoting software','plumber quote software','electrician quote software','voice to quote','AI estimating software','quote PDF generator'],
   alternates: { canonical: '/' },
-  openGraph: {
-    type: 'website',
-    siteName: 'QUVOTO',
-    title: 'QUVOTO — AI Voice Quotes for Contractors',
-    description: 'Speak your job notes. Get a professional quote ready to review and send.',
-    url: '/',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'QUVOTO — AI Voice Quotes for Contractors',
-    description: 'Turn field voice notes into professional customer-ready quotes.',
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 },
-  },
-  icons: {
-    icon: '/icon.svg?v=14',
-    shortcut: '/icon.svg?v=13',
-    apple: '/icon.svg?v=13',
-  },
-  appleWebApp: {
-    capable: true,
-    title: 'QUVOTO',
-    statusBarStyle: 'default',
-  },
-  other: {
-    'mobile-web-app-capable': 'yes',
-    'theme-color': '#1769E0',
-  },
+  openGraph: { type: 'website', siteName: 'QUVOTO', title: 'QUVOTO — AI Voice Quotes for Contractors', description: 'Speak your job notes. Get a professional quote ready to review and send.', url: '/' },
+  twitter: { card: 'summary_large_image', title: 'QUVOTO — AI Voice Quotes for Contractors', description: 'Turn field voice notes into professional customer-ready quotes.' },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 } },
+  icons: { icon: '/logo.webp?v=15', shortcut: '/logo.webp?v=15', apple: '/logo.webp?v=15' },
+  appleWebApp: { capable: true, title: 'QUVOTO', statusBarStyle: 'default' },
+  other: { 'mobile-web-app-capable': 'yes', 'theme-color': '#1769E0' },
 };
 
 export default function Layout({children}:{children:React.ReactNode}) {
