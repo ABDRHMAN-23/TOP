@@ -13,8 +13,8 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#1769E0',
     orientation: 'portrait',
     icons: [
-      { src: '/quvoto-logo.jpg?v=17', sizes: '256x256', type: 'image/jpeg', purpose: 'any' },
-      { src: '/quvoto-logo.jpg?v=17', sizes: '256x256', type: 'image/jpeg', purpose: 'maskable' },
+      { src: '/quvoto-logo.jpg?v=18', sizes: '256x256', type: 'image/jpeg', purpose: 'any' },
+      { src: '/quvoto-logo.jpg?v=18', sizes: '256x256', type: 'image/jpeg', purpose: 'maskable' },
     ],
   };
 }

@@ -1,1 +1,1 @@
-export default function QuvotoLogo({className='h-12 w-12'}:{className?:string}){return <img src="/quvoto-logo.jpg?v=17" alt="QUVOTO" width={256} height={256} className={className+" block shrink-0 object-contain"} draggable="false"/>;}
+export default function QuvotoLogo({className='h-12 w-12'}:{className?:string}){return <img src="/quvoto-logo.jpg?v=18" alt="QUVOTO" width={256} height={256} className={className+" block shrink-0 object-contain"} draggable="false"/>;}
