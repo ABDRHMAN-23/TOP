@@ -142,7 +142,7 @@ async function qualifyForUser(admin:any, uid:string){
    type:'reward',
    link:'/rewards',
    tag:'reward-unlocked',
-   dedupeKey:'reward-unlocked:' + reward.id
+   dedupeKey:'reward-unlocked:' + ref.id + ':' + qualifiedCount
   });
  }
 }
