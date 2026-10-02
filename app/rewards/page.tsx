@@ -140,6 +140,11 @@ export default function RewardsPage() {
         </div>
       </div>
 
+      <div className="mb-8 rounded-[2rem] border bg-white p-6 shadow-sm sm:p-8">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[.18em] text-[#1769E0]">Referral activity</p><h2 className="mt-2 text-2xl font-black">Watch your network move.</h2><p className="mt-1 text-sm text-slate-500">Every meaningful qualification appears here automatically.</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black text-slate-500">{ref?.timeline?.length || 0} recent events</span></div>
+        {(ref?.timeline?.length || 0) > 0 ? <div className="mt-6 space-y-1">{ref.timeline.map((e:any)=><div key={e.id} className="relative flex gap-4 rounded-2xl p-3 hover:bg-slate-50"><div className="relative flex w-9 shrink-0 justify-center"><div className="z-10 flex h-9 w-9 items-center justify-center rounded-full bg-[#1769E0]/10 text-[#1769E0]">{e.type==='annual'?<CalendarDays size={16}/>:e.type==='monthly'?<Gift size={16}/>:e.type==='free'?<Users size={16}/>:<Sparkles size={16}/>}</div></div><div className="min-w-0 flex-1"><div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"><p className="font-black">{e.title}</p><time className="text-[11px] font-semibold text-slate-400">{e.at ? new Date(e.at).toLocaleDateString() : ''}</time></div><p className="mt-1 text-sm leading-5 text-slate-500">{e.detail}</p></div></div>)}</div> : <div className="mt-6 rounded-2xl bg-slate-50 p-6 text-center"><p className="font-black">Your referral activity will appear here.</p><p className="mt-1 text-sm text-slate-500">Share your link and the timeline will fill automatically as people join and qualify.</p></div>}
+      </div>
+
       <div className="grid gap-5 lg:grid-cols-3">
         <RewardCard
           icon={<Users size={23}/>}
