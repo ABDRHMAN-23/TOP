@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { FileText, Plus, ExternalLink, Settings } from 'lucide-react';
 import QuoteActions from './QuoteActions';
+import NotificationCenter from '@/components/NotificationCenter';
 
 function Brand(){return <div className="flex items-center gap-2.5"><img src="/logo.svg" alt="QUVOTO" className="h-9 w-9"/><span className="text-xl font-black tracking-[-0.04em] text-[#0A1E3D]">QUVOTO</span></div>;}
 import { createClient } from '@/lib/supabase/server';
@@ -31,7 +32,7 @@ export default async function DashboardPage() {
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
         <a href="/" aria-label="QUVOTO home"><Brand/></a>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2"><NotificationCenter/>
           <a href="/advisor" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Advisor</a>
           <a href="/settings" className="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-3.5 text-sm font-bold text-slate-600"><Settings size={16}/><span className="hidden sm:inline">Settings</span></a>
           {isTeam && <a href="/team" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Team</a>}
