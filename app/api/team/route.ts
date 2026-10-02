@@ -12,7 +12,6 @@ async function owner(){
  return {supabase,user};
 }
 function hashToken(token:string){return crypto.createHash('sha256').update(token).digest('hex')}
-function escapeHtml(value:string){return value.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!))}
 async function sendInviteEmail(to:string,inviteUrl:string){
  const key=process.env.RESEND_API_KEY; const from=process.env.RESEND_FROM_EMAIL;
  if(!key||!from) return false;
