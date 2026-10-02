@@ -67,6 +67,7 @@ export default function RewardsPage() {
   const walletRewards = (ref?.rewards || []).filter((r:any)=>['earned','scheduled','applied'].includes(r.status));
   const statusLabel = (status:string) => status==='earned' ? 'Unlocked' : status==='scheduled' ? 'Scheduled' : status==='applied' ? 'Applied' : 'Locked';
   const statusClass = (status:string) => status==='applied' ? 'bg-emerald-50 text-emerald-700' : status==='scheduled' ? 'bg-amber-50 text-amber-700' : 'bg-[#1769E0]/10 text-[#1769E0]';
+  const loyalty = ref?.loyalty || {level:'QUVOTO Starter',totalQualified:0,next:10,remaining:10,progress:0};
 
   return <main className="min-h-screen bg-white text-[#0A1E3D]">
     {celebrate && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1E3D]/60 p-5 backdrop-blur-sm"><div className="w-full max-w-md rounded-[2rem] bg-white p-7 text-center shadow-2xl"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#1769E0] text-white shadow-lg"><Trophy size={30}/></div><p className="mt-5 text-xs font-black uppercase tracking-[.2em] text-[#1769E0]">Milestone unlocked</p><h2 className="mt-2 text-3xl font-black">You earned a reward.</h2><p className="mt-3 text-slate-500">Your referral progress just crossed a milestone. Keep going — the next unlock is already waiting.</p><div className="mt-5 rounded-2xl bg-[#1769E0]/5 p-4"><p className="font-black">{celebrate.reward_type==='free_year'?'1 free year':celebrate.reward_type==='free_6_months'?'6 free months':'1 free month'} · {celebrate.plan}</p><p className="mt-1 text-xs text-slate-500">Milestone {celebrate.milestone}</p></div><button onClick={()=>setCelebrate(null)} className="mt-6 w-full rounded-xl bg-[#1769E0] py-3.5 font-bold text-white">See my next milestone</button></div></div>}
@@ -88,6 +89,17 @@ export default function RewardsPage() {
     </section>
 
     <section className="mx-auto max-w-5xl px-5 pt-10 sm:px-8 sm:pt-14">
+      <div className="rounded-[2rem] border border-[#1769E0]/15 bg-white p-6 shadow-sm sm:p-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div><p className="text-xs font-black uppercase tracking-[.18em] text-[#1769E0]">QUVOTO Loyalty</p><h2 className="mt-2 text-3xl font-black">{loyalty.level}</h2><p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">Your loyalty level grows from qualified referrals across all three tracks. It is a recognition system — it never changes your plan or billing.</p></div>
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-[6px] border-[#1769E0]/15 bg-[#1769E0]/5 text-center"><div><p className="text-xl font-black">{loyalty.totalQualified}</p><p className="text-[9px] font-black uppercase tracking-widest text-slate-400">qualified</p></div></div>
+        </div>
+        <div className="mt-6"><div className="flex justify-between text-xs font-black text-slate-500"><span>{loyalty.level}</span><span>{loyalty.next ? loyalty.next+' total' : 'Maximum level'}</span></div><div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#1769E0]" style={{width:loyalty.progress+'%'}}/></div><p className="mt-2 text-xs font-semibold text-slate-400">{loyalty.next ? loyalty.remaining+' more qualified referrals to the next level.' : 'You have reached the current top loyalty level.'}</p></div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-black text-[#1769E0]">Starter</p><p className="mt-1 text-sm font-bold">0–9 qualified referrals</p></div><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-black text-[#1769E0]">Builder</p><p className="mt-1 text-sm font-bold">10–24 qualified referrals</p></div><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-black text-[#1769E0]">Champion → Legend</p><p className="mt-1 text-sm font-bold">25–49 → 50+ qualified referrals</p></div></div>
+      </div>
+    </section>
+
+
       <div className="rounded-[2rem] border border-[#1769E0]/15 bg-white p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="text-xs font-black uppercase tracking-[.18em] text-[#1769E0]">Reward Wallet</p><h2 className="mt-2 text-3xl font-black">You choose how to use it.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Each unlocked paid reward is yours to direct. Choose Monthly or Annual for this reward — your next unlocked reward can go the other way.</p></div>
