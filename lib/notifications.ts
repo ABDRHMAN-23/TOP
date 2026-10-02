@@ -21,7 +21,13 @@ export async function notifyUser(userId: string, input: NotificationInput) {
     dedupe_key: input.dedupeKey || null,
   }).select('id').single();
 
-  if (error) return { notificationId: null, push: { sent: 0, skipped: true }, error };
+  if (error) {
+    if (error.code === '23505' && input.dedupeKey) {
+      const { data: existing } = await admin.from('notifications').select('id').eq('user_id', userId).eq('dedupe_key', input.dedupeKey).maybeSingle();
+      return { notificationId: existing?.id || null, push: { sent: 0, skipped: true, duplicate: true }, error: null };
+    }
+    return { notificationId: null, push: { sent: 0, skipped: true }, error };
+  }
 
   const push = await sendPushToUser(userId, {
     title: input.title,
