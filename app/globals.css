@@ -14,3 +14,5 @@ button,input,textarea{font:inherit}
   button,a{ -webkit-tap-highlight-color: transparent }
   input,textarea,select{font-size:16px}
 }
+
+.input{width:100%;border:1px solid #e2e8f0;border-radius:.75rem;padding:.75rem;outline:none;background:#fff}.input:focus{border-color:#1769E0;box-shadow:0 0 0 4px #1769E014}.btn{width:100%;border-radius:.75rem;background:#0A1E3D;color:#fff;padding:.8rem 1rem;font-weight:700}.btn:disabled{opacity:.5}
