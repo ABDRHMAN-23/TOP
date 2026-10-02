@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronRight, CircleAlert, FileText, Loader2, Lock, Mic, Plus, RotateCcw, Save, Square, Trash2 } from 'lucide-react';
+import { Check, ChevronRight, CircleAlert, FileText, Loader2, Lock, Mic, Plus, RotateCcw, Save, Square, Trash2, Camera, Calculator } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 type Item = { description: string; quantity: number; unit: string; price: number };
@@ -45,6 +45,11 @@ export default function AppPage() {
   const [template, setTemplate] = useState('modern');
   const [currency, setCurrency] = useState('GBP');
   const [language, setLanguage] = useState('en');
+  const [siteNotes, setSiteNotes] = useState('');
+  const [savedItems, setSavedItems] = useState<Item[]>([]);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [labourHours, setLabourHours] = useState('');
+  const [labourRate, setLabourRate] = useState('');
   const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null);
   const media = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
@@ -111,6 +116,7 @@ export default function AppPage() {
     setTemplate('modern');
     setCurrency('GBP');
     setLanguage('en');
+    setSiteNotes(''); setPhotoFiles([]); setLabourHours(''); setLabourRate('');
     setError('');
     setSaved('');
     setSavedQuoteUrl('');
