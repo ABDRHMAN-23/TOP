@@ -229,6 +229,8 @@ export default function RewardsPage() {
   </main>;
 }
 
+function TrackCounter({icon,title,count,next,progress,reward,tone,disabled=false}:{icon:any;title:string;count:number;next:number;progress:number;reward:string;tone:'blue'|'navy';disabled?:boolean}) { return <article className={'rounded-2xl border bg-slate-50 p-5 '+(disabled?'opacity-60':'')}><div className="flex items-center gap-3"><div className={'flex h-10 w-10 items-center justify-center rounded-xl '+(tone==='navy'?'bg-[#0A1E3D] text-white':'bg-[#1769E0]/10 text-[#1769E0]')}>{icon}</div><div><p className="font-black">{title}</p><p className="text-xs font-semibold text-slate-400">{reward}</p></div></div><div className="mt-4 flex items-end justify-between"><span className="text-2xl font-black">{count}</span><span className="text-xs font-bold text-slate-400">next: {next}</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-[#1769E0]" style={{width:progress+'%'}}/></div></article>; }
+
 function RewardCard({icon,eyebrow,title,text,count,next,progress,label,accent}:{icon:any;eyebrow:string;title:string;text:string;count:number;next:number;progress:number;label:string;accent:'blue'|'navy'}) {
   return <article className="rounded-[2rem] border bg-white p-6 shadow-sm sm:p-8">
     <div className="flex items-center justify-between"><div className={'flex h-11 w-11 items-center justify-center rounded-xl '+(accent==='navy'?'bg-[#0A1E3D] text-white':'bg-[#1769E0]/10 text-[#1769E0]')}>{icon}</div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">{eyebrow}</span></div>
