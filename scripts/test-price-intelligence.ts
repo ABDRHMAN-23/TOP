@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { comparePriceOffers, getPurchaseRecommendations } from '../lib/advisor/price-intelligence.ts';
+import { comparePriceOffers, getPurchaseRecommendations, specMatchScore } from '../lib/advisor/price-intelligence.ts';
 
 const base = {
   currency: 'GBP',
@@ -94,5 +94,12 @@ result = comparePriceOffers([
   offer('22mm copper pipe 30m roll', 'B', 75, { packCoverage: 30, packCoverageUnit: 'm', availability: 'in_stock', currency: 'USD' }),
 ], 30, 'm');
 assert.equal(result[0].comparable, false, 'different currencies must not be ranked together');
+
+assert.equal(specMatchScore('22mm copper pipe', '22mm copper pipe 30m roll'), 1);
+assert.equal(specMatchScore('22mm copper pipe', '28mm copper pipe 30m roll'), 0);
+assert.equal(specMatchScore('30m 22mm copper pipe', '22mm copper pipe 10 x 3m roll'), 1);
+assert.equal(specMatchScore('30m 22mm copper pipe', '22mm copper pipe 2 x 15m roll'), 1);
+assert.equal(specMatchScore('15kg cement', '20kg cement bag'), 0);
+assert.equal(specMatchScore('15kg cement', 'cement 3 x 5kg bags'), 1);
 
 console.log('Price comparison tests passed.');
