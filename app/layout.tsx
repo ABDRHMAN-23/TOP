@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: { type: 'website', siteName: 'QUVOTO', title: 'QUVOTO — AI Voice Quotes for Contractors', description: 'Speak your job notes. Get a professional quote ready to review and send.', url: '/' },
   twitter: { card: 'summary_large_image', title: 'QUVOTO — AI Voice Quotes for Contractors', description: 'Turn field voice notes into professional customer-ready quotes.' },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 } },
-  icons: { icon: '/logo.webp?v=15', shortcut: '/logo.webp?v=15', apple: '/logo.webp?v=15' },
+  icons: { icon: '/quvoto-logo.jpg?v=16', shortcut: '/quvoto-logo.jpg?v=16', apple: '/quvoto-logo.jpg?v=16' },
   appleWebApp: { capable: true, title: 'QUVOTO', statusBarStyle: 'default' },
   other: { 'mobile-web-app-capable': 'yes', 'theme-color': '#1769E0' },
 };
