@@ -1,4 +1,4 @@
-const CACHE='quvoto-shell-v10';
+const CACHE='quvoto-shell-v11';
 const OFFLINE='/offline.html';
 const APP='/app';
 
