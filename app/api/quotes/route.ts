@@ -57,7 +57,8 @@ export async function POST(req: Request) {
     body: data?.quote_number ? 'Quote #' + data.quote_number + ' is ready for your review.' : 'Your new quote is ready for review.',
     type: 'quote_created',
     link: '/workspace',
-    tag: 'quote-created'
+    tag: 'quote-created',
+    dedupeKey: 'quote-created:' + String(data?.id || data?.quote_number || crypto.randomUUID())
   });
 
   return NextResponse.json(data);
