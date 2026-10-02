@@ -21,9 +21,9 @@ const structuredData = {
       url: 'https://quvoto.com',
       offers: [
         { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD' },
-        { '@type': 'Offer', name: 'Starter', price: '19', priceCurrency: 'USD' },
-        { '@type': 'Offer', name: 'Pro', price: '39', priceCurrency: 'USD' },
-        { '@type': 'Offer', name: 'Team', price: '79', priceCurrency: 'USD' }
+        { '@type': 'Offer', name: 'Starter', price: '9', priceCurrency: 'USD' },
+        { '@type': 'Offer', name: 'Pro', price: '19', priceCurrency: 'USD' },
+        { '@type': 'Offer', name: 'Team', price: '39', priceCurrency: 'USD' }
       ]
     },
     {
@@ -39,7 +39,7 @@ export default function Home() {
   return <main className="min-h-screen bg-white text-[#0A1E3D]"><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
     <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
       <Link href="/" aria-label="QUVOTO home"><Brand /></Link>
-      <div className="flex items-center gap-2 sm:gap-5"><Link href="/pricing" className="hidden text-sm font-semibold text-slate-600 sm:block">Pricing</Link><Link href="/rewards" className="hidden text-sm font-semibold text-slate-600 sm:block">Rewards</Link><Link href="/login" className="hidden text-sm font-semibold text-slate-600 sm:block">Sign in</Link><Link href="/app" className="rounded-full bg-[#0A1E3D] px-5 py-2.5 text-sm font-bold text-white">Start free</Link></div>
+      <div className="flex items-center gap-2 sm:gap-5"><Link href="/pricing" className="hidden text-sm font-semibold text-slate-600 sm:block">Pricing</Link><Link href="/rewards" className="text-sm font-semibold text-slate-600">Rewards</Link><Link href="/login" className="hidden text-sm font-semibold text-slate-600 sm:block">Sign in</Link><Link href="/app" className="rounded-full bg-[#0A1E3D] px-5 py-2.5 text-sm font-bold text-white">Start free</Link></div>
     </nav>
 
     <section className="relative overflow-hidden border-t border-[#1769E0]/10 bg-white">
@@ -49,7 +49,7 @@ export default function Home() {
           <h1 className="mt-6 max-w-3xl text-5xl font-black leading-[.98] tracking-[-.04em] sm:text-7xl">Talk for 30 seconds.<br/><span className="text-[#1769E0]">Get a quote ready to send.</span></h1>
           <p className="mt-7 max-w-xl text-lg leading-8 text-slate-600">Capture the job while you are still on site. QUVOTO turns your field notes into structured, editable quote details without the admin grind.</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row"><Link href="/app" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1769E0] px-7 py-4 font-bold text-white shadow-lg shadow-blue-600/20">Create your first quote <ArrowRight size={18}/></Link><Link href="/pricing" className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-7 py-4 font-bold text-slate-800">See pricing</Link></div>
-          <div className="mt-7 flex flex-wrap gap-4 text-sm text-slate-500"><span className="flex items-center gap-2"><Check size={16} className="text-emerald-600"/>5 free quotes to start</span><span className="flex items-center gap-2"><Check size={16} className="text-emerald-600"/>No client login</span><span className="flex items-center gap-2"><Check size={16} className="text-emerald-600"/>A4 PDF output</span></div><p className="mt-4 text-sm font-semibold text-[#1769E0]">Rewards: 10 active Free users = 1 Starter month. Monthly paid referrals start at 1 and repeat every 3; annual paid referrals unlock larger rewards.</p>
+          <div className="mt-7 flex flex-wrap gap-4 text-sm text-slate-500"><span className="flex items-center gap-2"><Check size={16} className="text-emerald-600"/>10 free quotes/month</span><span className="flex items-center gap-2"><Check size={16} className="text-emerald-600"/>No client login</span><span className="flex items-center gap-2"><Check size={16} className="text-emerald-600"/>A4 PDF output</span></div><p className="mt-4 text-sm font-semibold text-[#1769E0]">Rewards: 10 active Free users = 1 Starter month. Monthly paid referrals start at 1 and repeat every 3; annual paid referrals unlock larger rewards.</p>
         </div>
 
         <div className="relative">
@@ -71,7 +71,7 @@ export default function Home() {
 
     <section className="bg-[#0A1E3D] text-white"><div className="mx-auto max-w-6xl px-5 py-20 sm:px-8"><div className="grid gap-10 lg:grid-cols-2 lg:items-center"><div><p className="text-sm font-bold uppercase tracking-widest text-blue-300">Why QUVOTO</p><h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Focused on one job: getting your quote out fast.</h2></div><div className="grid gap-3">{['Voice-first workflow built for job sites','Editable client and line-item details','Professional A4 PDF output','Secure customer-facing quote links','Simple plans without enterprise complexity'].map(item=><div key={item} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4"><Check size={18} className="text-blue-300"/><span className="font-semibold">{item}</span></div>)}</div></div></div></section>
 
-    <section className="mx-auto max-w-5xl px-5 py-20 text-center sm:px-8"><p className="text-sm font-bold uppercase tracking-widest text-[#1769E0]">Ready when you are</p><h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Make your next quote before you leave the job.</h2><p className="mx-auto mt-4 max-w-2xl text-slate-500">Start with five free quotes. No complicated setup.</p><Link href="/app" className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-7 py-4 font-bold text-white">Start free <ArrowRight size={18}/></Link></section>
+    <section className="mx-auto max-w-5xl px-5 py-20 text-center sm:px-8"><p className="text-sm font-bold uppercase tracking-widest text-[#1769E0]">Ready when you are</p><h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Make your next quote before you leave the job.</h2><p className="mx-auto mt-4 max-w-2xl text-slate-500">Start with 10 free quotes each month. No complicated setup.</p><Link href="/app" className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-7 py-4 font-bold text-white">Start free <ArrowRight size={18}/></Link></section>
 
     <footer className="border-t border-slate-200 bg-white py-10"><div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 sm:px-8 md:flex-row md:items-end md:justify-between"><div><Brand tagline /><p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">AI voice quoting for contractors. Capture the job, review the details, and send a professional quote.</p></div><div className="flex gap-5 text-sm font-semibold text-slate-600"><Link href="/pricing">Pricing</Link><Link href="/login">Sign in</Link></div></div><div className="mx-auto mt-8 max-w-6xl border-t border-slate-100 px-5 pt-6 text-xs text-slate-400 sm:px-8">© 2026 QUVOTO. Speak. Quote. Done.</div></footer>
   </main>;
