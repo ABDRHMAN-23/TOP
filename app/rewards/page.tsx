@@ -105,26 +105,32 @@ export default function RewardsPage() {
     </section>
 
     <section className="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16">
-      <div className="mb-6 grid gap-6 overflow-hidden rounded-[2rem] bg-[#0A1E3D] p-6 text-white shadow-xl sm:p-8 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
-        <div className="flex justify-center">
-          <div className="relative h-56 w-56 rounded-full p-3" style={{background:`conic-gradient(#2F8CFF ${circleProgress}%, rgba(255,255,255,.09) ${circleProgress}% 100%)`}}>
-            <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-[#0A1E3D] text-center ring-1 ring-white/10">
-              <span className="text-xs font-black uppercase tracking-[.18em] text-blue-200">Your progress</span>
-              <strong className="mt-1 text-5xl font-black tracking-tight">{activeCount}</strong>
-              <span className="text-sm font-bold text-slate-400">of {activeNext}</span>
-              <span className="mt-2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-black text-blue-200">{Math.round(circleProgress)}% COMPLETE</span>
-            </div>
+      <div className="mb-6 rounded-[2rem] border border-[#1769E0]/15 bg-white p-6 shadow-sm sm:p-8">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[.18em] text-[#1769E0]">All reward tracks</p>
+            <h2 className="mt-2 text-3xl font-black">Three counters. Running at the same time.</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Free, Monthly, and Annual referrals are tracked independently. Completing one track never resets or locks the others.</p>
           </div>
+          <div className="rounded-full bg-[#1769E0]/5 px-4 py-2 text-xs font-black text-[#1769E0]">Earn → Unlock → Choose → Repeat</div>
         </div>
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-blue-200"><Zap size={13}/> Active track</div>
-          <h2 className="mt-4 text-3xl font-black sm:text-4xl">{activeTitle}</h2>
-          <p className="mt-2 text-slate-300">Next unlock: <b className="text-white">{activeReward}</b> at <b className="text-white">{activeNext}</b>.</p>
-          <div className="mt-6 h-2.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#2F8CFF]" style={{width:circleProgress+'%'}}/></div>
-          <div className="mt-3 flex items-center justify-between text-xs font-bold"><span className="text-slate-400">{Math.max(0,activeNext-activeCount)} more to unlock</span><span className="text-blue-200">Keep climbing</span></div>
-          {latestReward && <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-[10px] font-black uppercase tracking-widest text-blue-200">Latest reward</p><p className="mt-1 font-black">{latestReward.reward_type==='free_year'?'1 free year':'6 free months'} · {latestReward.plan}</p><p className="mt-1 text-xs text-slate-400">{latestReward.status==='applied'?'Applied to your account.':'Unlocked — ready for the next step.'}</p></div>}
+
+        <div className="mt-7 grid gap-4 lg:grid-cols-3">
+          <TrackCounter icon={<Users size={20}/>} title="Free users" count={freeCount} next={freeNext} progress={freeProgress} reward="1 free Starter month" tone="blue" />
+          <TrackCounter icon={<Gift size={20}/>} title="Monthly referrals" count={monthlyCount} next={monthlyNext || 1} progress={monthlyProgress} reward="1 free month" tone="navy" disabled={!ref?.plan} />
+          <TrackCounter icon={<CalendarDays size={20}/>} title="Annual referrals" count={annualCount} next={annualNext || 2} progress={annualProgress} reward={annualNext===2?'1 free year':annualNext===4?'6 free months':annualNext && (annualNext-8)%6===0 && annualNext>=8?'1 free year':annualNext && (annualNext-10)%6===0 && annualNext>=10?'6 free months':'Next annual reward'} tone="blue" disabled={!ref?.plan} />
+        </div>
+
+        <div className="mt-5 rounded-2xl bg-[#0A1E3D] p-5 text-white sm:flex sm:items-center sm:justify-between sm:gap-6">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[.18em] text-blue-200">How it works</p>
+            <p className="mt-1 font-black">A milestone unlocks a reward — it does not automatically change your billing.</p>
+            <p className="mt-1 text-xs leading-5 text-slate-300">For paid rewards, open your Reward Wallet and choose Monthly or Annual. Your counters keep progressing separately.</p>
+          </div>
+          <div className="mt-4 shrink-0 rounded-xl bg-white/10 px-4 py-3 text-xs font-black sm:mt-0">No track is permanently selected.</div>
         </div>
       </div>
+
       <div className="grid gap-5 lg:grid-cols-3">
         <RewardCard
           icon={<Users size={23}/>}
