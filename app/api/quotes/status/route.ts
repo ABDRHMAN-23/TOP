@@ -18,7 +18,7 @@ export async function PATCH(req: Request) {
   if (status === 'accepted') patch.accepted_at = new Date().toISOString();
   const { data: before } = await supabase.from('quotes').select('id,quote_number,client_name,status').eq('id', id).eq('user_id', user.id).maybeSingle();
   if (!before) return NextResponse.json({ error: 'Quote not found.' }, { status: 404 });
-  if (before.status === 'accepted' && status !== 'accepted') return NextResponse.json({ error: 'An accepted quote cannot be moved back to another status.' }, { status: 409, code: 'QUOTE_ACCEPTED_FINAL' });
+  if (before.status === 'accepted' && status !== 'accepted') return NextResponse.json({ error: 'An accepted quote cannot be moved back to another status.', code: 'QUOTE_ACCEPTED_FINAL' }, { status: 409 });
   if (before.status === status) return NextResponse.json(before);
 
   const { data, error } = await supabase.from('quotes').update(patch).eq('id', id).eq('user_id', user.id).select('id,status,sent_at,accepted_at,quote_number,client_name').single();
