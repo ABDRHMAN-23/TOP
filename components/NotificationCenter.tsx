@@ -40,11 +40,14 @@ export default function NotificationCenter(){
 
   const ensureSubscription=async()=>{
     const key=process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if(!key||!('serviceWorker' in navigator)||!('PushManager' in window))return;
-    const reg=await navigator.serviceWorker.ready;
-    let sub=await reg.pushManager.getSubscription();
-    if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(key)});
-    await fetch('/api/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:sub.toJSON()})});
+    if(!key||!('serviceWorker' in navigator)||!('PushManager' in window))return false;
+    try{
+      const reg=await navigator.serviceWorker.ready;
+      let sub=await reg.pushManager.getSubscription();
+      if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(key)});
+      const r=await fetch('/api/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:sub.toJSON()})});
+      return r.ok;
+    }catch{return false}
   };
 
   const enable=async()=>{
@@ -53,7 +56,8 @@ export default function NotificationCenter(){
       if(!('Notification' in window)){setPermission('unsupported');return}
       const p=await Notification.requestPermission();setPermission(p);setPrompt(false);
       if(p!=='granted'||!('serviceWorker' in navigator)||!('PushManager' in window))return;
-      await ensureSubscription();
+      const saved=await ensureSubscription();
+      if(!saved) setPermission('unsupported');
     }finally{setBusy(false)}
   };
 
