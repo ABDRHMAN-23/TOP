@@ -16,6 +16,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
       .eq('public_token', token)
       .maybeSingle();
     quote = data;
+    if (quote?.id && quote.status !== 'accepted') await admin.from('quotes').update({ viewed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', quote.id);
     if (quote?.user_id) {
       const { data: profile } = await admin
         .from('business_profiles')
@@ -29,7 +30,6 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
   } catch {}
 
   if (!quote) notFound();
-  if (quote.status !== 'accepted') { try { await admin.from('quotes').update({ viewed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', quote.id); } catch {} }
   const items = Array.isArray(quote.items) ? quote.items : [];
 
   return <main className="min-h-screen bg-[#f7faff] px-3 py-5 sm:px-4 sm:py-10">
