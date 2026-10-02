@@ -25,7 +25,8 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
         .maybeSingle();
       const { data: subscription } = await admin.from('subscriptions').select('plan,status').eq('user_id', quote.user_id).maybeSingle();
       const activePlan = (subscription?.status === 'active' || subscription?.status === 'trialing') ? subscription?.plan : 'free';
-      const { data: photos } = await admin.from('quote_photos').select('url,caption').eq('quote_id', quote.id).order('created_at');\n      business = { ...profile, allow_custom_logo: activePlan !== 'free', photos: photos || [] };
+      const { data: photos } = await admin.from('quote_photos').select('url,caption').eq('quote_id', quote.id).order('created_at');
+      business = { ...profile, allow_custom_logo: activePlan !== 'free', photos: photos || [] };
     }
   } catch {}
 
@@ -63,7 +64,8 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
           {Number(quote.vat_amount)>0 && <div className="flex justify-between"><span>VAT ({quote.vat_rate}%)</span><span>{quote.currency} {Number(quote.vat_amount).toFixed(2)}</span></div>}
           <div className="flex justify-between border-t pt-3 text-xl font-black"><span>Total</span><span>{quote.currency} {Number(quote.total).toFixed(2)}</span></div>
         </div>
-        {(quote.site_notes || business?.photos?.length) ? <div className="mt-8 border-t pt-5">{quote.site_notes ? <div className="rounded-2xl bg-[#f7faff] p-4"><div className="font-bold text-slate-800">Site notes</div><p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{quote.site_notes}</p></div> : null}{business?.photos?.length ? <div className="mt-4"><div className="mb-3 font-bold">Site photos</div><div className="grid gap-3 sm:grid-cols-2">{business.photos.map((p:any)=><img key={p.url} src={p.url} alt={p.caption || 'Site photo'} className="w-full rounded-xl border object-cover" />)}</div></div> : null}</div> : null}\n        {(quote.notes?.length || business?.phone || business?.email || business?.address) ? <div className="mt-10 border-t pt-5 text-sm text-slate-500">
+        {(quote.site_notes || business?.photos?.length) ? <div className="mt-8 border-t pt-5">{quote.site_notes ? <div className="rounded-2xl bg-[#f7faff] p-4"><div className="font-bold text-slate-800">Site notes</div><p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{quote.site_notes}</p></div> : null}{business?.photos?.length ? <div className="mt-4"><div className="mb-3 font-bold">Site photos</div><div className="grid gap-3 sm:grid-cols-2">{business.photos.map((p:any)=><img key={p.url} src={p.url} alt={p.caption || 'Site photo'} className="w-full rounded-xl border object-cover" />)}</div></div> : null}</div> : null}
+        {(quote.notes?.length || business?.phone || business?.email || business?.address) ? <div className="mt-10 border-t pt-5 text-sm text-slate-500">
           {Array.isArray(quote.notes) && quote.notes.length ? <div className="mb-5"><div className="font-bold text-slate-800">Notes</div>{quote.notes.map((n:string,i:number)=><div key={i}>{n}</div>)}</div> : null}
           {(business?.phone || business?.email || business?.address) ? <><div className="font-bold text-slate-800">{business.business_name}</div>{business.address && <div>{business.address}</div>}{business.phone && <div>{business.phone}</div>}{business.email && <div>{business.email}</div>}</> : null}
         </div> : null}
