@@ -33,6 +33,7 @@ export default function AppPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState('');
+  const [savedQuoteUrl, setSavedQuoteUrl] = useState('');
   const [intelligence, setIntelligence] = useState<{summary:string;warnings:string[];suggestions:string[];questions:string[];confidence:string}|null>(null);
   const [reviewing, setReviewing] = useState(false);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
@@ -112,6 +113,7 @@ export default function AppPage() {
     setLanguage('en');
     setError('');
     setSaved('');
+    setSavedQuoteUrl('');
   };
 
   const analyze = async () => {
@@ -163,6 +165,7 @@ export default function AppPage() {
     setSaving(true);
     setError('');
     setSaved('');
+    setSavedQuoteUrl('');
     try {
       const response = await fetch('/api/quotes', {
         method: 'POST',
@@ -182,6 +185,7 @@ export default function AppPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Please sign in before saving.');
       setSaved(data.quote_number || 'Quote saved');
+      if (data.public_token) setSavedQuoteUrl(window.location.origin + '/q/' + data.public_token);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save quote.');
     } finally {
@@ -242,7 +246,7 @@ export default function AppPage() {
             </div>
 
             {error && <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
-            {saved && <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700">{saved}</div>}
+            {saved && <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700"><div>{saved}</div>{savedQuoteUrl && <div className="mt-3 flex flex-wrap gap-2"><a href={savedQuoteUrl} target="_blank" rel="noreferrer" className="rounded-xl bg-[#1769E0] px-3 py-2 text-xs font-bold text-white">Open quote</a><button onClick={() => navigator.clipboard?.writeText(savedQuoteUrl)} className="rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-800">Copy public link</button></div>}</div>}
 
             <button onClick={analyze} disabled={loading || (!audio && !manualNotes.trim())} className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#1769E0] py-4 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
               {loading ? <><Loader2 className="animate-spin" size={18}/>Analyzing…</> : <><ChevronRight size={18}/>Analyze job</>}
