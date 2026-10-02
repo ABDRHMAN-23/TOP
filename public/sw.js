@@ -1,7 +1,7 @@
-const CACHE='quvoto-shell-v13';
+const CACHE='quvoto-shell-v14';
 const OFFLINE='/offline.html';
 const APP='/app';
-const LOGO='/quvoto-logo.jpg?v=16';
+const LOGO='/quvoto-logo.jpg?v=17';
 
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
