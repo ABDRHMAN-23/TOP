@@ -148,7 +148,7 @@ export default function AppPage() {
     }
   };
 
-  const updateItem = (index: number, key: keyof Item, value: string | number) => {
+  const updateItem = (index: number, key: keyof Item, value: string | number | null) => {
     setItems((current) => current.map((item, i) => i === index ? { ...item, [key]: value } : item));
   };
 
