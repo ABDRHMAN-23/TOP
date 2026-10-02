@@ -105,6 +105,12 @@ export async function GET(req:Request){
    {id:'annual-elite',label:'Annual Elite',description:'8 qualified same-plan annual referrals.',unlocked:annualCount>=8,icon:'✦'},
    {id:'referral-legend',label:'Referral Legend',description:'10+ qualified paid referrals across your active plan.',unlocked:(monthlyCount+annualCount)>=10,icon:'♛'}
  ];
+ const timeline=(referrals||[]).flatMap((r:any)=>{
+   const items:any[]=[{id:r.id+'-signup',type:'signup',title:'Referral joined QUVOTO',detail:'A new contractor signed up through your referral link.',at:r.signed_up_at||r.created_at}];
+   if(r.free_qualified_at) items.push({id:r.id+'-free',type:'free',title:'Free referral qualified',detail:'They created a real quote while staying on Free.',at:r.free_qualified_at});
+   if(r.qualified_at) items.push({id:r.id+'-paid',type:r.qualifying_interval==='year'?'annual':'monthly',title:r.qualifying_interval==='year'?'Annual referral qualified':'Monthly referral qualified',detail:'Same-plan paid referral reached the qualification point.',at:r.qualified_at});
+   return items;
+ }).sort((a:any,b:any)=>new Date(b.at).getTime()-new Date(a.at).getTime()).slice(0,20);
  const activeTrack=activePaid&&interval==='year'?'annual':activePaid&&interval==='month'?'monthly':'free';
  const activeNext=activeTrack==='annual'?annualNext:activeTrack==='monthly'?monthlyNext:freeNext;
  const activeCount=activeTrack==='annual'?annualCount:activeTrack==='monthly'?monthlyCount:freeCount;
@@ -129,6 +135,7 @@ export async function GET(req:Request){
    activeReward,
    badges,
    referrals:referrals||[],
-   rewards:rewards||[]
+   rewards:rewards||[],
+   timeline
  });
 }
