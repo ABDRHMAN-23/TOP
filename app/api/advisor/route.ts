@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sourcesForMarket } from '@/lib/advisor/market-sources';
 import { findUKMarketData } from '@/lib/advisor/uk-market-data';
-import { comparePriceOffers, searchProductPrices, getBuildWatchPriceHistory } from '@/lib/advisor/price-intelligence';
+import { comparePriceOffers, searchProductPrices, getBuildWatchPriceHistory, getPurchaseRecommendations } from '@/lib/advisor/price-intelligence';
 
 async function getFx(base: string, quote: string) {
   if (!base || !quote || base === quote) return { base, date: new Date().toISOString().slice(0, 10), rates: { [quote]: 1 } };
@@ -62,6 +62,7 @@ export async function POST(req: Request) {
     const productPrices = isUk ? await searchProductPrices(searchQuery, market, currency) : [];
     const priceComparisons = comparePriceOffers(productPrices, requiredQuantity, requiredUnit);
     const priceHistory = isUk ? await getBuildWatchPriceHistory(searchQuery, 30).catch(() => null) : null;
+    const purchaseRecommendations = getPurchaseRecommendations(priceComparisons);
     const priceSignal = priceHistory?.anomaly === 'high'
       ? 'Current observed price is unusually high versus the recent observed average.'
       : priceHistory?.anomaly === 'low'
@@ -69,7 +70,7 @@ export async function POST(req: Request) {
         : priceHistory?.anomaly === 'normal'
           ? 'Current observed price is within the recent observed range.'
           : 'There is not enough recent history to classify the current price.';
-    const context = { business: business || {}, market, requested_currency: currency, fx, quote_history: quotes || [], verified_market_sources: marketSources, verified_market_data: marketData, commercial_product_prices: productPrices, price_comparisons: priceComparisons,
+    const context = { business: business || {}, market, requested_currency: currency, fx, quote_history: quotes || [], verified_market_sources: marketSources, verified_market_data: marketData, commercial_product_prices: productPrices, price_comparisons: priceComparisons, purchase_recommendations: purchaseRecommendations, purchase_recommendations: purchaseRecommendations,
   price_history: priceHistory, price_signal: priceSignal, product_price_status: process.env.PRICE_INTELLIGENCE_API_URL ? 'connected' : 'built_in_uk_source', requested_quantity: requiredQuantity, requested_unit: requiredUnit, product_search_query: searchQuery, question };
     const result = await askGemma(JSON.stringify(context));
     return NextResponse.json({ ...result, market, currency, fx_source: 'Frankfurter reference rates', fx_date: fx?.date || null, sources: marketSources, market_data: marketData, product_prices: productPrices, price_comparisons: priceComparisons, requested_quantity: requiredQuantity, requested_unit: requiredUnit, product_price_connected: Boolean(process.env.PRICE_INTELLIGENCE_API_URL) || isUk });
