@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/admin';
 import DownloadPdf from './DownloadPdf';
+import AcceptQuote from './AcceptQuote';
 
 export default async function PublicQuotePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -28,6 +29,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
   } catch {}
 
   if (!quote) notFound();
+  if (quote.status !== 'accepted') { try { await admin.from('quotes').update({ viewed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', quote.id); } catch {} }
   const items = Array.isArray(quote.items) ? quote.items : [];
 
   return <main className="min-h-screen bg-[#f7faff] px-3 py-5 sm:px-4 sm:py-10">
@@ -41,7 +43,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
           </div>
           <div className="flex shrink-0 flex-col items-end gap-3">
             {business?.logo_url ? <img src={business.logo_url} alt={business.business_name || 'Business logo'} className="h-14 w-14 rounded-xl object-contain" /> : null}
-            <DownloadPdf quote={quote} business={business} removeBrand={business?.allow_custom_logo || false} />
+            <div className="flex flex-wrap items-center justify-end gap-2"><DownloadPdf quote={quote} business={business} removeBrand={business?.allow_custom_logo || false} />{quote.status !== "accepted" && <AcceptQuote token={token} initialStatus={quote.status} />}</div>
           </div>
         </div>
         <div className="mt-6 grid gap-2 text-sm text-slate-500 sm:grid-cols-2">
