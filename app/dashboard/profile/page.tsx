@@ -83,11 +83,11 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     'business-name': 'Business name is required.'
   };
 
-  return <main className="min-h-screen bg-slate-50">
+  return <main className="min-h-screen bg-[#f7faff]">
     <header className="border-b bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
-        <a href="/dashboard" className="text-xl font-black">Voice<span className="text-blue-600">Quote</span></a>
-        <a href="/app" className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white">New quote</a>
+        <a href="/dashboard" className="text-xl font-black tracking-[-0.04em] text-[#0A1E3D]">QUVOTO</a>
+        <a href="/app" className="rounded-xl bg-[#1769E0] px-4 py-2 text-sm font-bold text-white">New quote</a>
       </div>
     </header>
 
