@@ -1,22 +1,22 @@
 'use client';
-
 import { useState } from 'react';
-import { Check, Loader2, Mail } from 'lucide-react';
+import { Check, Copy, Loader2, Mail, MessageCircle, BriefcaseBusiness, FileText, Clock3 } from 'lucide-react';
 
-export default function QuoteActions({ quoteId, clientEmail, initialStatus='draft' }: { quoteId:string; clientEmail?:string|null; initialStatus?:string }) {
-  const [status,setStatus]=useState(initialStatus); const [busy,setBusy]=useState(false); const [message,setMessage]=useState('');
-  const update=async(next:string)=>{
-    setBusy(true);setMessage('');
-    try{const r=await fetch('/api/quotes/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:quoteId,status:next})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not update status.');setStatus(d.status);setMessage(next==='accepted'?'Accepted':'Status updated.');}catch(e){setMessage(e instanceof Error?e.message:'Could not update status.')}finally{setBusy(false)}
-  };
-  const send=async()=>{
-    setBusy(true);setMessage('');
-    try{const r=await fetch('/api/quotes/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:quoteId})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not send email.');setStatus('sent');setMessage('Quotation emailed to '+d.recipient+'.')}catch(e){setMessage(e instanceof Error?e.message:'Could not send email.')}finally{setBusy(false)}
-  };
-  return <div className="flex flex-wrap items-center gap-2">
-    <button disabled={busy || status==='sent' || status==='accepted'} onClick={()=>update('sent')} className="rounded-xl border border-[#1769E0]/20 bg-[#1769E0]/5 px-3 py-2 text-xs font-bold text-[#1769E0] disabled:opacity-50">Mark sent</button>
-    {clientEmail && status!=='accepted' && <button disabled={busy} onClick={send} className="inline-flex items-center gap-1.5 rounded-xl bg-[#1769E0] px-3 py-2 text-xs font-bold text-white disabled:opacity-50">{busy?<Loader2 size={14} className="animate-spin"/>:<Mail size={14}/>}Email</button>}
-    <button disabled={busy || status==='accepted'} onClick={()=>update('accepted')} className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 disabled:opacity-50"><Check size={14}/>Accepted</button>
-    {message && <span className="text-xs font-semibold text-slate-500">{message}</span>}
-  </div>;
+export default function QuoteActions({ quoteId, clientEmail, publicToken, initialStatus='draft' }: { quoteId:string; clientEmail?:string|null; publicToken?:string|null; initialStatus?:string }) {
+ const [status,setStatus]=useState(initialStatus); const [busy,setBusy]=useState(false); const [message,setMessage]=useState('');
+ const link=publicToken ? window.location.origin+'/q/'+publicToken : '';
+ const call=async(body:any,success:string)=>{setBusy(true);setMessage('');try{const r=await fetch('/api/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not complete action.');setMessage(success)}catch(e){setMessage(e instanceof Error?e.message:'Could not complete action.')}finally{setBusy(false)}};
+ const update=async(next:string)=>{setBusy(true);setMessage('');try{const r=await fetch('/api/quotes/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:quoteId,status:next})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not update status.');setStatus(d.status);setMessage(next==='accepted'?'Accepted':'Status updated.')}catch(e){setMessage(e instanceof Error?e.message:'Could not update status.')}finally{setBusy(false)}};
+ const send=async()=>{setBusy(true);setMessage('');try{const r=await fetch('/api/quotes/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:quoteId})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not send email.');setStatus('sent');setMessage('Quotation emailed to '+d.recipient+'.')}catch(e){setMessage(e instanceof Error?e.message:'Could not send email.')}finally{setBusy(false)}};
+ const share=(kind:string)=>{if(!link)return;const text='Your QUVOTO quotation is ready: '+link;if(kind==='copy')navigator.clipboard?.writeText(link);else if(kind==='whatsapp')window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');else if(kind==='sms')window.location.href='sms:?body='+encodeURIComponent(text);else if(kind==='email')window.location.href='mailto:?subject='+encodeURIComponent('Your quotation')+'&body='+encodeURIComponent(text);setMessage(kind==='copy'?'Link copied.':'Share opened.')};
+ return <div className="flex flex-wrap items-center gap-2">
+   {link&&<><button disabled={busy} onClick={()=>share('copy')} className="inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold"><Copy size={14}/>Copy</button><button disabled={busy} onClick={()=>share('whatsapp')} className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">WhatsApp</button><button disabled={busy} onClick={()=>share('sms')} className="rounded-xl border px-3 py-2 text-xs font-bold">SMS</button></>}
+   <button disabled={busy || status==='sent' || status==='accepted'} onClick={()=>update('sent')} className="rounded-xl border border-[#1769E0]/20 bg-[#1769E0]/5 px-3 py-2 text-xs font-bold text-[#1769E0] disabled:opacity-50">Mark sent</button>
+   {clientEmail && status!=='accepted' && <button disabled={busy} onClick={send} className="inline-flex items-center gap-1.5 rounded-xl bg-[#1769E0] px-3 py-2 text-xs font-bold text-white disabled:opacity-50">{busy?<Loader2 size={14} className="animate-spin"/>:<Mail size={14}/>}Email</button>}
+   {status==='accepted'&&<><button disabled={busy} onClick={()=>call({action:'job',quote_id:quoteId},'Job created.')} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700"><BriefcaseBusiness size={14}/>Job</button><button disabled={busy} onClick={()=>call({action:'invoice',quote_id:quoteId},'Invoice created.')} className="inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold"><FileText size={14}/>Invoice</button></>}
+   {status!=='accepted'&&<button disabled={busy} onClick={()=>call({action:'followup',quote_id:quoteId,days:3},'Follow-up scheduled for 3 days.')} className="inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold"><Clock3 size={14}/>+3d</button>}
+   <button disabled={busy} onClick={()=>call({action:'duplicate',quote_id:quoteId},'Quote duplicated. Open New quote to edit it.')} className="rounded-xl border px-3 py-2 text-xs font-bold">Duplicate</button>
+   <button disabled={busy || status==='accepted'} onClick={()=>update('accepted')} className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 disabled:opacity-50"><Check size={14}/>Accepted</button>
+   {message && <span className="text-xs font-semibold text-slate-500">{message}</span>}
+ </div>;
 }
