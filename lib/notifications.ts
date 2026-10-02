@@ -29,12 +29,17 @@ export async function notifyUser(userId: string, input: NotificationInput) {
     return { notificationId: null, push: { sent: 0, skipped: true }, error };
   }
 
-  const push = await sendPushToUser(userId, {
-    title: input.title,
-    body: input.body,
-    link: input.link,
-    tag: input.tag || input.type || 'quvoto',
-  });
+  let push: any;
+  try {
+    push = await sendPushToUser(userId, {
+      title: input.title,
+      body: input.body,
+      link: input.link,
+      tag: input.tag || input.type || 'quvoto',
+    });
+  } catch (pushError) {
+    push = { sent: 0, skipped: false, error: pushError instanceof Error ? pushError.message : 'Push delivery failed.' };
+  }
 
   return { notificationId: data?.id || null, push, error: null };
 }
