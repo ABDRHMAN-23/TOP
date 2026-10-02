@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useState } from 'react';
 import { Check, Lock, Mic, FileText } from 'lucide-react';
 
 function Brand(){return <div className="flex items-center gap-2.5"><img src="/logo.svg" alt="QUVOTO" className="h-10 w-10"/><div><div className="text-2xl font-black tracking-[-0.05em] text-[#0A1E3D]">QUVOTO</div><div className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#1769E0]">Speak. Quote. Done.</div></div></div>;}
@@ -11,6 +12,9 @@ const plans = [
 ];
 
 export default function Pricing() {
+  const [loading,setLoading]=useState('');
+  const [error,setError]=useState('');
+  const checkout=async(plan:string)=>{setLoading(plan);setError('');try{const r=await fetch('/api/billing/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan})});const d=await r.json();if(r.status===401){window.location.href='/login?next=/pricing';return}if(!r.ok)throw new Error(d.error||'Checkout unavailable.');window.location.href=d.url}catch(e){setError(e instanceof Error?e.message:'Checkout unavailable.')}finally{setLoading('')}}
   return <main className="min-h-screen bg-slate-50 text-slate-950">
     <header className="border-b bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
@@ -29,12 +33,12 @@ export default function Pricing() {
           <p className="text-sm font-bold text-slate-400">{plan.name}</p>
           <div className="mt-4 flex items-end gap-1"><span className="text-5xl font-black">{plan.price}</span>{plan.name!=='Free' ? <span className="pb-1 text-sm text-slate-400">/mo</span> : null}</div>
           <p className="mt-2 font-semibold text-slate-700">{plan.detail}</p>
-          <Link href="/app" className="mt-6 block rounded-xl bg-[#0A1E3D] py-3 text-center font-bold text-white">{plan.name==='Free' ? 'Start free' : 'Use this plan'}</Link>
+          <button onClick={()=>plan.name==='Free'?window.location.href='/app':checkout(plan.name.toLowerCase())} disabled={!!loading} className="mt-6 block w-full rounded-xl bg-[#0A1E3D] py-3 text-center font-bold text-white disabled:opacity-60">{loading===plan.name.toLowerCase()?'Opening checkout…':plan.name==='Free'?'Start free':'Choose '+plan.name}</button>
           <div className="mt-7 space-y-3">{plan.features.map(f => <div key={f} className="flex gap-2 text-sm text-slate-600"><Check size={16} className="mt-0.5 shrink-0 text-emerald-600"/>{f}</div>)}</div>
           <div className="mt-7 rounded-2xl bg-slate-50 p-4 text-xs text-slate-500">{plan.name==='Free' ? 'Upgrade later when you hit the limit.' : 'Feature access is enforced server-side when a quote is created.'}</div>
         </div>)}
       </div>
-      <div className="mt-10 grid gap-4 md:grid-cols-3">
+      {error&&<div className="mx-auto mt-6 max-w-xl rounded-2xl bg-amber-50 p-4 text-center text-sm font-semibold text-amber-800">{error}</div>}<div className="mt-10 grid gap-4 md:grid-cols-3">
         <div className="rounded-3xl border bg-white p-6"><Mic className="text-[#1769E0]"/><h2 className="mt-4 text-xl font-black">Same core flow</h2><p className="mt-2 text-sm leading-6 text-slate-500">Record → transcribe → Gemma 4 31B extracts details → review → save.</p></div>
         <div className="rounded-3xl border bg-white p-6"><FileText className="text-[#1769E0]"/><h2 className="mt-4 text-xl font-black">Five real PDF styles</h2><p className="mt-2 text-sm leading-6 text-slate-500">Modern, Classic, Bold, Minimal and Technical are separate visual layouts.</p></div>
         <div className="rounded-3xl border bg-white p-6"><Lock className="text-[#1769E0]"/><h2 className="mt-4 text-xl font-black">Plan-aware access</h2><p className="mt-2 text-sm leading-6 text-slate-500">The interface shows locks, and the database route enforces the same rules.</p></div>
