@@ -216,7 +216,7 @@ export default function AppPage() {
     <main className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
-          <a href="/" aria-label="QUVOTO home" className="inline-flex items-center"><img src="/logo.svg" alt="QUVOTO" className="h-10 w-auto"/></a>
+          <a href="/" aria-label="QUVOTO home" className="inline-flex items-center"><img src="/logo.webp" alt="QUVOTO" className="h-10 w-auto"/></a>
           <div className="flex items-center gap-2">
             {planInfo && <a href="/pricing" className="hidden rounded-full bg-[#2F8CFF]/10 px-3 py-2 text-xs font-bold text-[#1769E0] sm:inline-flex">{planInfo.label} · {planInfo.quota === null ? 'Unlimited' : planInfo.used + '/' + planInfo.quota}</a>}
             <a href="/advisor" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Advisor</a><button onClick={signIn} className="min-h-11 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold hover:bg-slate-50">Sign in</button>
