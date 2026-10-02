@@ -2,18 +2,18 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    id: '/dashboard',
+    id: '/app',
     name: 'QUVOTO — Speak. Quote. Done.',
     short_name: 'QUVOTO',
     description: 'Fast voice-first quoting for contractors.',
-    start_url: '/dashboard',
+    start_url: '/app',
     scope: '/',
     display: 'standalone',
     background_color: '#ffffff',
     theme_color: '#1769E0',
     orientation: 'portrait',
     icons: [
-      { src: '/icon.svg', sizes: '64x64', type: 'image/svg+xml', purpose: 'any' },
+      { src: '/icon.svg?v=3', sizes: '256x256', type: 'image/svg+xml', purpose: 'any maskable' },
     ],
   };
 }
