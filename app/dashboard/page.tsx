@@ -4,7 +4,7 @@ import QuoteActions from './QuoteActions';
 import NotificationCenter from '@/components/NotificationCenter';
 import DailyBrief from '@/components/DailyBrief';
 
-function Brand(){return <div className="flex items-center gap-2.5"><img src="/logo.svg" alt="QUVOTO" className="h-9 w-9"/><span className="text-xl font-black tracking-[-0.04em] text-[#0A1E3D]">QUVOTO</span></div>;}
+function Brand(){return <img src="/logo.svg" alt="QUVOTO" className="h-10 w-auto"/>;}
 import { createClient } from '@/lib/supabase/server';
 
 export default async function DashboardPage() {
