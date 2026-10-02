@@ -108,7 +108,9 @@ export async function GET(req:Request){
  const activeTrack=activePaid&&interval==='year'?'annual':activePaid&&interval==='month'?'monthly':'free';
  const activeNext=activeTrack==='annual'?annualNext:activeTrack==='monthly'?monthlyNext:freeNext;
  const activeCount=activeTrack==='annual'?annualCount:activeTrack==='monthly'?monthlyCount:freeCount;
- const activeReward=activeTrack==='annual'?(annualNext===2?'1 free year':annualNext===4?'6 free months':annualNext&&annualNext%2===0?'1 free year':'next reward') : activeTrack==='monthly'?'1 free month':'1 free Starter month';
+ const activeReward=activeTrack==='annual'
+   ? (annualNext===2?'1 free year':annualNext===4?'6 free months':annualNext!=null && (annualNext-8)%6===0 && annualNext>=8?'1 free year':annualNext!=null && (annualNext-10)%6===0 && annualNext>=10?'6 free months':'next reward')
+   : activeTrack==='monthly'?'1 free month':'1 free Starter month';
 
  return NextResponse.json({
    code,
