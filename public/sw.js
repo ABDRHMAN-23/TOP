@@ -48,8 +48,8 @@ self.addEventListener('push',event=>{
   try{if(event.data)data={...data,...event.data.json()}}catch(_){}
   event.waitUntil(self.registration.showNotification(data.title,{
     body:data.body,
-    icon:'/icon.webp',
-    badge:'/icon.webp',
+    icon:'/quvoto-icon.svg?v=14',
+    badge:'/quvoto-icon.svg?v=14',
     data:{link:data.link||'/'},
     tag:data.tag||'quvoto-update',
     renotify:true
