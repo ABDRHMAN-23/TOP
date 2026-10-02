@@ -33,6 +33,9 @@ export default function RewardsPage() {
   const activeReward = ref?.activeReward || '1 free Starter month';
   const badges = ref?.badges || [];
   const activeTitle = activeTrack === 'annual' ? 'Annual momentum' : activeTrack === 'monthly' ? 'Monthly momentum' : 'Free-user momentum';
+  const circleProgress = Math.min(100, (activeCount / Math.max(1, activeNext)) * 100);
+  const earnedRewards = (ref?.rewards || []).filter((r:any)=>['earned','scheduled','applied'].includes(r.status));
+  const latestReward = earnedRewards[0];
 
   return <main className="min-h-screen bg-white text-[#0A1E3D]">
     <header className="border-b border-slate-200 bg-white">
@@ -53,7 +56,27 @@ export default function RewardsPage() {
     </section>
 
     <section className="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16">
-      <div className="mb-6 overflow-hidden rounded-3xl bg-[#0A1E3D] p-6 text-white shadow-xl"><div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between"><div><div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-blue-200"><Zap size={13}/> Active track</div><h2 className="mt-4 text-3xl font-black">{activeTitle}</h2><p className="mt-2 text-slate-300">Next unlock: <b className="text-white">{activeReward}</b> at <b className="text-white">{activeNext}</b>.</p></div><div className="min-w-[16rem] lg:w-80"><div className="flex justify-between text-sm font-bold"><span>{activeCount} qualified</span><span>{activeNext}</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#2F8CFF]" style={{width:Math.min(100,(activeCount/Math.max(1,activeNext))*100)+'%'}}/></div><p className="mt-2 text-xs text-slate-400">{Math.max(0,activeNext-activeCount)} more to the next unlock</p></div></div></div><div className="grid gap-5 lg:grid-cols-3">
+      <div className="mb-6 grid gap-6 overflow-hidden rounded-[2rem] bg-[#0A1E3D] p-6 text-white shadow-xl sm:p-8 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
+        <div className="flex justify-center">
+          <div className="relative h-56 w-56 rounded-full p-3" style={{background:`conic-gradient(#2F8CFF ${circleProgress}%, rgba(255,255,255,.09) ${circleProgress}% 100%)`}}>
+            <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-[#0A1E3D] text-center ring-1 ring-white/10">
+              <span className="text-xs font-black uppercase tracking-[.18em] text-blue-200">Your progress</span>
+              <strong className="mt-1 text-5xl font-black tracking-tight">{activeCount}</strong>
+              <span className="text-sm font-bold text-slate-400">of {activeNext}</span>
+              <span className="mt-2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-black text-blue-200">{Math.round(circleProgress)}% COMPLETE</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-blue-200"><Zap size={13}/> Active track</div>
+          <h2 className="mt-4 text-3xl font-black sm:text-4xl">{activeTitle}</h2>
+          <p className="mt-2 text-slate-300">Next unlock: <b className="text-white">{activeReward}</b> at <b className="text-white">{activeNext}</b>.</p>
+          <div className="mt-6 h-2.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#2F8CFF]" style={{width:circleProgress+'%'}}/></div>
+          <div className="mt-3 flex items-center justify-between text-xs font-bold"><span className="text-slate-400">{Math.max(0,activeNext-activeCount)} more to unlock</span><span className="text-blue-200">Keep climbing</span></div>
+          {latestReward && <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-[10px] font-black uppercase tracking-widest text-blue-200">Latest reward</p><p className="mt-1 font-black">{latestReward.reward_type==='free_year'?'1 free year':'6 free months'} · {latestReward.plan}</p><p className="mt-1 text-xs text-slate-400">{latestReward.status==='applied'?'Applied to your account.':'Unlocked — ready for the next step.'}</p></div>}
+        </div>
+      </div>
+      <div className="mb-6"><div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between"><div><div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-blue-200"><Zap size={13}/> Active track</div><h2 className="mt-4 text-3xl font-black">{activeTitle}</h2><p className="mt-2 text-slate-300">Next unlock: <b className="text-white">{activeReward}</b> at <b className="text-white">{activeNext}</b>.</p></div><div className="min-w-[16rem] lg:w-80"><div className="flex justify-between text-sm font-bold"><span>{activeCount} qualified</span><span>{activeNext}</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#2F8CFF]" style={{width:Math.min(100,(activeCount/Math.max(1,activeNext))*100)+'%'}}/></div><p className="mt-2 text-xs text-slate-400">{Math.max(0,activeNext-activeCount)} more to the next unlock</p></div></div></div><div className="grid gap-5 lg:grid-cols-3">
         <RewardCard
           icon={<Users size={23}/>}
           eyebrow="Free User Reward"
