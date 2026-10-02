@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { comparePriceOffers } from '../lib/advisor/price-intelligence.ts';
+import { comparePriceOffers, getPurchaseRecommendations } from '../lib/advisor/price-intelligence.ts';
 
 const base = {
   currency: 'GBP',
@@ -63,6 +63,11 @@ result = comparePriceOffers([
 ], 30, 'm');
 assert.equal(result[0].lowest?.retailer, 'B');
 assert.equal(result[0].lowest?.totalWithExtras, 69);
+assert.equal(result[0].lowestCostBasis, 'confirmed_total');
+assert.equal(result[0].lowestTotalWithExtras, 69);
+const recommendations = getPurchaseRecommendations(result);
+assert.equal(recommendations[0]?.costBasis, 'confirmed_total');
+assert.equal(recommendations[0]?.totalWithExtras, 69);
 
 result = comparePriceOffers([
   offer('22mm copper pipe 10 x 3m roll', 'A', 60, { packQuantity: 10, packCoverage: 30, packCoverageUnit: 'm', availability: 'in_stock', shipping: 5, shippingScope: 'unknown' }),
