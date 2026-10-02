@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+function rewardMonths(count:number){
+ if(count===2)return 12;
+ if(count===4)return 6;
+ if(count>=8 && (count-8)%6===0)return 12;
+ if(count>=10 && (count-10)%6===0)return 6;
+ return 0;
+}
 function nextAnnualMilestone(count:number){
- if(count<2)return 2;
- if(count<4)return 4;
- if(count<8)return 8;
- const offset=count-8;
- return offset%6===0?count+2:8+Math.ceil(offset/6)*6;
+ for(let n=count+1;n<=count+100;n++)if(rewardMonths(n)>0)return n;
+ return null;
 }
 export async function GET(req:Request){
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return NextResponse.json({error:'Authentication required'},{status:401});
