@@ -110,6 +110,7 @@ async function searchBuildWatchPrices(query: string): Promise<PriceQuote[]> {
         observedAt: String(offer?.scraped_at || new Date().toISOString()),
         sourceType: 'approved_aggregator',
         confidence: 'medium',
+        taxIncluded: true,
         availability: offer?.in_stock === true ? 'in_stock' : offer?.in_stock === false ? 'out_of_stock' : 'unknown',
       });
     }
@@ -140,7 +141,9 @@ function normalize(item: any): PriceQuote | null {
     packQuantity: Number.isFinite(packQuantity) && packQuantity > 0 ? packQuantity : undefined,
     shipping: Number.isFinite(shipping) && shipping >= 0 ? shipping : undefined,
     tax: Number.isFinite(tax) && tax >= 0 ? tax : undefined,
-    totalWithExtras: Number.isFinite(shipping) && shipping >= 0 || Number.isFinite(tax) && tax >= 0 ? price + (Number.isFinite(shipping) && shipping >= 0 ? shipping : 0) + (Number.isFinite(tax) && tax >= 0 ? tax : 0) : undefined,
+    shippingScope,
+    taxIncluded,
+    totalWithExtras: undefined,
     observedAt: String(item?.observedAt ?? item?.observed_at ?? item?.checkedAt ?? new Date().toISOString()),
     sourceType: ['retailer_api','merchant_feed','approved_aggregator'].includes(item?.sourceType) ? item.sourceType : 'approved_aggregator',
     confidence: ['high','medium','low'].includes(item?.confidence) ? item.confidence : 'medium',
