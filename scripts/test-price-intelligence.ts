@@ -51,6 +51,13 @@ assert.equal(result[0].lowest?.retailer, 'A');
 assert.equal(result[0].requestedPurchaseTotals?.find(x => x.retailer === 'B')?.total, 62);
 
 result = comparePriceOffers([
+  offer('22mm copper pipe 10 x 3m roll', 'A', 60, { packQuantity: 10, packCoverage: 30, packCoverageUnit: 'm', unit: '30m roll', availability: 'in_stock' }),
+  offer('22mm copper pipe 30m roll', 'B', 75, { packCoverage: 30, packCoverageUnit: 'm', unit: '30m roll', availability: 'in_stock' }),
+], 30, 'm');
+assert.equal(result[0].comparable, true, 'pack coverage unit must support comparable offers even when unit labels contain pack text');
+assert.equal(result[0].lowest?.retailer, 'A');
+
+result = comparePriceOffers([
   offer('22mm copper pipe 10 x 3m roll', 'A', 60, { packQuantity: 10, packCoverage: 30, packCoverageUnit: 'm', availability: 'in_stock' }),
   offer('22mm copper pipe 30m roll', 'B', 75, { packCoverage: 30, packCoverageUnit: 'm', availability: 'out_of_stock' }),
 ], 30, 'm');
