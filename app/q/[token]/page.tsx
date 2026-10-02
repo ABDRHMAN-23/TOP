@@ -12,11 +12,11 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
     const admin = createAdminClient();
     const { data } = await admin
       .from('quotes')
-      .select('id,user_id,quote_number,client_name,client_email,client_phone,client_address,items,subtotal,vat_rate,vat_amount,discount,total,currency,status,template,language,notes,created_at')
+      .select('id,user_id,quote_number,client_name,client_email,client_phone,client_address,items,subtotal,vat_rate,vat_amount,discount,total,currency,status,template,language,notes,created_at,viewed_at')
       .eq('public_token', token)
       .maybeSingle();
     quote = data;
-    if (quote?.id && quote.status !== 'accepted') await admin.from('quotes').update({ viewed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', quote.id);
+    if (quote?.id && !quote.viewed_at && quote.status !== 'accepted') { const now = new Date().toISOString(); await admin.from('quotes').update({ viewed_at: now }).eq('id', quote.id).is('viewed_at', null); }
     if (quote?.user_id) {
       const { data: profile } = await admin
         .from('business_profiles')
