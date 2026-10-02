@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Mail } from 'lucide-react';
 
-function Brand(){return <img src="/logo.webp" alt="QUVOTO" className="h-14 w-auto"/>;}
+function Brand(){return <QuvotoLogo className="h-14 w-auto"/>;}
 import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage(){
