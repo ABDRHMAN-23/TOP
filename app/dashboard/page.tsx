@@ -23,7 +23,7 @@ export default async function DashboardPage() {
   const rewardLabel = rewardTrack === 'annual' ? 'Annual reward' : rewardTrack === 'monthly' ? 'Monthly reward' : 'Free-user reward';
   const isTeam = subscription?.plan === 'team' && ['active','trialing'].includes(subscription.status || '');
 
-    const { data: quotes } = await supabase
+  const { data: quotes } = await supabase
     .from('quotes')
     .select('id, quote_number, client_name, client_email, total, currency, status, created_at, public_token')
     .order('created_at', { ascending: false })
@@ -41,6 +41,7 @@ export default async function DashboardPage() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(20);
+
   return <main className="min-h-screen bg-[#f7faff]">
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
@@ -49,7 +50,9 @@ export default async function DashboardPage() {
           <a href="/advisor" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Advisor</a>
           <a href="/settings" className="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-3.5 text-sm font-bold text-slate-600"><Settings size={16}/><span className="hidden sm:inline">Settings</span></a>
           {isTeam && <a href="/team" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Team</a>}
-          <a href="/rewards" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Rewards</a><a href="/workspace" className="hidden min-h-11 items-center rounded-xl border border-slate-200 px-3.5 text-sm font-bold text-slate-600 sm:inline-flex">Workspace</a><a href="/app" className="flex min-h-11 items-center gap-2 rounded-xl bg-[#1769E0] px-3.5 text-sm font-bold text-white"><Plus size={16}/><span>New quote</span></a>
+          <a href="/rewards" className="flex min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0]"><span className="hidden sm:inline">Rewards</span><span className="sm:hidden">🎁</span></a>
+          <a href="/workspace" className="hidden min-h-11 items-center rounded-xl border border-slate-200 px-3.5 text-sm font-bold text-slate-600 sm:inline-flex">Workspace</a>
+          <a href="/app" className="flex min-h-11 items-center gap-2 rounded-xl bg-[#1769E0] px-3.5 text-sm font-bold text-white"><Plus size={16}/><span className="hidden sm:inline">New quote</span><span className="sm:hidden">New</span></a>
         </div>
       </div>
     </header>
