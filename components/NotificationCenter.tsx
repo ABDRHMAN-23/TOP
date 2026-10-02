@@ -26,6 +26,7 @@ export default function NotificationCenter(){
     const refreshTimer=window.setInterval(load,30000);
     const onVisible=()=>{if(document.visibilityState==='visible')load()};
     document.addEventListener('visibilitychange',onVisible);
+    if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
     const vapidKey=process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     const standalone=window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone===true;
     const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
@@ -34,7 +35,6 @@ export default function NotificationCenter(){
       setPrompt(true);localStorage.setItem('quvoto_notification_prompt_seen','1');
     }
     if(pushReady && Notification.permission==='granted') ensureSubscription();
-    if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
     return()=>{window.clearInterval(refreshTimer);document.removeEventListener('visibilitychange',onVisible)};
   },[]);
 
