@@ -248,13 +248,13 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
       const effectiveUnitPrice = purchaseTotal !== undefined && projectQuantity
         ? purchaseTotal / projectQuantity
         : undefined;
-      const shippingCost = purchaseTotal !== undefined && offer.shipping !== undefined
+      const shippingCost = purchaseTotal !== undefined && offer.shipping !== undefined && offer.shippingScope !== 'unknown'
         ? offer.shippingScope === 'pack' && purchasePackCount ? offer.shipping * purchasePackCount : offer.shipping
         : undefined;
       const taxCost = purchaseTotal !== undefined && offer.tax !== undefined && offer.taxIncluded === false
         ? offer.tax
         : undefined;
-      const totalWithExtras = purchaseTotal !== undefined && (shippingCost !== undefined || taxCost !== undefined)
+      const totalWithExtras = purchaseTotal !== undefined && (offer.shipping === undefined || offer.shippingScope !== 'unknown') && (shippingCost !== undefined || taxCost !== undefined)
         ? purchaseTotal + (shippingCost ?? 0) + (taxCost ?? 0)
         : undefined;
       return { ...offer, purchaseTotal, purchasePackCount, effectiveUnitPrice, totalWithExtras };
@@ -262,7 +262,7 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
 
     const sorted = [...pricedOffers].sort((a, b) => {
       const stockRank = (a.availability === 'in_stock' ? 0 : a.availability === 'unknown' ? 1 : 2) - (b.availability === 'in_stock' ? 0 : b.availability === 'unknown' ? 1 : 2);
-      return stockRank || purchaseCost(a) - purchaseCost(b) || a.price - b.price;
+      return purchaseCost(a) - purchaseCost(b) || stockRank || a.price - b.price;
     });
     const purchasable = sorted.filter((offer) => offer.availability !== 'out_of_stock');
     const lowest = purchasable[0] || sorted[0];
