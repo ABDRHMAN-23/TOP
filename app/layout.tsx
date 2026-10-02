@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import InstallPrompt from '@/components/InstallPrompt';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
@@ -47,5 +48,5 @@ export const metadata: Metadata = {
 };
 
 export default function Layout({children}:{children:React.ReactNode}) {
-  return <html lang="en"><body className={inter.className}>{children}</body></html>;
+  return <html lang="en"><body className={inter.className}>{children}<InstallPrompt/></body></html>;
 }
