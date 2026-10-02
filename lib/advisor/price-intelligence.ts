@@ -61,10 +61,10 @@ async function fetchBuildWatch(path: string) {
 function normalizeUnit(value?: string): string | undefined {
   const unit = value?.trim().toLowerCase();
   if (!unit) return undefined;
-  if (/^(m|metre|metres|meter|meters)$/.test(unit)) return 'm';
-  if (/^(kg|kilogram|kilograms)$/.test(unit)) return 'kg';
-  if (/^(l|litre|litres|liter|liters)$/.test(unit)) return 'l';
-  if (/^(pc|pcs|piece|pieces|unit|units)$/.test(unit)) return 'pcs';
+  if (/\b(m|metre|metres|meter|meters)\b/.test(unit)) return 'm';
+  if (/\b(kg|kilogram|kilograms)\b/.test(unit)) return 'kg';
+  if (/\b(l|litre|litres|liter|liters)\b/.test(unit)) return 'l';
+  if (/\b(pc|pcs|piece|pieces|unit|units)\b/.test(unit)) return 'pcs';
   return unit;
 }
 
@@ -118,7 +118,15 @@ function specMatchScore(query: string, productName: string) {
   const required = extractSpecs(query);
   if (!required.length) return 1;
   const actual = new Set(extractSpecs(productName));
-  const matched = required.filter((spec) => actual.has(spec)).length;
+  const matched = required.filter((spec) => {
+    if (actual.has(spec)) return true;
+    const match = spec.match(/^(\\d+(?:\\.\\d+)?)(m|kg|l)$/);
+    if (!match) return false;
+    const requiredValue = Number(match[1]);
+    const requiredUnit = match[2];
+    const pack = parsePackDetails(undefined, productName);
+    return pack.coverageUnit === requiredUnit && pack.coverage !== undefined && Math.abs(pack.coverage - requiredValue) < 0.000001;
+  }).length;
   return matched / required.length;
 }
 
