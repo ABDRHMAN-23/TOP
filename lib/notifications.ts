@@ -7,6 +7,7 @@ type NotificationInput = {
   type?: string;
   link?: string;
   tag?: string;
+  dedupeKey?: string;
 };
 
 export async function notifyUser(userId: string, input: NotificationInput) {
@@ -17,6 +18,7 @@ export async function notifyUser(userId: string, input: NotificationInput) {
     body: input.body,
     type: input.type || 'account',
     link: input.link || null,
+    dedupe_key: input.dedupeKey || null,
   }).select('id').single();
 
   if (error) return { notificationId: null, push: { sent: 0, skipped: true }, error };
