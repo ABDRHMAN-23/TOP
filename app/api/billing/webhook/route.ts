@@ -21,6 +21,24 @@ export async function POST(req:Request){
  const variant=String(a.variant_id||''); const plan=variant===process.env.LEMON_SQUEEZY_TEAM_VARIANT_ID?'team':variant===process.env.LEMON_SQUEEZY_PRO_VARIANT_ID?'pro':variant===process.env.LEMON_SQUEEZY_STARTER_VARIANT_ID?'starter':'free';
  const active=['subscription_created','subscription_updated','subscription_resumed','subscription_payment_success'].includes(event);
  const canceled=['subscription_cancelled','subscription_expired'].includes(event);
- await admin.from('subscriptions').upsert({user_id:uid,plan,status:active?'active':canceled?'expired':String(a.status||'active'),ls_subscription_id:String(body?.data?.id||''),ls_customer_id:String(a.customer_id||''),current_period_start:a.renews_at?new Date(a.created_at||Date.now()).toISOString():null,current_period_end:a.renews_at?new Date(a.renews_at).toISOString():null,cancel_at_period_end:Boolean(a.cancelled),updated_at:new Date().toISOString()},{onConflict:'user_id'});
+ const {data:existing}=await admin.from('subscriptions').select('current_period_start,current_period_end').eq('user_id',uid).maybeSingle();
+ const nextPeriodStart=event==='subscription_created'
+   ? (a.created_at?new Date(a.created_at).toISOString():null)
+   : event==='subscription_payment_success'
+     ? (existing?.current_period_end || existing?.current_period_start || null)
+     : (existing?.current_period_start || (a.created_at?new Date(a.created_at).toISOString():null));
+ const {error:upsertError}=await admin.from('subscriptions').upsert({
+   user_id:uid,
+   plan,
+   status:active?'active':canceled?'expired':String(a.status||'active'),
+   ls_subscription_id:String(body?.data?.id||''),
+   ls_customer_id:String(a.customer_id||''),
+   current_period_start:nextPeriodStart,
+   current_period_end:a.renews_at?new Date(a.renews_at).toISOString():(existing?.current_period_end || null),
+   cancel_at_period_end:Boolean(a.cancelled),
+   trial_ends_at:a.trial_ends_at?new Date(a.trial_ends_at).toISOString():null,
+   updated_at:new Date().toISOString()
+ },{onConflict:'user_id'});
+ if(upsertError) return NextResponse.json({error:'Could not update subscription.'},{status:500});
  return NextResponse.json({ok:true});
 }
