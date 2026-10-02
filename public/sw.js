@@ -1,13 +1,13 @@
-const CACHE='quvoto-shell-v11';
+const CACHE='quvoto-shell-v12';
 const OFFLINE='/offline.html';
 const APP='/app';
+const LOGO='/logo.webp?v=15';
 
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
     const cache=await caches.open(CACHE);
     await cache.add(OFFLINE);
-    await cache.add('/quvoto-icon.svg?v=1').catch(()=>{});
-    await cache.add('/logo.svg?v=13').catch(()=>{});
+    await cache.add(LOGO).catch(()=>{});
     await cache.add(APP).catch(()=>{});
     await self.skipWaiting();
   })());
@@ -48,8 +48,8 @@ self.addEventListener('push',event=>{
   try{if(event.data)data={...data,...event.data.json()}}catch(_){}
   event.waitUntil(self.registration.showNotification(data.title,{
     body:data.body,
-    icon:'/quvoto-icon.svg?v=14',
-    badge:'/quvoto-icon.svg?v=14',
+    icon:LOGO,
+    badge:LOGO,
     data:{link:data.link||'/'},
     tag:data.tag||'quvoto-update',
     renotify:true
