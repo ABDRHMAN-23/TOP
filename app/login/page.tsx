@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Mail } from 'lucide-react';
 
-function Brand(){return <div className="flex items-center gap-3"><img src="/logo.svg" alt="QUVOTO" className="h-12 w-12"/><div><div className="text-2xl font-black tracking-[-0.05em] text-[#0A1E3D]">QUVOTO</div><div className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#1769E0]">Speak. Quote. Done.</div></div></div>;}
+function Brand(){return <img src="/logo.svg" alt="QUVOTO" className="h-14 w-auto"/>;}
 import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage(){
