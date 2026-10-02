@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronRight, CircleAlert, FileText, Loader2, Lock, Mic, Plus, RotateCcw, Save, Square, Trash2, Camera, Calculator } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
-type Item = { description: string; quantity: number; unit: string; price: number };
+type Item = { description: string; quantity: number | null; unit: string; price: number | null };
 type Analysis = {
   transcript: string;
   client?: { name?: string; email?: string; phone?: string; address?: string };
@@ -139,7 +139,7 @@ export default function AppPage() {
       setClientEmail(data.client?.email || '');
       setClientPhone(data.client?.phone || '');
       setClientAddress(data.client?.address || '');
-      setItems(Array.isArray(data.items) && data.items.length ? data.items : [{ description: '', quantity: 1, unit: 'item', price: 0 }]);
+      setItems(Array.isArray(data.items) && data.items.length ? data.items : [{ description: '', quantity: 1, unit: 'item', price: null }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Analysis failed.');
     } finally {
@@ -286,9 +286,9 @@ export default function AppPage() {
                     {items.map((item, index) => (
                       <div key={index} className="grid gap-2 p-4 sm:grid-cols-[1.5fr_.6fr_.7fr_.8fr_auto]">
                         <input value={item.description} onChange={(e) => updateItem(index,'description',e.target.value)} className="rounded-lg border p-2.5" placeholder="Description"/>
-                        <input type="number" min="0" value={item.quantity} onChange={(e) => updateItem(index,'quantity',Number(e.target.value))} className="rounded-lg border p-2.5" />
+                        <input type="number" min="0" value={item.quantity ?? ''} onChange={(e) => updateItem(index,'quantity',e.target.value === '' ? null : Number(e.target.value))} className="rounded-lg border p-2.5" />
                         <input value={item.unit} onChange={(e) => updateItem(index,'unit',e.target.value)} className="rounded-lg border p-2.5" placeholder="unit"/>
-                        <input type="number" min="0" step="0.01" value={item.price} onChange={(e) => updateItem(index,'price',Number(e.target.value))} className="rounded-lg border p-2.5" placeholder="£"/>
+                        <input type="number" min="0" step="0.01" value={item.price ?? ''} onChange={(e) => updateItem(index,'price',e.target.value === '' ? null : Number(e.target.value))} className="rounded-lg border p-2.5" placeholder="£"/>
                         <button onClick={() => removeItem(index)} className="rounded-lg p-2.5 text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={17}/></button>
                       </div>
                     ))}
