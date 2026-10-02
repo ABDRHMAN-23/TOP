@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { notifyUser } from '@/lib/notifications';
 
 async function auth() {
   const supabase = await createClient();
@@ -51,7 +52,9 @@ export async function POST(req:Request) {
     const days=Math.max(0,Math.min(365,Number(b.days||3)));
     const scheduled=new Date(Date.now()+days*86400000).toISOString();
     const {data,error}=await supabase.from('followups').insert({user_id:uid,quote_id:String(b.quote_id),scheduled_for:scheduled,channel:String(b.channel||'copy'),note:String(b.note||'Hi, just checking whether you have had a chance to review the quote.')}).select().single();
-    if(error)return NextResponse.json({error:error.message},{status:400}); return NextResponse.json(data);
+    if(error)return NextResponse.json({error:error.message},{status:400});
+    await notifyUser(uid,{title:'Follow-up scheduled',body:'Your follow-up for '+(data?.scheduled_for?new Date(data.scheduled_for).toLocaleDateString():'the scheduled date')+' is on your QUVOTO list.',type:'followup',link:'/workspace',tag:'followup-scheduled',dedupeKey:data?.id?'followup-scheduled:'+String(data.id):undefined});
+    return NextResponse.json(data);
   }
   if(action==='followup_done'){
     const {data,error}=await supabase.from('followups').update({status:'done',sent_at:new Date().toISOString()}).eq('id',String(b.id)).eq('user_id',uid).select().single();
@@ -64,7 +67,9 @@ export async function POST(req:Request) {
     let customerId:string|null=null;
     if(q.client_name){const {data:c}=await supabase.from('customers').upsert({user_id:uid,name:q.client_name,email:q.client_email,phone:q.client_phone,address:q.client_address,updated_at:new Date().toISOString()},{onConflict:'user_id,email,phone,name'}).select('id').single();customerId=c?.id||null;}
     const {data,error}=await supabase.from('jobs').insert({user_id:uid,customer_id:customerId,quote_id:q.id,title:String(b.title||('Job from '+q.client_name)),description:Array.isArray(q.notes)?q.notes.join('\n'):''}).select().single();
-    if(error)return NextResponse.json({error:error.message},{status:400}); return NextResponse.json(data);
+    if(error)return NextResponse.json({error:error.message},{status:400});
+    await notifyUser(uid,{title:'Job created',body:(data?.title||'Your accepted quote')+' is now in your QUVOTO jobs.',type:'job_created',link:'/workspace',tag:'job-created',dedupeKey:data?.id?'job-created:'+String(data.id):undefined});
+    return NextResponse.json(data);
   }
   if(action==='invoice'){
     const quoteId=String(b.quote_id||'');
@@ -72,7 +77,9 @@ export async function POST(req:Request) {
     if(!q||q.status!=='accepted')return NextResponse.json({error:'Only accepted quotes can become invoices.'},{status:400});
     const invoiceNumber='INV-'+new Date().toISOString().slice(0,7).replace('-','')+'-'+Math.random().toString(36).slice(2,7).toUpperCase();
     const {data,error}=await supabase.from('invoices').insert({user_id:uid,quote_id:q.id,invoice_number:invoiceNumber,amount:q.total,currency:q.currency}).select().single();
-    if(error)return NextResponse.json({error:error.message},{status:400}); return NextResponse.json(data);
+    if(error)return NextResponse.json({error:error.message},{status:400});
+    await notifyUser(uid,{title:'Invoice created',body:'Invoice '+invoiceNumber+' was created from the accepted quote.',type:'invoice_created',link:'/workspace',tag:'invoice-created',dedupeKey:data?.id?'invoice-created:'+String(data.id):undefined});
+    return NextResponse.json(data);
   }
   if(action==='duplicate'){
     const quoteId=String(b.quote_id||'');
