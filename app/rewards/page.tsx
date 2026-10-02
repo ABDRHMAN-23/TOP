@@ -73,7 +73,7 @@ export default function RewardsPage() {
     {celebrate && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1E3D]/60 p-5 backdrop-blur-sm"><div className="w-full max-w-md rounded-[2rem] bg-white p-7 text-center shadow-2xl"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#1769E0] text-white shadow-lg"><Trophy size={30}/></div><p className="mt-5 text-xs font-black uppercase tracking-[.2em] text-[#1769E0]">Milestone unlocked</p><h2 className="mt-2 text-3xl font-black">You earned a reward.</h2><p className="mt-3 text-slate-500">Your referral progress just crossed a milestone. Keep going — the next unlock is already waiting.</p><div className="mt-5 rounded-2xl bg-[#1769E0]/5 p-4"><p className="font-black">{celebrate.reward_type==='free_year'?'1 free year':celebrate.reward_type==='free_6_months'?'6 free months':'1 free month'} · {celebrate.plan}</p><p className="mt-1 text-xs text-slate-500">Milestone {celebrate.milestone}</p></div><button onClick={()=>setCelebrate(null)} className="mt-6 w-full rounded-xl bg-[#1769E0] py-3.5 font-bold text-white">See my next milestone</button></div></div>}
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-8">
-        <a href="/dashboard" className="text-xl font-black tracking-[-.04em]">QUVOTO</a>
+        <a href="/dashboard" aria-label="QUVOTO home" className="inline-flex items-center"><img src="/logo.svg" alt="QUVOTO" className="h-10 w-auto"/></a>
         <a href="/workspace" className="inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold text-slate-600"><ArrowLeft size={16}/> Workspace</a>
       </div>
     </header>
