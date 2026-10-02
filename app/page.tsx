@@ -1,7 +1,8 @@
 import Link from 'next/link';
+import QuvotoLogo from '@/components/QuvotoLogo';
 import { ArrowRight, Check, Mic, FileText, ShieldCheck } from 'lucide-react';
 
-function Brand({ tagline = false }: { tagline?: boolean }) { return <img src="/logo.webp" alt="QUVOTO" className="h-11 w-auto" />; }
+function Brand({ tagline = false }: { tagline?: boolean }) { return <QuvotoLogo className="h-11 w-auto" />; }
 
 const steps = [
   ['01','Talk','Record a natural field note in seconds.'],
