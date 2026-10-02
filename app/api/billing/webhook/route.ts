@@ -10,8 +10,18 @@ function verify(raw:string, signature:string){
 function addMonths(value:string|null, months:number){const d=value?new Date(value):new Date();d.setMonth(d.getMonth()+months);return d.toISOString();}
 function isAnnualVariant(variant:string){return [process.env.LEMON_SQUEEZY_STARTER_ANNUAL_VARIANT_ID,process.env.LEMON_SQUEEZY_PRO_ANNUAL_VARIANT_ID,process.env.LEMON_SQUEEZY_TEAM_ANNUAL_VARIANT_ID].filter(Boolean).includes(variant);}
 
-// Annual referral milestones: 2 => +12 months, 4 total => +6 months, 8 total => +12 months.
-function rewardMonthsForCount(count:number){if(count===2)return 12;if(count===4)return 6;if(count===8)return 12;return 0;}
+// Annual referral milestones: 2 => +12 months, 4 total => +6 months, 8 total => +12 months, then repeat.
+function annualRewardMonthsForCount(count:number){
+ if(count===2)return 12;
+ if(count===4)return 6;
+ if(count>=8 && (count-8)%6===0)return 12;
+ if(count>=10 && (count-10)%6===0)return 6;
+ return 0;
+}
+// Monthly referral milestones: 1 => +1 month, then every 3 additional qualified referrals.
+function monthlyRewardMonthsForCount(count:number){
+ return count>=1 && (count-1)%3===0 ? 1 : 0;
+}
 
 async function qualifyForUser(admin:any, uid:string){
  const {data:refs}=await admin.from('referrals').select('*').or('referrer_user_id.eq.'+uid+',referred_user_id.eq.'+uid).in('status',['signed_up','subscribed','paid','qualified','rewarded']);
@@ -20,18 +30,79 @@ async function qualifyForUser(admin:any, uid:string){
    admin.from('subscriptions').select('plan,status,billing_interval,current_period_end').eq('user_id',ref.referrer_user_id).maybeSingle(),
    admin.from('subscriptions').select('plan,status,billing_interval,current_period_end').eq('user_id',ref.referred_user_id).maybeSingle()
   ]);
-  const referrerActive=referrerSub&&referrerSub.status==='active'&&referrerSub.billing_interval==='year'&&['starter','pro','team'].includes(referrerSub.plan);
-  const referredPaid=referredSub&&referredSub.status==='active'&&referredSub.billing_interval==='year'&&['starter','pro','team'].includes(referredSub.plan);
-  if(!referrerActive||!referredPaid||referrerSub.plan!==referredSub.plan)continue;
-  if(ref.status!=='qualified'&&ref.status!=='rewarded')await admin.from('referrals').update({status:'qualified',qualifying_plan:referrerSub.plan,qualifying_interval:'year',qualified_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',ref.id);
-  const {count}=await admin.from('referrals').select('id',{count:'exact',head:true}).eq('referrer_user_id',ref.referrer_user_id).eq('qualifying_plan',referrerSub.plan).eq('qualifying_interval','year').in('status',['qualified','rewarded']);
-  const qualifiedCount=count||0; const rewardMonths=rewardMonthsForCount(qualifiedCount); if(!rewardMonths)continue;
-  const {data:existing}=await admin.from('referral_rewards').select('id').eq('user_id',ref.referrer_user_id).eq('plan',referrerSub.plan).eq('billing_interval','year').eq('milestone',qualifiedCount).maybeSingle(); if(existing)continue;
+
+  const referrerActive=referrerSub&&referrerSub.status==='active'&&['starter','pro','team'].includes(referrerSub.plan);
+  const referredActive=referredSub&&referredSub.status==='active'&&['starter','pro','team'].includes(referredSub.plan);
+  if(!referrerActive||!referredActive||referrerSub.plan!==referredSub.plan||referrerSub.billing_interval!==referredSub.billing_interval)continue;
+
+  const interval=referrerSub.billing_interval;
+  if(interval!=='month'&&interval!=='year')continue;
+
+  if(ref.status!=='qualified'&&ref.status!=='rewarded'){
+   await admin.from('referrals').update({
+    status:'qualified',
+    qualifying_plan:referrerSub.plan,
+    qualifying_interval:interval,
+    qualified_at:new Date().toISOString(),
+    updated_at:new Date().toISOString()
+   }).eq('id',ref.id);
+  }
+
+  const {count}=await admin.from('referrals').select('id',{count:'exact',head:true})
+   .eq('referrer_user_id',ref.referrer_user_id)
+   .eq('qualifying_plan',referrerSub.plan)
+   .eq('qualifying_interval',interval)
+   .in('status',['qualified','rewarded']);
+
+  const qualifiedCount=count||0;
+  const rewardMonths=interval==='year'
+   ? annualRewardMonthsForCount(qualifiedCount)
+   : monthlyRewardMonthsForCount(qualifiedCount);
+
+  if(!rewardMonths)continue;
+
+  const {data:existing}=await admin.from('referral_rewards').select('id')
+   .eq('user_id',ref.referrer_user_id)
+   .eq('plan',referrerSub.plan)
+   .eq('billing_interval',interval)
+   .eq('milestone',qualifiedCount)
+   .maybeSingle();
+
+  if(existing)continue;
+
   const now=new Date().toISOString();
-  const {error:rewardError}=await admin.from('referral_rewards').insert({user_id:ref.referrer_user_id,referral_id:ref.id,milestone:qualifiedCount,reward_type:rewardMonths===12?'free_year':'free_6_months',plan:referrerSub.plan,billing_interval:'year',status:'earned',earned_at:now}); if(rewardError)continue;
-  await admin.from('subscriptions').update({current_period_end:addMonths(referrerSub.current_period_end,rewardMonths),updated_at:now}).eq('user_id',ref.referrer_user_id);
+  const rewardType=interval==='year'
+   ? (rewardMonths===12?'free_year':'free_6_months')
+   : 'free_month';
+
+  const {error:rewardError}=await admin.from('referral_rewards').insert({
+   user_id:ref.referrer_user_id,
+   referral_id:ref.id,
+   milestone:qualifiedCount,
+   reward_type:rewardType,
+   plan:referrerSub.plan,
+   billing_interval:interval,
+   status:'earned',
+   earned_at:now
+  });
+  if(rewardError)continue;
+
+  await admin.from('subscriptions').update({
+   current_period_end:addMonths(referrerSub.current_period_end,rewardMonths),
+   updated_at:now
+  }).eq('user_id',ref.referrer_user_id);
+
   await admin.from('referrals').update({status:'rewarded',updated_at:now}).eq('id',ref.id);
-  await admin.from('referral_events').insert({referral_id:ref.id,event_type:'reward_earned',metadata:{milestone:qualifiedCount,reward_months:rewardMonths,plan:referrerSub.plan,billing_interval:'year'}});
+  await admin.from('referral_events').insert({
+   referral_id:ref.id,
+   event_type:'reward_earned',
+   metadata:{
+    milestone:qualifiedCount,
+    reward_months:rewardMonths,
+    plan:referrerSub.plan,
+    billing_interval:interval
+   }
+  });
  }
 }
 export async function POST(req:Request){
