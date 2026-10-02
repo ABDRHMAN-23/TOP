@@ -350,7 +350,7 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
     const lowest = [...purchasable].sort((a, b) => calculatedCost(a) - calculatedCost(b) || a.price - b.price)[0];
     const highest = sorted[sorted.length - 1];
     const average = sorted.reduce((sum, item) => sum + item.price, 0) / sorted.length;
-    const spreadPercent = lowest.price > 0 ? ((highest.price - lowest.price) / lowest.price) * 100 : undefined;
+    const spreadPercent = lowest && lowest.price > 0 ? ((highest.price - lowest.price) / lowest.price) * 100 : undefined;
     const lowestPackCount = lowest?.purchasePackCount;
     const lowestPurchaseTotal = lowest?.purchaseTotal;
     const lowestTotalWithExtras = lowest?.totalWithExtras;
