@@ -42,9 +42,9 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 },
   },
   icons: {
-    icon: '/icon.webp?v=9',
-    shortcut: '/icon.webp?v=9',
-    apple: '/icon.webp?v=9',
+    icon: '/icon.svg?v=13',
+    shortcut: '/icon.svg?v=13',
+    apple: '/icon.svg?v=13',
   },
   appleWebApp: {
     capable: true,
