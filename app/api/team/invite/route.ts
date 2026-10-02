@@ -16,6 +16,8 @@ export async function POST(req:Request){
  if(new Date(invite.expires_at).getTime()<Date.now())return NextResponse.json({error:'This invitation has expired.'},{status:410});
  if(String(user.email||'').toLowerCase()!==String(invite.email||'').toLowerCase())return NextResponse.json({error:'Sign in with the email address that received this invitation.'},{status:403});
  if(user.id===invite.owner_id)return NextResponse.json({error:'The owner cannot join their own team as a member.'},{status:400});
+ const {data:ownerSub}=await admin.from('subscriptions').select('plan,status').eq('user_id',invite.owner_id).maybeSingle();
+ if(ownerSub?.plan!=='team'||!['active','trialing'].includes(ownerSub.status||''))return NextResponse.json({error:'This Team invitation is no longer active.'},{status:410});
  const {count}=await admin.from('team_memberships').select('*',{count:'exact',head:true}).eq('owner_id',invite.owner_id);
  if((count||0)>=2)return NextResponse.json({error:'This Team already has three users.'},{status:409});
  const {error:insertError}=await admin.from('team_memberships').insert({owner_id:invite.owner_id,member_id:user.id,role:'member'});
