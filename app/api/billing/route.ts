@@ -7,9 +7,11 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
 
+  const { data: membership } = await supabase.from('team_memberships').select('owner_id').eq('member_id', user.id).neq('owner_id', user.id).maybeSingle();
+  const billingOwnerId = membership?.owner_id || user.id;
   const [{ data: subscription }, { data: usage }] = await Promise.all([
-    supabase.from('subscriptions').select('plan,status,current_period_end').eq('user_id', user.id).maybeSingle(),
-    supabase.from('usage').select('quotes_count,period_start').eq('user_id', user.id).order('period_start', { ascending: false }).limit(1).maybeSingle()
+    supabase.from('subscriptions').select('plan,status,current_period_end').eq('user_id', billingOwnerId).maybeSingle(),
+    supabase.from('usage').select('quotes_count,period_start').eq('user_id', billingOwnerId).order('period_start', { ascending: false }).limit(1).maybeSingle()
   ]);
 
   const plan = normalizePlan(subscription?.status === 'active' || subscription?.status === 'trialing' ? subscription?.plan : 'free');
