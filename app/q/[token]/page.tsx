@@ -31,7 +31,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
           body: (viewed.quote_number ? 'Quote #' + viewed.quote_number : 'Your quote') + (viewed.client_name ? ' for ' + viewed.client_name : '') + ' was just viewed.',
           type: 'quote_viewed',
           link: '/workspace',
-          tag: 'quote-viewed'
+          tag: 'quote-viewed', dedupeKey: 'quote-viewed:' + viewed.id
         });
       }
     }
