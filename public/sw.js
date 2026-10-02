@@ -1,4 +1,4 @@
-const CACHE='quvoto-shell-v7';
+const CACHE='quvoto-shell-v8';
 const OFFLINE='/offline.html';
 const APP='/app';
 
@@ -6,8 +6,8 @@ self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
     const cache=await caches.open(CACHE);
     await cache.add(OFFLINE);
-    await cache.add('/icon.svg').catch(()=>{});
-    await cache.add('/logo.svg').catch(()=>{});
+    await cache.add('/icon.webp').catch(()=>{});
+    await cache.add('/logo.webp').catch(()=>{});
     await cache.add(APP).catch(()=>{});
     await self.skipWaiting();
   })());
@@ -48,8 +48,8 @@ self.addEventListener('push',event=>{
   try{if(event.data)data={...data,...event.data.json()}}catch(_){}
   event.waitUntil(self.registration.showNotification(data.title,{
     body:data.body,
-    icon:'/icon.svg',
-    badge:'/icon.svg',
+    icon:'/icon.webp',
+    badge:'/icon.webp',
     data:{link:data.link||'/'},
     tag:data.tag||'quvoto-update',
     renotify:true
