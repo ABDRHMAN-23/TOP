@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error && data.user) {
-      const consentMatch = request.headers.get('cookie')?.match(/(?:^|;\\s*)quvoto_legal_consent=([^;]+)/);
+      const consentMatch = request.headers.get('cookie')?.match(/(?:^|;\s*)quvoto_legal_consent=([^;]+)/);
       const consentVersion = consentMatch?.[1] ? decodeURIComponent(consentMatch[1]) : null;
       if (consentVersion !== '2026-10-02') {
         await supabase.auth.signOut();
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
       }
       const admin = createAdminClient();
       await admin.from('legal_consents').insert({user_id:data.user.id,terms_version:'2026-10-02',privacy_version:'2026-10-02',source:'login',user_agent:request.headers.get('user-agent')});
-      const refCode = request.headers.get('cookie')?.match(/(?:^|;\\s*)quvoto_ref=([^;]+)/)?.[1];
+      const refCode = request.headers.get('cookie')?.match(/(?:^|;\s*)quvoto_ref=([^;]+)/)?.[1];
       if (refCode) {
         const admin=createAdminClient();
         const {data:rc}=await admin.from('referral_codes').select('id,user_id').eq('code',decodeURIComponent(refCode)).eq('active',true).maybeSingle();
