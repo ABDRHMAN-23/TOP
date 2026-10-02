@@ -351,14 +351,16 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
     const highest = sorted[sorted.length - 1];
     const average = sorted.reduce((sum, item) => sum + item.price, 0) / sorted.length;
     const spreadPercent = lowest.price > 0 ? ((highest.price - lowest.price) / lowest.price) * 100 : undefined;
-    const lowestPackCount = lowest.purchasePackCount;
-    const lowestPurchaseTotal = lowest.purchaseTotal;
-    const lowestTotalWithExtras = lowest.totalWithExtras;
-    const lowestCostBasis = canCompareConfirmedTotals && lowest.totalWithExtras !== undefined
-      ? 'confirmed_total' as const
-      : lowest.purchaseTotal !== undefined
-        ? 'project_purchase' as const
-        : 'listed_price' as const;
+    const lowestPackCount = lowest?.purchasePackCount;
+    const lowestPurchaseTotal = lowest?.purchaseTotal;
+    const lowestTotalWithExtras = lowest?.totalWithExtras;
+    const lowestCostBasis = lowest
+      ? canCompareConfirmedTotals && lowest.totalWithExtras !== undefined
+        ? 'confirmed_total' as const
+        : lowest.purchaseTotal !== undefined
+          ? 'project_purchase' as const
+          : 'listed_price' as const
+      : undefined;
     const requestedPurchaseTotals = projectQuantity
       ? pricedOffers.filter((offer) => offer.purchaseTotal !== undefined).map((offer) => ({ retailer: offer.retailer, packs: offer.purchasePackCount || 0, total: offer.purchaseTotal || 0, currency: offer.currency, availability: offer.availability || 'unknown' }))
       : undefined;
