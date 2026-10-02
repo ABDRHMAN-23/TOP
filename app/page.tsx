@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, Check, Mic, FileText, ShieldCheck } from 'lucide-react';
 
-function Brand() { return <img src="/logo.svg" alt="QUVOTO" className="h-11 w-auto" />; }
+function Brand({ tagline = false }: { tagline?: boolean }) { return <img src="/logo.svg" alt="QUVOTO" className="h-11 w-auto" />; }
 
 const steps = [
   ['01','Talk','Record a natural field note in seconds.'],
