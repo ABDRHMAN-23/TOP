@@ -1,9 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, Check, Mic, FileText, ShieldCheck } from 'lucide-react';
 
-function Brand({ compact = false, tagline = false }: { compact?: boolean; tagline?: boolean }) {
-  return <div className={`flex items-center ${tagline ? 'gap-3' : 'gap-2.5'}`}><img src="/logo.svg" alt="QUVOTO" className={compact ? 'h-9 w-9' : 'h-11 w-11'} /><div className="leading-none"><span className="block text-[1.35rem] font-black tracking-[-0.045em] text-[#0A1E3D]">QUVOTO</span>{tagline && <span className="mt-1.5 block text-[9px] font-bold uppercase tracking-[0.22em] text-[#1769E0]">Speak. Quote. Done.</span>}</div></div>;
-}
+function Brand() { return <img src="/logo.svg" alt="QUVOTO" className="h-11 w-auto" />; }
 
 const steps = [
   ['01','Talk','Record a natural field note in seconds.'],
@@ -47,7 +45,7 @@ export default function Home() {
     <section className="relative overflow-hidden border-t border-[#1769E0]/10 bg-white">
       <div className="mx-auto grid max-w-6xl gap-12 px-5 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
         <div>
-          <div className="mb-7"><Brand tagline /></div><div className="inline-flex items-center gap-2 rounded-full border border-[#1769E0]/15 bg-[#1769E0]/5 px-3 py-1.5 text-xs font-bold text-[#1769E0]">Built for independent contractors</div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#1769E0]/15 bg-[#1769E0]/5 px-3 py-1.5 text-xs font-bold text-[#1769E0]">Built for independent contractors</div>
           <h1 className="mt-6 max-w-3xl text-5xl font-black leading-[.98] tracking-[-.04em] sm:text-7xl">Talk for 30 seconds.<br/><span className="text-[#1769E0]">Get a quote ready to send.</span></h1>
           <p className="mt-7 max-w-xl text-lg leading-8 text-slate-600">Capture the job while you are still on site. QUVOTO turns your field notes into structured, editable quote details without the admin grind.</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row"><Link href="/app" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1769E0] px-7 py-4 font-bold text-white shadow-lg shadow-blue-600/20">Create your first quote <ArrowRight size={18}/></Link><Link href="/pricing" className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-7 py-4 font-bold text-slate-800">See pricing</Link></div>
