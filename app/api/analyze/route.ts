@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-type ExtractedItem = { description?: string; quantity?: number; unit?: string; price?: number };
+type ExtractedItem = { description?: string; quantity?: number|null; unit?: string|null; price?: number|null };
 
 function normalizeExtraction(value: any, transcript: string) {
   const source = value?.result && typeof value.result === 'object' ? value.result : value;
@@ -39,7 +39,7 @@ async function extractWithGemma(transcript: string) {
 
   const schema = {
     client: { name: 'string|null', email: 'string|null', phone: 'string|null', address: 'string|null' },
-    items: [{ description: 'string', quantity: 'number', unit: 'string', price: 'number' }],
+    items: [{ description: 'string', quantity: 'number|null', unit: 'string|null', price: 'number|null' }],
     notes: ['string'],
     currency: 'GBP'
   };
