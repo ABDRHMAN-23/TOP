@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/admin';
 import DownloadPdf from './DownloadPdf';
 import AcceptQuote from './AcceptQuote';
+import { notifyUser } from '@/lib/notifications';
 
 export default async function PublicQuotePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -16,7 +17,24 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
       .eq('public_token', token)
       .maybeSingle();
     quote = data;
-    if (quote?.id && !quote.viewed_at && quote.status !== 'accepted') { const now = new Date().toISOString(); await admin.from('quotes').update({ viewed_at: now, status: quote.status === 'sent' ? 'viewed' : quote.status }).eq('id', quote.id).is('viewed_at', null); quote.viewed_at = now; if (quote.status === 'sent') quote.status = 'viewed'; }
+    if (quote?.id && !quote.viewed_at && quote.status !== 'accepted') {
+      const now = new Date().toISOString();
+      const { data: viewed } = await admin.from('quotes').update({
+        viewed_at: now,
+        status: quote.status === 'sent' ? 'viewed' : quote.status
+      }).eq('id', quote.id).is('viewed_at', null).select('id,user_id,quote_number,client_name').maybeSingle();
+      if (viewed) {
+        quote.viewed_at = now;
+        if (quote.status === 'sent') quote.status = 'viewed';
+        await notifyUser(viewed.user_id, {
+          title: 'Quote viewed',
+          body: (viewed.quote_number ? 'Quote #' + viewed.quote_number : 'Your quote') + (viewed.client_name ? ' for ' + viewed.client_name : '') + ' was just viewed.',
+          type: 'quote_viewed',
+          link: '/workspace',
+          tag: 'quote-viewed'
+        });
+      }
+    }
     if (quote?.user_id) {
       const { data: profile } = await admin
         .from('business_profiles')
