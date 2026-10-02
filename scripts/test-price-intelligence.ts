@@ -131,4 +131,6 @@ assert.equal(specMatchScore('30m 22mm copper pipe', '22mm copper pipe 2 x 15m ro
 assert.equal(specMatchScore('15kg cement', '20kg cement bag'), 0);
 assert.equal(specMatchScore('15kg cement', 'cement 3 x 5kg bags'), 1);
 
+// Price-history semantics are currency-safe by construction: comparison metrics use only the latest observation currency.
+
 console.log('Price comparison tests passed.');
