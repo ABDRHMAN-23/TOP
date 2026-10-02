@@ -27,7 +27,7 @@ export async function PATCH(req: Request) {
   if (status === 'sent') await notifyUser(user.id, {
     title: 'Quote sent',
     body: label + (data.client_name ? ' for ' + data.client_name : '') + ' is now marked as sent.',
-    type: 'quote_sent', link: '/workspace', tag: 'quote-sent'
+    type: 'quote_sent', link: '/workspace', tag: 'quote-sent', dedupeKey: 'quote-sent:' + id
   });
   if (status === 'accepted') await notifyUser(user.id, {
     title: 'Quote accepted 🎉',
