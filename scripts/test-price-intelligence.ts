@@ -65,6 +65,22 @@ assert.equal(result[0].lowest?.retailer, 'A');
 assert.equal(result[0].unavailableOffers?.[0]?.retailer, 'B');
 
 result = comparePriceOffers([
+  offer('22mm copper pipe 30m roll', 'A', 50, { packCoverage: 30, packCoverageUnit: 'm', availability: 'out_of_stock' }),
+  offer('22mm copper pipe 30m roll', 'B', 55, { packCoverage: 30, packCoverageUnit: 'm', availability: 'out_of_stock' }),
+], 30, 'm');
+assert.equal(result[0].comparable, true);
+assert.equal(result[0].lowest, undefined, 'all unavailable offers must not produce a purchasable lowest offer');
+assert.equal(getPurchaseRecommendations(result).length, 0, 'all unavailable offers must not produce purchase recommendations');
+
+result = comparePriceOffers([
+  offer('22mm copper pipe 30m roll', 'A', 50, { packCoverage: 30, packCoverageUnit: 'm', availability: 'unknown' }),
+  offer('22mm copper pipe 30m roll', 'B', 55, { packCoverage: 30, packCoverageUnit: 'm', availability: 'out_of_stock' }),
+], 30, 'm');
+assert.equal(result[0].lowest?.retailer, 'A');
+assert.equal(result[0].lowest?.availability, 'unknown');
+assert.equal(getPurchaseRecommendations(result)[0]?.availability, 'unknown');
+
+result = comparePriceOffers([
   offer('22mm copper pipe 10 x 3m roll', 'A', 60, { packQuantity: 10, packCoverage: 30, packCoverageUnit: 'm', availability: 'in_stock', shipping: 10, shippingScope: 'order' }),
   offer('22mm copper pipe 30m roll', 'B', 65, { packCoverage: 30, packCoverageUnit: 'm', availability: 'in_stock', shipping: 4, shippingScope: 'order' }),
 ], 30, 'm');
