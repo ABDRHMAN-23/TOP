@@ -54,11 +54,11 @@ export async function POST(req: Request) {
 
   await notifyUser(user.id, {
     title: 'Quote ready',
-    body: data?.quote_number ? 'Quote #' + data.quote_number + ' is ready for your review.' : 'Your new quote is ready for review.',
+    body: (data as any)?.quote_number ? 'Quote #' + (data as any).quote_number + ' is ready for your review.' : 'Your new quote is ready for review.',
     type: 'quote_created',
     link: '/workspace',
     tag: 'quote-created',
-    dedupeKey: data?.id ? 'quote-created:' + String(data.id) : undefined
+    dedupeKey: (data as any)?.id ? 'quote-created:' + String((data as any).id) : undefined
   });
 
   return NextResponse.json(data);
