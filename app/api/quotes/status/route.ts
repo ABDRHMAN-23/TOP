@@ -32,7 +32,7 @@ export async function PATCH(req: Request) {
   if (status === 'accepted') await notifyUser(user.id, {
     title: 'Quote accepted 🎉',
     body: label + (data.client_name ? ' for ' + data.client_name : '') + ' was marked accepted.',
-    type: 'quote_accepted', link: '/workspace', tag: 'quote-accepted'
+    type: 'quote_accepted', link: '/workspace', tag: 'quote-accepted', dedupeKey: 'quote-accepted:' + id
   });
 
   return NextResponse.json(data);
