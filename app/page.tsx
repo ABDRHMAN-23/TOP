@@ -41,7 +41,7 @@ export default function Home() {
   return <main className="min-h-screen bg-white text-[#0A1E3D]"><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
     <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
       <Link href="/" aria-label="QUVOTO home"><Brand /></Link>
-      <div className="flex items-center gap-2 sm:gap-5"><Link href="/pricing" className="hidden text-sm font-semibold text-slate-600 sm:block">Pricing</Link><Link href="/login" className="hidden text-sm font-semibold text-slate-600 sm:block">Sign in</Link><Link href="/app" className="rounded-full bg-[#0A1E3D] px-5 py-2.5 text-sm font-bold text-white">Start free</Link></div>
+      <div className="flex items-center gap-2 sm:gap-5"><Link href="/pricing" className="hidden text-sm font-semibold text-slate-600 sm:block">Pricing</Link><Link href="/rewards" className="hidden text-sm font-semibold text-slate-600 sm:block">Rewards</Link><Link href="/login" className="hidden text-sm font-semibold text-slate-600 sm:block">Sign in</Link><Link href="/app" className="rounded-full bg-[#0A1E3D] px-5 py-2.5 text-sm font-bold text-white">Start free</Link></div>
     </nav>
 
     <section className="relative overflow-hidden border-t border-[#1769E0]/10 bg-white">
@@ -51,7 +51,7 @@ export default function Home() {
           <h1 className="mt-6 max-w-3xl text-5xl font-black leading-[.98] tracking-[-.04em] sm:text-7xl">Talk for 30 seconds.<br/><span className="text-[#1769E0]">Get a quote ready to send.</span></h1>
           <p className="mt-7 max-w-xl text-lg leading-8 text-slate-600">Capture the job while you are still on site. QUVOTO turns your field notes into structured, editable quote details without the admin grind.</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row"><Link href="/app" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1769E0] px-7 py-4 font-bold text-white shadow-lg shadow-blue-600/20">Create your first quote <ArrowRight size={18}/></Link><Link href="/pricing" className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-7 py-4 font-bold text-slate-800">See pricing</Link></div>
-          <div className="mt-7 flex flex-wrap gap-4 text-sm text-slate-500"><span className="flex items-center gap-2"><Check size={16} className="text-emerald-600"/>5 free quotes to start</span><span className="flex items-center gap-2"><Check size={16} className="text-emerald-600"/>No client login</span><span className="flex items-center gap-2"><Check size={16} className="text-emerald-600"/>A4 PDF output</span></div><p className="mt-4 text-sm font-semibold text-[#1769E0]">Annual referrals: 2 same-plan paid annual subscribers = 1 free year; +2 = 6 months; +4 = 1 more year.</p>
+          <div className="mt-7 flex flex-wrap gap-4 text-sm text-slate-500"><span className="flex items-center gap-2"><Check size={16} className="text-emerald-600"/>5 free quotes to start</span><span className="flex items-center gap-2"><Check size={16} className="text-emerald-600"/>No client login</span><span className="flex items-center gap-2"><Check size={16} className="text-emerald-600"/>A4 PDF output</span></div><p className="mt-4 text-sm font-semibold text-[#1769E0]">Rewards: 10 genuinely active Free users can earn 1 free Starter month. Annual paid referrals can unlock bigger rewards.</p>
         </div>
 
         <div className="relative">
