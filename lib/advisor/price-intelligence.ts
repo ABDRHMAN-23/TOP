@@ -223,6 +223,7 @@ function comparisonKey(item: PriceQuote) {
     .replace(/×/g, 'x')
     .replace(/\b\d+(?:\.\d+)?\s*x\s*\d+(?:\.\d+)?\s*(?:m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/gi, '')
     .replace(/\b(?:pack|box|roll|coil|bundle|reel)\s*(?:of)?\s*\d+(?:\.\d+)?\s*(?:m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/gi, '')
+    .replace(/\b(?:pack|box|roll|coil|bundle|reel)\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
   return normalized + '|' + (normalizeUnit(item.unit) || '');
