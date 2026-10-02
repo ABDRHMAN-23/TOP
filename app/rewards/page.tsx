@@ -21,6 +21,9 @@ export default function RewardsPage() {
   const freeCount = Number(ref?.freeCount || 0);
   const freeNext = Number(ref?.nextFreeMilestone || 10);
   const freeProgress = Math.min(100, (freeCount / freeNext) * 100);
+  const monthlyCount = Number(ref?.monthlyCount || 0);
+  const monthlyNext = ref?.nextMonthlyMilestone || 1;
+  const monthlyProgress = Math.min(100, (monthlyCount / monthlyNext) * 100);
   const annualCount = Number(ref?.qualifiedCount || 0);
   const annualNext = ref?.nextMilestone || 2;
   const annualProgress = Math.min(100, (annualCount / annualNext) * 100);
@@ -38,29 +41,40 @@ export default function RewardsPage() {
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#1769E0] text-white shadow-lg shadow-blue-600/20"><Gift size={27}/></div>
         <p className="mt-6 text-sm font-black uppercase tracking-[.18em] text-[#1769E0]">QUVOTO Rewards</p>
         <h1 className="mx-auto mt-3 max-w-3xl text-4xl font-black tracking-[-.04em] sm:text-6xl">Invite good people. Get more time with QUVOTO.</h1>
-        <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">There are two simple ways to earn. Bring real contractors to QUVOTO, help them start using it, and we’ll take care of the reward automatically.</p>
+        <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">There are three simple reward tracks. Bring real contractors to QUVOTO, help them start using it, and we’ll take care of the reward automatically.</p>
         {ref?.link && <div className="mx-auto mt-8 flex max-w-xl flex-col gap-2 rounded-2xl border bg-white p-2 shadow-sm sm:flex-row"><div className="flex-1 truncate px-3 py-3 text-left text-sm font-semibold text-slate-600">{ref.link}</div><button onClick={copy} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1769E0] px-5 py-3 text-sm font-bold text-white">{copied ? <Check size={16}/> : <Copy size={16}/>} {copied ? 'Copied' : 'Copy referral link'}</button></div>}
       </div>
     </section>
 
     <section className="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16">
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-3">
         <RewardCard
           icon={<Users size={23}/>}
           eyebrow="Free User Reward"
           title="10 active Free users = 1 free Starter month"
-          text="Share your personal link. When a genuinely new user joins through it and creates their first real quote while staying on the Free plan, they count toward your progress."
+          text="A genuinely new user must join through your link and create their first real quote while staying on Free."
           count={freeCount}
           next={freeNext}
           progress={freeProgress}
-          label="Free users using QUVOTO"
+          label="Qualified Free users"
+          accent="blue"
+        />
+        <RewardCard
+          icon={<Gift size={23}/>}
+          eyebrow="Monthly Referral Reward"
+          title="1 paid referral, then every 3 more = 1 free month"
+          text="Same-plan monthly referrals only. 1 qualified referral earns 1 free month; then another month at 4, 7, 10, 13…"
+          count={monthlyCount}
+          next={monthlyNext}
+          progress={monthlyProgress}
+          label="Qualified monthly referrals"
           accent="blue"
         />
         <RewardCard
           icon={<Sparkles size={23}/>}
           eyebrow="Annual Referral Reward"
-          title="Paid annual referrals unlock bigger rewards"
-          text="Same-plan annual referrals only. 2 qualified referrals earn 1 free year; 4 total earns another 6 months; 8 total earns another free year, then the pattern continues."
+          title="Annual referrals unlock bigger rewards"
+          text="Same-plan annual referrals only. 2 = 1 free year; 4 total = 6 months; 8 = 1 year; 10 = 6 months; 14 = 1 year, then the pattern continues."
           count={annualCount}
           next={annualNext}
           progress={annualProgress}
@@ -70,12 +84,12 @@ export default function RewardsPage() {
       </div>
 
       <div className="mt-8 rounded-3xl border bg-slate-50 p-6 sm:p-8">
-        <h2 className="text-2xl font-black">How the Free-user reward works</h2>
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <h2 className="text-2xl font-black">How the rewards work</h2>
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
           {[
-            ['01','Share','Send your personal QUVOTO referral link to a real contractor.'],
-            ['02','They use Free','They create an account and make at least one real quote on the Free plan.'],
-            ['03','You earn','Every 10 qualified Free users earns 1 month of Starter access.']
+            ['01','Free users','Every 10 qualified Free users earns 1 free Starter month.'],
+            ['02','Monthly plans','1 same-plan paid monthly referral earns 1 free month; then every 3 additional referrals.'],
+            ['03','Annual plans','2 same-plan paid annual referrals earn 1 free year, followed by the agreed 6-month/1-year cycle.']
           ].map(([n,t,d])=><div key={n} className="rounded-2xl bg-white p-5"><span className="text-sm font-black text-[#1769E0]">{n}</span><h3 className="mt-5 font-black">{t}</h3><p className="mt-2 text-sm leading-6 text-slate-500">{d}</p></div>)}
         </div>
       </div>
