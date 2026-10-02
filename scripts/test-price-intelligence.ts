@@ -72,8 +72,8 @@ assert.equal(result[0].lowest?.retailer, 'A');
 assert.equal(result[0].lowest?.totalWithExtras, undefined, 'unknown shipping scope must not become a confirmed total');
 
 result = comparePriceOffers([
-  offer('22mm copper pipe 10 x 3m roll', 'A', 60, { packQuantity: 10, packCoverage: 30, packCoverageUnit: 'm', availability: 'in_stock', tax: 12, taxIncluded: false }),
-  offer('22mm copper pipe 30m roll', 'B', 65, { packCoverage: 30, packCoverageUnit: 'm', availability: 'in_stock', tax: 0, taxIncluded: true }),
+  offer('22mm copper pipe 10 x 3m roll', 'A', 60, { packQuantity: 10, packCoverage: 30, packCoverageUnit: 'm', availability: 'in_stock', shipping: 0, shippingScope: 'order', tax: 12, taxIncluded: false }),
+  offer('22mm copper pipe 30m roll', 'B', 65, { packCoverage: 30, packCoverageUnit: 'm', availability: 'in_stock', shipping: 0, shippingScope: 'order', tax: 0, taxIncluded: true }),
 ], 30, 'm');
 assert.equal(result[0].lowest?.retailer, 'B');
 assert.equal(result[0].lowest?.totalWithExtras, 65);
