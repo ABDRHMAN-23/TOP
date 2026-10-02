@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { comparePriceOffers, getPurchaseRecommendations, specMatchScore } from '../lib/advisor/price-intelligence.ts';
+import { comparePriceOffers, getPurchaseRecommendations, getBuildWatchPriceHistory, specMatchScore } from '../lib/advisor/price-intelligence.ts';
 
 const base = {
   currency: 'GBP',
@@ -131,6 +131,47 @@ assert.equal(specMatchScore('30m 22mm copper pipe', '22mm copper pipe 2 x 15m ro
 assert.equal(specMatchScore('15kg cement', '20kg cement bag'), 0);
 assert.equal(specMatchScore('15kg cement', 'cement 3 x 5kg bags'), 1);
 
-// Price-history semantics are currency-safe by construction: comparison metrics use only the latest observation currency.
+const originalFetch = globalThis.fetch;
+try {
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes('/search?q=')) {
+      return {
+        ok: true,
+        json: async () => ({ results: [{ slug: '22mm-copper-pipe', name: '22mm copper pipe 30m roll' }] }),
+      } as Response;
+    }
 
-console.log('Price comparison tests passed.');
+    return {
+      ok: true,
+      json: async () => ({
+        history: [
+          { scraped_at: '2026-09-05T10:00:00.000Z', merchant_name: 'A', price_inc_vat: 40, currency: 'GBP', in_stock: true },
+          { scraped_at: '2026-09-10T10:00:00.000Z', merchant_name: 'B', price_inc_vat: 70, currency: 'GBP', in_stock: false },
+          { scraped_at: '2026-09-15T10:00:00.000Z', merchant_name: 'A', price_inc_vat: 44, currency: 'GBP', in_stock: true },
+          { scraped_at: '2026-09-20T10:00:00.000Z', merchant_name: 'A', price_inc_vat: 48, currency: 'USD', in_stock: true },
+          { scraped_at: '2026-09-25T10:00:00.000Z', merchant_name: 'A', price_inc_vat: 50, currency: 'GBP', in_stock: true },
+          { scraped_at: 'not-a-date', merchant_name: 'A', price_inc_vat: 999, currency: 'GBP', in_stock: true },
+        ],
+      }),
+    } as Response;
+  }) as typeof globalThis.fetch;
+
+  const history = await getBuildWatchPriceHistory('22mm copper pipe', 30);
+  assert.ok(history);
+  assert.equal(history?.currency, 'GBP');
+  assert.equal(history?.current, 50);
+  assert.equal(history?.previous, 44, 'previous price must come from the latest retailer in the latest currency');
+  assert.ok(Math.abs((history?.changePercent ?? 0) - ((50 - 44) / 44) * 100) < 0.000001);
+  assert.equal(history?.averagePrice, (40 + 70 + 44 + 50) / 4, 'average must exclude mixed-currency observations');
+  assert.equal(history?.lowestPrice, 40);
+  assert.equal(history?.highestPrice, 70);
+  assert.equal(history?.observationCount, 5, 'invalid dates must be excluded');
+  assert.equal(history?.retailerCount, 2);
+  assert.equal(history?.latestRetailer, 'A');
+  assert.equal(history?.points.some((point) => point.currency === 'USD'), true, 'raw points may retain other currencies for context');
+} finally {
+  globalThis.fetch = originalFetch;
+}
+
+console.log('Price comparison and price-history tests passed.');
