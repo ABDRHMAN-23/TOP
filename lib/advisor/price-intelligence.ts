@@ -116,7 +116,7 @@ function extractSpecs(text: string) {
   return [...new Set(values)].sort();
 }
 
-function specMatchScore(query: string, productName: string) {
+export function specMatchScore(query: string, productName: string) {
   const required = extractSpecs(query);
   if (!required.length) return 1;
   const actual = new Set(extractSpecs(productName));
