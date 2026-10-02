@@ -1,4 +1,4 @@
-const CACHE='quvoto-shell-v3';
+const CACHE='quvoto-shell-v4';
 const OFFLINE='/offline.html';
 const APP='/app';
 
@@ -7,6 +7,7 @@ self.addEventListener('install',event=>{
     const cache=await caches.open(CACHE);
     await cache.add(OFFLINE);
     await cache.add('/icon.svg').catch(()=>{});
+    await cache.add('/logo.svg').catch(()=>{});
     await cache.add(APP).catch(()=>{});
     await self.skipWaiting();
   })());
