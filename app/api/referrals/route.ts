@@ -16,6 +16,41 @@ function monthlyReward(count:number){
   return count>=1 && (count-1)%3===0 ? 1 : 0;
 }
 
+export async function POST(req:Request){
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)return NextResponse.json({error:'Authentication required'},{status:401});
+ let body:any;
+ try{body=await req.json()}catch{return NextResponse.json({error:'Invalid JSON.'},{status:400})}
+ const rewardId=String(body?.rewardId||'');
+ const redemptionInterval=String(body?.redemptionInterval||'');
+ if(!rewardId||!['month','year'].includes(redemptionInterval)){
+   return NextResponse.json({error:'Choose Monthly or Annual.'},{status:400});
+ }
+ const {data:reward,error:rewardError}=await supabase.from('referral_rewards')
+   .select('*').eq('id',rewardId).eq('user_id',user.id).maybeSingle();
+ if(rewardError||!reward)return NextResponse.json({error:'Reward not found.'},{status:404});
+ if(!['earned','scheduled'].includes(reward.status)){
+   return NextResponse.json({error:'This reward is no longer available for selection.'},{status:409});
+ }
+ if(reward.status==='scheduled' && reward.redemption_interval && reward.redemption_interval===redemptionInterval){
+   return NextResponse.json({ok:true,message:'Your reward is already scheduled for this billing track.'});
+ }
+ const now=new Date().toISOString();
+ const {error:updateError}=await supabase.from('referral_rewards').update({
+   redemption_interval:redemptionInterval,
+   selected_at:now,
+   status:'scheduled'
+ }).eq('id',rewardId).eq('user_id',user.id).in('status',['earned','scheduled']);
+ if(updateError)return NextResponse.json({error:'Could not save your reward choice.'},{status:500});
+ return NextResponse.json({
+   ok:true,
+   message:redemptionInterval==='year'
+     ? 'Reward saved for Annual billing. You can choose Monthly for your next unlocked reward.'
+     : 'Reward saved for Monthly billing. You can choose Annual for your next unlocked reward.'
+ });
+}
+
 export async function GET(req:Request){
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
