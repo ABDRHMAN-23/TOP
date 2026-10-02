@@ -55,7 +55,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
       <div className="p-4 sm:p-10">
         <div className="overflow-hidden rounded-2xl border">
           <div className="grid grid-cols-[minmax(0,1fr)_48px_88px] sm:grid-cols-[1fr_80px_110px] gap-3 bg-[#f7faff] p-4 text-xs font-bold uppercase text-slate-500"><span>Description</span><span>Qty</span><span className="text-right">Amount</span></div>
-          {items.map((item: any, index: number) => <div key={index} className="grid grid-cols-[1fr_80px_110px] gap-3 border-t p-4 text-sm"><span>{item.description || 'Item'}</span><span>{item.quantity || 0} {item.unit || ''}</span><span className="text-right font-semibold">{quote.currency} {(Number(item.quantity || 0) * Number(item.price || 0)).toFixed(2)}</span></div>)}
+          {items.map((item: any, index: number) => <div key={index} className="grid grid-cols-[1fr_80px_110px] gap-3 border-t p-4 text-sm"><span>{item.description || 'Item'}</span><span>{item.quantity == null ? 'Quantity missing' : item.quantity+' '+(item.unit || '')}</span><span className="text-right font-semibold">{item.price == null ? 'Price not provided' : quote.currency+' '+(Number(item.quantity || 0) * Number(item.price || 0)).toFixed(2)}</span></div>)}
         </div>
         <div className="ml-auto mt-6 max-w-xs space-y-2 text-sm">
           <div className="flex justify-between"><span>Subtotal</span><span>{quote.currency} {Number(quote.subtotal).toFixed(2)}</span></div>
