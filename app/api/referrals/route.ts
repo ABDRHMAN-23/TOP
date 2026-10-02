@@ -111,6 +111,11 @@ export async function GET(req:Request){
    if(r.qualified_at) items.push({id:r.id+'-paid',type:r.qualifying_interval==='year'?'annual':'monthly',title:r.qualifying_interval==='year'?'Annual referral qualified':'Monthly referral qualified',detail:'Same-plan paid referral reached the qualification point.',at:r.qualified_at});
    return items;
  }).sort((a:any,b:any)=>new Date(b.at).getTime()-new Date(a.at).getTime()).slice(0,20);
+ const totalPaid=monthlyCount+annualCount;
+ const totalQualified=freeCount+totalPaid;
+ const loyaltyLevel=totalQualified>=50?{name:'QUVOTO Legend',next:null}:{totalQualified>=25?{name:'QUVOTO Champion',next:50}:totalQualified>=10?{name:'QUVOTO Builder',next:25}:{name:'QUVOTO Starter',next:10}};
+ const loyaltyProgress=loyaltyLevel.next?Math.min(100,(totalQualified/loyaltyLevel.next)*100):100;
+ const nextLoyalty=loyaltyLevel.next?Math.max(0,loyaltyLevel.next-totalQualified):0;
  const activeTrack=activePaid&&interval==='year'?'annual':activePaid&&interval==='month'?'monthly':'free';
  const activeNext=activeTrack==='annual'?annualNext:activeTrack==='monthly'?monthlyNext:freeNext;
  const activeCount=activeTrack==='annual'?annualCount:activeTrack==='monthly'?monthlyCount:freeCount;
@@ -136,6 +141,7 @@ export async function GET(req:Request){
    badges,
    referrals:referrals||[],
    rewards:rewards||[],
-   timeline
+   timeline,
+   loyalty:{level:loyaltyLevel.name,totalQualified,next:loyaltyLevel.next,remaining:nextLoyalty,progress:loyaltyProgress}
  });
 }
