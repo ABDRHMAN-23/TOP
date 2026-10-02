@@ -141,7 +141,8 @@ async function qualifyForUser(admin:any, uid:string){
     : 'You just unlocked 1 free month. Open your Reward Wallet and choose when to use it.',
    type:'reward',
    link:'/rewards',
-   tag:'reward-unlocked'
+   tag:'reward-unlocked',
+   dedupeKey:'reward-unlocked:' + reward.id
   });
  }
 }
