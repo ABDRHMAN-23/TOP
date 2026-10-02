@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Check, Copy, Gift, Users, Sparkles, Trophy, Lock, Zap, Share2 } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Gift, Users, Sparkles, Trophy, Lock, Zap, CalendarDays } from 'lucide-react';
 
 export default function RewardsPage() {
   const [ref, setRef] = useState<any>(null);
   const [copied, setCopied] = useState(false);
   const [celebrate, setCelebrate] = useState<any>(null);
+  const [choosing, setChoosing] = useState<string | null>(null);
+  const [choiceMessage, setChoiceMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/referrals').then(async r => { if (r.ok) setRef(await r.json()); });
@@ -21,6 +23,20 @@ export default function RewardsPage() {
       setCelebrate(latest);
     }
   }, [ref]);
+
+  const chooseReward = async (id:string, interval:'month'|'year') => {
+    setChoosing(id + ':' + interval);
+    setChoiceMessage(null);
+    try {
+      const res = await fetch('/api/referrals', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ rewardId:id, redemptionInterval:interval }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Could not save reward choice.');
+      setChoiceMessage(data?.message || 'Reward choice saved.');
+      const refreshed = await fetch('/api/referrals');
+      if (refreshed.ok) setRef(await refreshed.json());
+    } catch (e:any) { setChoiceMessage(e?.message || 'Could not save reward choice.'); }
+    finally { setChoosing(null); }
+  };
 
   const copy = async () => {
     if (!ref?.link) return;
@@ -47,6 +63,7 @@ export default function RewardsPage() {
   const circleProgress = Math.min(100, (activeCount / Math.max(1, activeNext)) * 100);
   const earnedRewards = (ref?.rewards || []).filter((r:any)=>['earned','scheduled','applied'].includes(r.status));
   const latestReward = earnedRewards[0];
+  const selectableRewards = (ref?.rewards || []).filter((r:any)=>['earned','scheduled'].includes(r.status) && !r.redemption_interval);
 
   return <main className="min-h-screen bg-white text-[#0A1E3D]">
     {celebrate && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1E3D]/60 p-5 backdrop-blur-sm"><div className="w-full max-w-md rounded-[2rem] bg-white p-7 text-center shadow-2xl"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#1769E0] text-white shadow-lg"><Trophy size={30}/></div><p className="mt-5 text-xs font-black uppercase tracking-[.2em] text-[#1769E0]">Milestone unlocked</p><h2 className="mt-2 text-3xl font-black">You earned a reward.</h2><p className="mt-3 text-slate-500">Your referral progress just crossed a milestone. Keep going — the next unlock is already waiting.</p><div className="mt-5 rounded-2xl bg-[#1769E0]/5 p-4"><p className="font-black">{celebrate.reward_type==='free_year'?'1 free year':'6 free months'} · {celebrate.plan}</p><p className="mt-1 text-xs text-slate-500">Milestone {celebrate.milestone}</p></div><button onClick={()=>setCelebrate(null)} className="mt-6 w-full rounded-xl bg-[#1769E0] py-3.5 font-bold text-white">See my next milestone</button></div></div>}
@@ -64,6 +81,26 @@ export default function RewardsPage() {
         <h1 className="mx-auto mt-3 max-w-3xl text-4xl font-black tracking-[-.04em] sm:text-6xl">Share QUVOTO. Hit milestones. Unlock rewards.</h1>
         <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">Every qualified referral moves your counter. Cross a milestone, unlock a reward, earn a badge, and immediately see what is waiting next.</p>
         {ref?.link && <div className="mx-auto mt-8 flex max-w-xl flex-col gap-2 rounded-2xl border bg-white p-2 shadow-sm sm:flex-row"><div className="flex-1 truncate px-3 py-3 text-left text-sm font-semibold text-slate-600">{ref.link}</div><button onClick={copy} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1769E0] px-5 py-3 text-sm font-bold text-white">{copied ? <Check size={16}/> : <Copy size={16}/>} {copied ? 'Copied' : 'Copy referral link'}</button></div>}
+      </div>
+    </section>
+
+    <section className="mx-auto max-w-5xl px-5 pt-10 sm:px-8 sm:pt-14">
+      <div className="rounded-[2rem] border border-[#1769E0]/15 bg-white p-6 shadow-sm sm:p-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div><p className="text-xs font-black uppercase tracking-[.18em] text-[#1769E0]">Reward Wallet</p><h2 className="mt-2 text-3xl font-black">You choose how to use it.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Each unlocked paid reward is yours to direct. Choose Monthly or Annual for this reward — your next unlocked reward can go the other way.</p></div>
+          {choiceMessage && <div className="rounded-xl bg-[#1769E0]/5 px-4 py-3 text-sm font-bold text-[#1769E0]">{choiceMessage}</div>}
+        </div>
+        {selectableRewards.length ? <div className="mt-6 grid gap-4 lg:grid-cols-2">{selectableRewards.map((r:any)=>{
+          const value=r.reward_type==='free_year'?'1 free year':r.reward_type==='free_6_months'?'6 free months':'1 free month';
+          return <div key={r.id} className="rounded-2xl border bg-slate-50 p-5">
+            <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-widest text-[#1769E0]">Unlocked reward</p><h3 className="mt-1 text-xl font-black">{value}</h3><p className="mt-1 text-xs text-slate-500">Milestone {r.milestone} · {r.plan}</p></div><Gift className="text-[#1769E0]" size={22}/></div>
+            <p className="mt-4 text-sm font-semibold text-slate-600">Choose where this reward should be redeemed.</p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button onClick={()=>chooseReward(r.id,'month')} disabled={!!choosing} className="rounded-xl border bg-white px-3 py-3 text-sm font-black hover:border-[#1769E0] disabled:opacity-50"><span className="flex items-center justify-center gap-2"><Zap size={15}/> Monthly</span><span className="mt-1 block text-[10px] font-semibold text-slate-400">Free month value</span></button>
+              <button onClick={()=>chooseReward(r.id,'year')} disabled={!!choosing} className="rounded-xl bg-[#0A1E3D] px-3 py-3 text-sm font-black text-white disabled:opacity-50"><span className="flex items-center justify-center gap-2"><CalendarDays size={15}/> Annual</span><span className="mt-1 block text-[10px] font-semibold text-slate-300">Bank for annual billing</span></button>
+            </div>
+          </div>
+        })}</div> : <div className="mt-6 rounded-2xl bg-slate-50 p-6 text-center"><p className="font-black">No reward is waiting for a choice yet.</p><p className="mt-1 text-sm text-slate-500">Keep sharing. The moment a milestone unlocks, it will appear here.</p></div>}
       </div>
     </section>
 
@@ -88,7 +125,7 @@ export default function RewardsPage() {
           {latestReward && <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-[10px] font-black uppercase tracking-widest text-blue-200">Latest reward</p><p className="mt-1 font-black">{latestReward.reward_type==='free_year'?'1 free year':'6 free months'} · {latestReward.plan}</p><p className="mt-1 text-xs text-slate-400">{latestReward.status==='applied'?'Applied to your account.':'Unlocked — ready for the next step.'}</p></div>}
         </div>
       </div>
-      <div className="mb-6"><div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between"><div><div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-blue-200"><Zap size={13}/> Active track</div><h2 className="mt-4 text-3xl font-black">{activeTitle}</h2><p className="mt-2 text-slate-300">Next unlock: <b className="text-white">{activeReward}</b> at <b className="text-white">{activeNext}</b>.</p></div><div className="min-w-[16rem] lg:w-80"><div className="flex justify-between text-sm font-bold"><span>{activeCount} qualified</span><span>{activeNext}</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#2F8CFF]" style={{width:Math.min(100,(activeCount/Math.max(1,activeNext))*100)+'%'}}/></div><p className="mt-2 text-xs text-slate-400">{Math.max(0,activeNext-activeCount)} more to the next unlock</p></div></div></div><div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-3">
         <RewardCard
           icon={<Users size={23}/>}
           eyebrow="Free User Reward"
