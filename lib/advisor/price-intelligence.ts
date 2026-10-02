@@ -216,10 +216,16 @@ function productSpecKey(name: string) {
   return specs.map((x) => x.replace(/\s+/g, '')).join('|');
 }
 
-function keyFor(item: PriceQuote) {
-  const name = item.productName.trim().toLowerCase().replace(/\s+/g, ' ');
-  const specs = productSpecKey(name);
-  return name + '|' + (item.unit || '').trim().toLowerCase() + '|' + specs;
+function comparisonKey(item: PriceQuote) {
+  const normalized = item.productName
+    .trim()
+    .toLowerCase()
+    .replace(/×/g, 'x')
+    .replace(/\b\d+(?:\.\d+)?\s*x\s*\d+(?:\.\d+)?\s*(?:m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/gi, '')
+    .replace(/\b(?:pack|box|roll|coil|bundle|reel)\s*(?:of)?\s*\d+(?:\.\d+)?\s*(?:m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return normalized + '|' + (normalizeUnit(item.unit) || '');
 }
 
 function specsMatch(a: PriceQuote, b: PriceQuote) {
@@ -262,7 +268,7 @@ export function getPurchaseRecommendations(comparisons: PriceComparison[]): Purc
 export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: number, requiredUnit?: string): PriceComparison[] {
   const groups = new Map<string, PriceQuote[]>();
   for (const price of prices) {
-    const key = keyFor(price);
+    const key = comparisonKey(price);
     const list = groups.get(key) || [];
     list.push(price);
     groups.set(key, list);
