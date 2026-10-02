@@ -51,7 +51,22 @@ export async function GET(req:Request){
  ).length;
 
  const freeCount=(referrals||[]).filter(r=>!!r.free_qualified_at).length;
- const freeNext=freeCount>0 && freeCount%10===0 ? freeCount+10 : Math.ceil((freeCount+1)/10)*10;
+ const freeNext=Math.max(10,Math.ceil((freeCount+1)/10)*10);
+ const monthlyNext=activePaid&&interval==='month'?nextMilestoneFor(monthlyCount,monthlyReward):null;
+ const annualNext=activePaid&&interval==='year'?nextMilestoneFor(annualCount,annualRewardMonths):null;
+ const badges=[
+   {id:'first-share',label:'First Share',description:'Your referral link is ready.',unlocked:true,icon:'↗'},
+   {id:'free-builder',label:'Free Builder',description:'10 active Free users.',unlocked:freeCount>=10,icon:'★'},
+   {id:'monthly-spark',label:'Monthly Spark',description:'1 qualified same-plan monthly referral.',unlocked:monthlyCount>=1,icon:'◆'},
+   {id:'monthly-engine',label:'Monthly Engine',description:'4 qualified same-plan monthly referrals.',unlocked:monthlyCount>=4,icon:'◆'},
+   {id:'annual-launch',label:'Annual Launch',description:'2 qualified same-plan annual referrals.',unlocked:annualCount>=2,icon:'✦'},
+   {id:'annual-elite',label:'Annual Elite',description:'8 qualified same-plan annual referrals.',unlocked:annualCount>=8,icon:'✦'},
+   {id:'referral-legend',label:'Referral Legend',description:'10+ qualified paid referrals across your active plan.',unlocked:(monthlyCount+annualCount)>=10,icon:'♛'}
+ ];
+ const activeTrack=activePaid&&interval==='year'?'annual':activePaid&&interval==='month'?'monthly':'free';
+ const activeNext=activeTrack==='annual'?annualNext:activeTrack==='monthly'?monthlyNext:freeNext;
+ const activeCount=activeTrack==='annual'?annualCount:activeTrack==='monthly'?monthlyCount:freeCount;
+ const activeReward=activeTrack==='annual'?(annualNext===2?'1 free year':annualNext===4?'6 free months':annualNext&&annualNext%2===0?'1 free year':'next reward') : activeTrack==='monthly'?'1 free month':'1 free Starter month';
 
  return NextResponse.json({
    code,
@@ -61,9 +76,14 @@ export async function GET(req:Request){
    freeCount,
    nextFreeMilestone:freeNext,
    monthlyCount,
-   nextMonthlyMilestone:activePaid&&interval==='month'?nextMilestoneFor(monthlyCount,monthlyReward):null,
+   nextMonthlyMilestone:monthlyNext,
    qualifiedCount:annualCount,
-   nextMilestone:activePaid&&interval==='year'?nextMilestoneFor(annualCount,annualRewardMonths):null,
+   nextMilestone:annualNext,
+   activeTrack,
+   activeCount,
+   activeNext,
+   activeReward,
+   badges,
    referrals:referrals||[],
    rewards:rewards||[]
  });
