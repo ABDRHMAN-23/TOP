@@ -24,7 +24,7 @@ export type PriceQuote = {
 
 export type PriceHistoryPoint = { date: string; retailer: string; price: number; currency: string; inStock?: boolean; };
 
-export type PriceHistorySummary = { productName: string; currency: string; points: PriceHistoryPoint[]; current?: number; previous?: number; changePercent?: number; direction: 'up'|'down'|'flat'|'unknown'; anomaly: 'high'|'low'|'normal'|'unknown'; averagePrice?: number; lowestPrice?: number; highestPrice?: number; source: string; };
+export type PriceHistorySummary = { productName: string; currency: string; points: PriceHistoryPoint[]; current?: number; previous?: number; changePercent?: number; direction: 'up'|'down'|'flat'|'unknown'; anomaly: 'high'|'low'|'normal'|'unknown'; averagePrice?: number; lowestPrice?: number; highestPrice?: number; observationCount: number; retailerCount: number; latestRetailer?: string; source: string; };
 
 export type PriceComparison = {
   productName: string;
@@ -388,41 +388,27 @@ export async function getBuildWatchPriceHistory(query: string, days = 30): Promi
     price: Number(x.price_inc_vat),
     currency: String(x.currency || 'GBP').toUpperCase(),
     inStock: typeof x.in_stock === 'boolean' ? x.in_stock : undefined,
-  })).sort((a: PriceHistoryPoint,b: PriceHistoryPoint) =>
-    new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
+  })).filter((x: PriceHistoryPoint) => Number.isFinite(new Date(x.date).getTime()))
+    .sort((a: PriceHistoryPoint,b: PriceHistoryPoint) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   if (!points.length) return null;
 
-  const byRetailer = new Map<string, PriceHistoryPoint[]>();
-  for (const point of points) {
-    const list = byRetailer.get(point.retailer) || [];
-    list.push(point);
-    byRetailer.set(point.retailer, list);
-  }
+  const latest = points[points.length - 1];
+  const retailerPoints = points.filter((point) => point.retailer === latest.retailer && point.currency === latest.currency);
+  const current = latest.price;
+  const previous = retailerPoints.length > 1 ? retailerPoints[retailerPoints.length - 2].price : undefined;
+  const changePercent = previous !== undefined && previous > 0 ? ((current - previous) / previous) * 100 : undefined;
 
-  const retailerSignals = Array.from(byRetailer.entries()).map(([retailer, items]) => {
-    const first = items[0];
-    const latest = items[items.length - 1];
-    const changePercent = first.price > 0 ? ((latest.price - first.price) / first.price) * 100 : undefined;
-    return { retailer, first, latest, changePercent };
-  }).filter((x) => x.changePercent !== undefined);
-
-  const current = points[points.length - 1].price;
-  const currency = points[points.length - 1].currency;
-  const comparableSignals = retailerSignals.filter((x) => x.latest.currency === currency);
-  const averageChange = comparableSignals.length
-    ? comparableSignals.reduce((sum, x) => sum + (x.changePercent || 0), 0) / comparableSignals.length
-    : undefined;
-
-  const historicalPrices = points.map((point: PriceHistoryPoint) => point.price).filter((price: number) => Number.isFinite(price));
-  const averagePrice = historicalPrices.length ? historicalPrices.reduce((sum: number, price: number) => sum + price, 0) / historicalPrices.length : undefined;
+  const comparablePoints = points.filter((point) => point.currency === latest.currency);
+  const historicalPrices = comparablePoints.map((point) => point.price).filter((price) => Number.isFinite(price));
+  const averagePrice = historicalPrices.length ? historicalPrices.reduce((sum, price) => sum + price, 0) / historicalPrices.length : undefined;
   const lowestPrice = historicalPrices.length ? Math.min(...historicalPrices) : undefined;
   const highestPrice = historicalPrices.length ? Math.max(...historicalPrices) : undefined;
-  const direction = averageChange === undefined
+
+  const direction = changePercent === undefined
     ? 'unknown'
-    : averageChange > 0.05 ? 'up'
-    : averageChange < -0.05 ? 'down'
+    : changePercent > 0.05 ? 'up'
+    : changePercent < -0.05 ? 'down'
     : 'flat';
   const anomaly = current === undefined || averagePrice === undefined
     ? 'unknown'
@@ -432,16 +418,19 @@ export async function getBuildWatchPriceHistory(query: string, days = 30): Promi
 
   return {
     productName: String(result.name || query),
-    currency,
+    currency: latest.currency,
     points: points.slice(-60),
     current,
-    previous: points.length > 1 ? points[points.length - 2].price : undefined,
-    changePercent: averageChange,
+    previous,
+    changePercent,
     direction,
     anomaly,
     averagePrice,
     lowestPrice,
     highestPrice,
+    observationCount: points.length,
+    retailerCount: new Set(points.map((point) => point.retailer)).size,
+    latestRetailer: latest.retailer,
     source: 'BuildWatch',
   };
 }
