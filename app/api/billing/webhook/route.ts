@@ -133,6 +133,15 @@ async function qualifyForUser(admin:any, uid:string){
     billing_interval:interval
    }
   });
+  await admin.from('notifications').insert({
+   user_id:ref.referrer_user_id,
+   title:interval==='year'?'🎉 Annual reward unlocked':'🎉 Reward unlocked',
+   body:interval==='year'
+    ? (rewardMonths===12?'You just unlocked 1 free year. Your next move is yours.':'You just unlocked 6 free months. Keep the momentum going.')
+    : 'You just unlocked 1 free month. Open your Reward Wallet and choose when to use it.',
+   type:'reward',
+   link:'/rewards'
+  });
  }
 }
 export async function POST(req:Request){
