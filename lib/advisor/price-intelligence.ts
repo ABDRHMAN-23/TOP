@@ -348,9 +348,10 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
       return calculatedCost(a) - calculatedCost(b) || stockRank || a.price - b.price;
     });
     const lowest = [...purchasable].sort((a, b) => calculatedCost(a) - calculatedCost(b) || a.price - b.price)[0];
-    const highest = sorted[sorted.length - 1];
-    const average = sorted.reduce((sum, item) => sum + item.price, 0) / sorted.length;
-    const spreadPercent = lowest && lowest.price > 0 ? ((highest.price - lowest.price) / lowest.price) * 100 : undefined;
+    const comparablePriced = purchasable.length ? purchasable : pricedOffers;
+    const highest = [...comparablePriced].sort((a, b) => calculatedCost(b) - calculatedCost(a) || b.price - a.price)[0];
+    const average = comparablePriced.reduce((sum, item) => sum + item.price, 0) / comparablePriced.length;
+    const spreadPercent = lowest && highest && lowest.price > 0 ? ((highest.price - lowest.price) / lowest.price) * 100 : undefined;
     const lowestPackCount = lowest?.purchasePackCount;
     const lowestPurchaseTotal = lowest?.purchaseTotal;
     const lowestTotalWithExtras = lowest?.totalWithExtras;
