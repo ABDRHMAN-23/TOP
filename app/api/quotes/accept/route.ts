@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     body: (quote.quote_number ? 'Quote #' + quote.quote_number : 'Your quote') + (quote.client_name ? ' for ' + quote.client_name : '') + ' was accepted.',
     type: 'quote_accepted',
     link: '/workspace',
-    tag: 'quote-accepted'
+    tag: 'quote-accepted', dedupeKey: 'quote-accepted:' + quote.id
   });
   return NextResponse.json(data);
 }
