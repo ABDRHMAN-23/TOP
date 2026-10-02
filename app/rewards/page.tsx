@@ -6,10 +6,21 @@ import { ArrowLeft, Check, Copy, Gift, Users, Sparkles, Trophy, Lock, Zap, Share
 export default function RewardsPage() {
   const [ref, setRef] = useState<any>(null);
   const [copied, setCopied] = useState(false);
+  const [celebrate, setCelebrate] = useState<any>(null);
 
   useEffect(() => {
     fetch('/api/referrals').then(async r => { if (r.ok) setRef(await r.json()); });
   }, []);
+
+  useEffect(() => {
+    const latest = ref?.rewards?.find((r:any)=>['earned','scheduled','applied'].includes(r.status));
+    if (!latest || typeof window === 'undefined') return;
+    const key = 'quvoto_last_seen_reward';
+    if (window.localStorage.getItem(key) !== latest.id) {
+      window.localStorage.setItem(key, latest.id);
+      setCelebrate(latest);
+    }
+  }, [ref]);
 
   const copy = async () => {
     if (!ref?.link) return;
@@ -38,6 +49,7 @@ export default function RewardsPage() {
   const latestReward = earnedRewards[0];
 
   return <main className="min-h-screen bg-white text-[#0A1E3D]">
+    {celebrate && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1E3D]/60 p-5 backdrop-blur-sm"><div className="w-full max-w-md rounded-[2rem] bg-white p-7 text-center shadow-2xl"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#1769E0] text-white shadow-lg"><Trophy size={30}/></div><p className="mt-5 text-xs font-black uppercase tracking-[.2em] text-[#1769E0]">Milestone unlocked</p><h2 className="mt-2 text-3xl font-black">You earned a reward.</h2><p className="mt-3 text-slate-500">Your referral progress just crossed a milestone. Keep going — the next unlock is already waiting.</p><div className="mt-5 rounded-2xl bg-[#1769E0]/5 p-4"><p className="font-black">{celebrate.reward_type==='free_year'?'1 free year':'6 free months'} · {celebrate.plan}</p><p className="mt-1 text-xs text-slate-500">Milestone {celebrate.milestone}</p></div><button onClick={()=>setCelebrate(null)} className="mt-6 w-full rounded-xl bg-[#1769E0] py-3.5 font-bold text-white">See my next milestone</button></div></div>}
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-8">
         <a href="/dashboard" className="text-xl font-black tracking-[-.04em]">QUVOTO</a>
