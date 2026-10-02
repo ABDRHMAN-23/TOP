@@ -10,7 +10,9 @@ export type PriceQuote = {
   purchasePackCount?: number;
   effectiveUnitPrice?: number;
   shipping?: number;
+  shippingScope?: 'order' | 'pack' | 'unknown';
   tax?: number;
+  taxIncluded?: boolean;
   totalWithExtras?: number;
   observedAt: string;
   sourceType: 'retailer_api' | 'merchant_feed' | 'approved_aggregator';
@@ -125,6 +127,8 @@ function normalize(item: any): PriceQuote | null {
   const packQuantity = Number(item?.packQuantity ?? item?.pack_quantity ?? item?.quantity_per_pack ?? item?.unitsPerPack);
   const shipping = Number(item?.shipping ?? item?.shipping_cost ?? item?.delivery ?? item?.delivery_cost);
   const tax = Number(item?.tax ?? item?.tax_amount ?? item?.vat);
+  const shippingScope = item?.shipping_scope === 'pack' || item?.shippingScope === 'pack' ? 'pack' : item?.shipping_scope === 'order' || item?.shippingScope === 'order' ? 'order' : 'unknown';
+  const taxIncluded = item?.tax_included === true || item?.taxIncluded === true ? true : item?.tax_included === false || item?.taxIncluded === false ? false : undefined;
   if (!name || !retailer || !url || !Number.isFinite(price) || price < 0) return null;
   return {
     productName: name,
@@ -210,8 +214,14 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
       const effectiveUnitPrice = purchaseTotal !== undefined && projectQuantity
         ? purchaseTotal / projectQuantity
         : undefined;
-      const totalWithExtras = purchaseTotal !== undefined && (offer.shipping !== undefined || offer.tax !== undefined)
-        ? purchaseTotal + (offer.shipping ?? 0) + (offer.tax ?? 0)
+      const shippingCost = purchaseTotal !== undefined && offer.shipping !== undefined
+        ? offer.shippingScope === 'pack' && purchasePackCount ? offer.shipping * purchasePackCount : offer.shipping
+        : undefined;
+      const taxCost = purchaseTotal !== undefined && offer.tax !== undefined && offer.taxIncluded === false
+        ? offer.tax
+        : undefined;
+      const totalWithExtras = purchaseTotal !== undefined && (shippingCost !== undefined || taxCost !== undefined)
+        ? purchaseTotal + (shippingCost ?? 0) + (taxCost ?? 0)
         : undefined;
       return { ...offer, purchaseTotal, purchasePackCount, effectiveUnitPrice, totalWithExtras };
     });
