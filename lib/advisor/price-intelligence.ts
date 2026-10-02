@@ -399,8 +399,8 @@ export async function getBuildWatchPriceHistory(query: string, days = 30): Promi
   const previous = retailerPoints.length > 1 ? retailerPoints[retailerPoints.length - 2].price : undefined;
   const changePercent = previous !== undefined && previous > 0 ? ((current - previous) / previous) * 100 : undefined;
 
-  const comparablePoints = points.filter((point) => point.currency === latest.currency);
-  const historicalPrices = comparablePoints.map((point) => point.price).filter((price) => Number.isFinite(price));
+  const comparablePoints: PriceHistoryPoint[] = points.filter((point: PriceHistoryPoint) => point.currency === latest.currency);
+  const historicalPrices: number[] = comparablePoints.map((point: PriceHistoryPoint) => point.price).filter((price: number) => Number.isFinite(price));
   const averagePrice = historicalPrices.length ? historicalPrices.reduce((sum, price) => sum + price, 0) / historicalPrices.length : undefined;
   const lowestPrice = historicalPrices.length ? Math.min(...historicalPrices) : undefined;
   const highestPrice = historicalPrices.length ? Math.max(...historicalPrices) : undefined;
@@ -429,7 +429,7 @@ export async function getBuildWatchPriceHistory(query: string, days = 30): Promi
     lowestPrice,
     highestPrice,
     observationCount: points.length,
-    retailerCount: new Set(points.map((point) => point.retailer)).size,
+    retailerCount: new Set(points.map((point: PriceHistoryPoint) => point.retailer)).size,
     latestRetailer: latest.retailer,
     source: 'BuildWatch',
   };
