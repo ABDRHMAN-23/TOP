@@ -63,7 +63,7 @@ export default function RewardsPage() {
   const circleProgress = Math.min(100, (activeCount / Math.max(1, activeNext)) * 100);
   const earnedRewards = (ref?.rewards || []).filter((r:any)=>['earned','scheduled','applied'].includes(r.status));
   const latestReward = earnedRewards[0];
-  const selectableRewards = (ref?.rewards || []).filter((r:any)=>['earned','scheduled'].includes(r.status));
+  const selectableRewards = (ref?.rewards || []).filter((r:any)=>['earned','scheduled'].includes(r.status) && ['month','year'].includes(r.billing_interval));
 
   return <main className="min-h-screen bg-white text-[#0A1E3D]">
     {celebrate && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1E3D]/60 p-5 backdrop-blur-sm"><div className="w-full max-w-md rounded-[2rem] bg-white p-7 text-center shadow-2xl"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#1769E0] text-white shadow-lg"><Trophy size={30}/></div><p className="mt-5 text-xs font-black uppercase tracking-[.2em] text-[#1769E0]">Milestone unlocked</p><h2 className="mt-2 text-3xl font-black">You earned a reward.</h2><p className="mt-3 text-slate-500">Your referral progress just crossed a milestone. Keep going — the next unlock is already waiting.</p><div className="mt-5 rounded-2xl bg-[#1769E0]/5 p-4"><p className="font-black">{celebrate.reward_type==='free_year'?'1 free year':celebrate.reward_type==='free_6_months'?'6 free months':'1 free month'} · {celebrate.plan}</p><p className="mt-1 text-xs text-slate-500">Milestone {celebrate.milestone}</p></div><button onClick={()=>setCelebrate(null)} className="mt-6 w-full rounded-xl bg-[#1769E0] py-3.5 font-bold text-white">See my next milestone</button></div></div>}
