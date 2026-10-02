@@ -120,7 +120,7 @@ function specMatchScore(query: string, productName: string) {
   const actual = new Set(extractSpecs(productName));
   const matched = required.filter((spec) => {
     if (actual.has(spec)) return true;
-    const match = spec.match(/^(\\d+(?:\\.\\d+)?)(m|kg|l)$/);
+    const match = spec.match(/^(\d+(?:\.\d+)?)(m|kg|l)$/);
     if (!match) return false;
     const requiredValue = Number(match[1]);
     const requiredUnit = match[2];
