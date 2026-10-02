@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { qualifyFreeReferralAndReward } from '@/lib/free-referrals';
 
 function mapQuoteError(message: string) {
   if (message.startsWith('QUOTE_LIMIT:')) {
@@ -46,6 +48,8 @@ export async function POST(req: Request) {
     if (error.message.includes('AUTH_REQUIRED')) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     return mapQuoteError(error.message);
   }
+
+  try { await qualifyFreeReferralAndReward(createAdminClient(), user.id); } catch { /* referral rewards must never block quote creation */ }
 
   return NextResponse.json(data);
 }
