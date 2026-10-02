@@ -12,7 +12,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
     const admin = createAdminClient();
     const { data } = await admin
       .from('quotes')
-      .select('user_id,quote_number,client_name,client_email,client_phone,client_address,items,subtotal,vat_rate,vat_amount,discount,total,currency,status,template,language,notes,created_at')
+      .select('id,user_id,quote_number,client_name,client_email,client_phone,client_address,items,subtotal,vat_rate,vat_amount,discount,total,currency,status,template,language,notes,created_at')
       .eq('public_token', token)
       .maybeSingle();
     quote = data;
