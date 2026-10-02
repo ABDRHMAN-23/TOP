@@ -2,8 +2,9 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Check, Lock, Mic, FileText } from 'lucide-react';
+import QuvotoLogo from '@/components/QuvotoLogo';
 
-function Brand(){return <img src="/logo.webp" alt="QUVOTO" className="h-11 w-auto"/>;}
+function Brand(){return <QuvotoLogo className="h-11 w-auto"/>;}
 
 const plans = [
  { name:'Free', price:'$0', detail:'10 quotes/month', features:['2 PDF templates: Modern + Classic','GBP only','English only','Public quote link','Basic workspace'] },
