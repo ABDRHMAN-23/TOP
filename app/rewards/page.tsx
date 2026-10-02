@@ -99,6 +99,16 @@ export default function RewardsPage() {
       </div>
     </section>
 
+    <section className="mx-auto max-w-5xl px-5 pt-8 sm:px-8">
+      <div className="rounded-[2rem] border border-[#1769E0]/15 bg-gradient-to-br from-[#1769E0]/5 to-white p-6 shadow-sm sm:p-8">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div><p className="text-xs font-black uppercase tracking-[.18em] text-[#1769E0]">Almost there</p><h2 className="mt-2 text-3xl font-black">Your next unlock is getting closer.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">QUVOTO watches all three referral tracks and highlights the milestones that are closest. Nothing resets while you work toward another reward.</p></div>
+          <div className="rounded-full bg-white px-4 py-2 text-xs font-black text-[#1769E0] shadow-sm">{ref?.nudges?.length || 0} close milestone{(ref?.nudges?.length || 0)===1?'':'s'}</div>
+        </div>
+        {(ref?.nudges?.length || 0)>0 ? <div className="mt-6 grid gap-3 md:grid-cols-3">{ref.nudges.map((n:any)=><div key={n.id} className="rounded-2xl border bg-white p-5"><div className="flex items-center justify-between"><span className="rounded-full bg-[#1769E0]/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#1769E0]">{n.track==='free'?'Free users':n.track==='monthly'?'Monthly':'Annual'}</span><span className="text-sm font-black text-[#1769E0]">{n.remaining} left</span></div><h3 className="mt-4 text-lg font-black">{n.title}</h3><p className="mt-2 text-sm leading-6 text-slate-500">{n.detail}</p><div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#1769E0]" style={{width:Math.min(100,(n.count/Math.max(1,n.next))*100)+'%'}}/></div><p className="mt-2 text-[11px] font-bold text-slate-400">{n.count} / {n.next}</p></div>)}</div> : <div className="mt-6 rounded-2xl bg-white p-5 text-sm font-semibold text-slate-500">Your next milestones are still a little further away. Keep sharing — this section will update automatically as referrals qualify.</div>}
+      </div>
+    </section>
+
 
       <div className="rounded-[2rem] border border-[#1769E0]/15 bg-white p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
