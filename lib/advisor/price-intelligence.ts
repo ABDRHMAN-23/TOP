@@ -171,6 +171,37 @@ function specsMatch(a: PriceQuote, b: PriceQuote) {
   return aSpecs === bSpecs;
 }
 
+export type PurchaseRecommendation = {
+  retailer: string;
+  productName: string;
+  url: string;
+  reason: string;
+  purchaseTotal?: number;
+  packCount?: number;
+  availability: 'in_stock' | 'out_of_stock' | 'unknown';
+  confidence: 'high' | 'medium' | 'low';
+};
+
+export function getPurchaseRecommendations(comparisons: PriceComparison[]): PurchaseRecommendation[] {
+  return comparisons.filter((comparison) => comparison.comparable && comparison.lowest).map((comparison) => {
+    const offer = comparison.lowest!;
+    const availabilityText = offer.availability === 'in_stock' ? 'reported in stock' : offer.availability === 'unknown' ? 'stock status is unknown' : 'reported out of stock';
+    const costText = offer.purchaseTotal !== undefined
+      ? `project purchase cost is ${offer.currency} ${offer.purchaseTotal.toFixed(2)}`
+      : `listed price is ${offer.currency} ${offer.price.toFixed(2)}`;
+    return {
+      retailer: offer.retailer,
+      productName: offer.productName,
+      url: offer.url,
+      reason: `Comparable offer with ${availabilityText}; ${costText} for the requested quantity.`,
+      purchaseTotal: offer.purchaseTotal,
+      packCount: offer.purchasePackCount,
+      availability: offer.availability || 'unknown',
+      confidence: offer.confidence,
+    };
+  });
+}
+
 export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: number, requiredUnit?: string): PriceComparison[] {
   const groups = new Map<string, PriceQuote[]>();
   for (const price of prices) {
