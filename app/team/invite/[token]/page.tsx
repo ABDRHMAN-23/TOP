@@ -1,0 +1,7 @@
+'use client';
+import {useEffect,useState} from 'react';
+export default function AcceptInvite({params}:{params:Promise<{token:string}>}){
+ const [token,setToken]=useState(''); const [message,setMessage]=useState('Opening invitation…'); const [busy,setBusy]=useState(true);
+ useEffect(()=>{params.then(async p=>{setToken(p.token);const r=await fetch('/api/team/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:p.token})});const d=await r.json();if(r.status===401){window.location.href='/login?next='+encodeURIComponent('/team/invite/'+p.token);return}if(!r.ok){setMessage(d.error||'This invitation could not be accepted.');setBusy(false);return}setMessage('Invitation accepted. Opening your QUVOTO workspace…');setTimeout(()=>{window.location.href='/app'},500)})},[params]);
+ return <main className="min-h-screen bg-[#f7faff] flex items-center justify-center px-5"><div className="w-full max-w-md rounded-[2rem] border bg-white p-8 text-center shadow-sm"><div className="text-2xl font-black text-[#0A1E3D]">QUVOTO</div><h1 className="mt-5 text-2xl font-black text-[#0A1E3D]">Team invitation</h1><p className="mt-3 text-slate-500">{message}</p>{!busy&&<a href="/dashboard" className="mt-6 inline-block rounded-xl bg-[#1769E0] px-5 py-3 font-bold text-white">Go to dashboard</a>}</div></main>;
+}
