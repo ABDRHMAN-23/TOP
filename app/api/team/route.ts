@@ -26,8 +26,11 @@ export async function GET(){
  const {data,error}=await a.supabase!.from('team_memberships').select('member_id,role,created_at').eq('owner_id',a.user!.id).order('created_at');
  if(error)return NextResponse.json({error:error.message},{status:500});
  const {data:invites}=await a.supabase!.from('team_invites').select('id,email,expires_at,created_at').eq('owner_id',a.user!.id).is('accepted_at',null).gt('expires_at',new Date().toISOString()).order('created_at');
- const admin=createAdminClient(); const users=await admin.auth.admin.listUsers({page:1,perPage:1000});
- const members=(data||[]).map(m=>({member_id:m.member_id,role:m.role,created_at:m.created_at,email:users.data.users.find(u=>u.id===m.member_id)?.email||'Unknown'}));
+ const admin=createAdminClient();
+ const members=await Promise.all((data||[]).map(async m=>{
+   const {data:memberUser}=await admin.auth.admin.getUserById(m.member_id);
+   return {member_id:m.member_id,role:m.role,created_at:m.created_at,email:memberUser.user?.email||'Unknown'};
+ }));
  return NextResponse.json({members,pending_invites:invites||[]});
 }
 export async function POST(req:Request){
@@ -39,8 +42,9 @@ export async function POST(req:Request){
  const {count}=await a.supabase!.from('team_memberships').select('*',{count:'exact',head:true}).eq('owner_id',a.user!.id);
  const {count:inviteCount}=await a.supabase!.from('team_invites').select('*',{count:'exact',head:true}).eq('owner_id',a.user!.id).is('accepted_at',null).gt('expires_at',new Date().toISOString());
  if((count||0)+(inviteCount||0)>=2)return NextResponse.json({error:'Your Team can have up to 3 users total, including pending invitations.'},{status:409});
- const admin=createAdminClient(); const users=await admin.auth.admin.listUsers({page:1,perPage:1000});
- const target=users.data.users.find(u=>u.email?.toLowerCase()===email);
+ const admin=createAdminClient();
+ const {data:targetData}=await admin.auth.admin.getUserByEmail(email);
+ const target=targetData.user;
  if(target){
    const {error}=await admin.from('team_memberships').insert({owner_id:a.user!.id,member_id:target.id,role:'member'});
    if(error?.code==='23505')return NextResponse.json({error:'This user is already on the team.'},{status:409});
