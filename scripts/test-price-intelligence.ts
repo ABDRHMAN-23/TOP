@@ -65,6 +65,12 @@ assert.equal(result[0].lowest?.retailer, 'A');
 assert.equal(result[0].unavailableOffers?.[0]?.retailer, 'B');
 
 result = comparePriceOffers([
+  offer('22mm copper pipe 30m roll', 'A', 50, { packCoverage: 30, packCoverageUnit: 'm', availability: 'in_stock' }),
+  offer('22mm copper pipe 30m roll', 'B', 500, { packCoverage: 30, packCoverageUnit: 'm', availability: 'out_of_stock' }),
+], 30, 'm');
+assert.equal(result[0].spreadPercent, 0, 'out-of-stock offers must not distort the price spread');
+
+result = comparePriceOffers([
   offer('22mm copper pipe 30m roll', 'A', 50, { packCoverage: 30, packCoverageUnit: 'm', availability: 'out_of_stock' }),
   offer('22mm copper pipe 30m roll', 'B', 55, { packCoverage: 30, packCoverageUnit: 'm', availability: 'out_of_stock' }),
 ], 30, 'm');
