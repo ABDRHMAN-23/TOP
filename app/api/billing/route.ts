@@ -19,6 +19,7 @@ export async function GET() {
 
   return NextResponse.json({
     plan,
+    billingConfigured: Boolean(process.env.LEMON_SQUEEZY_API_KEY && process.env.LEMON_SQUEEZY_STORE_ID),
     label: catalog.label,
     price: catalog.price,
     used,
