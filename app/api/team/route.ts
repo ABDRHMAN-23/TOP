@@ -46,9 +46,17 @@ export async function POST(req:Request){
  const {data:targetData}=await admin.auth.admin.getUserByEmail(email);
  const target=targetData.user;
  if(target){
+   const {data:membership,error:membershipError}=await admin
+     .from('team_memberships')
+     .select('member_id')
+     .eq('owner_id',a.user!.id)
+     .eq('member_id',target.id)
+     .maybeSingle();
+   if(membershipError)return NextResponse.json({error:membershipError.message},{status:500});
+   if(membership)return NextResponse.json({error:'This user is already on the team.'},{status:409});
    const {error}=await admin.from('team_memberships').insert({owner_id:a.user!.id,member_id:target.id,role:'member'});
-   if(error?.code==='23505')return NextResponse.json({error:'This user is already on the team.'},{status:409});
-   if(error)return NextResponse.json({error:error.message},{status:500});
+   if(error)return NextResponse.json({error:error.code==='23505'?'This user is already on the team.':error.message},{status:error.code==='23505'?409:500});
+   await admin.from('team_invites').delete().eq('owner_id',a.user!.id).eq('email',email).is('accepted_at',null);
    return NextResponse.json({ok:true,mode:'member'});
  }
  if(!process.env.RESEND_API_KEY||!process.env.RESEND_FROM_EMAIL)return NextResponse.json({error:'This person does not have a QUVOTO account yet. Add RESEND_API_KEY and RESEND_FROM_EMAIL to enable email invitations.'},{status:503});
