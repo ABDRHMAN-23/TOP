@@ -394,7 +394,7 @@ export async function getBuildWatchPriceHistory(query: string, days = 30): Promi
   if (!points.length) return null;
 
   const latest = points[points.length - 1];
-  const retailerPoints = points.filter((point) => point.retailer === latest.retailer && point.currency === latest.currency);
+  const retailerPoints = points.filter((point: PriceHistoryPoint) => point.retailer === latest.retailer && point.currency === latest.currency);
   const current = latest.price;
   const previous = retailerPoints.length > 1 ? retailerPoints[retailerPoints.length - 2].price : undefined;
   const changePercent = previous !== undefined && previous > 0 ? ((current - previous) / previous) * 100 : undefined;
