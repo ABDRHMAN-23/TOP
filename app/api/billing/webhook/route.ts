@@ -16,7 +16,7 @@ async function qualifyForUser(admin:any, uid:string){
    admin.from('subscriptions').select('plan,status,current_period_end').eq('user_id',ref.referrer_user_id).maybeSingle(),
    admin.from('subscriptions').select('plan,status,current_period_end').eq('user_id',ref.referred_user_id).maybeSingle()
   ]);
-  const referrerActive=referrerSub&&['active','trialing'].includes(referrerSub.status)&&['starter','pro','team'].includes(referrerSub.plan);
+  const referrerActive=referrerSub&&['active'].includes(referrerSub.status)&&['starter','pro','team'].includes(referrerSub.plan);
   const referredPaid=referredSub&&referredSub.status==='active'&&['starter','pro','team'].includes(referredSub.plan);
   if(!referrerActive||!referredPaid||referrerSub.plan!==referredSub.plan) continue;
   if(ref.status!=='qualified'&&ref.status!=='rewarded'){
