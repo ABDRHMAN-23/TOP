@@ -39,8 +39,10 @@ export async function POST(req: Request) {
     if (!question) return NextResponse.json({ error: 'Ask the Advisor a question.' }, { status: 400 });
     const market = String(body?.market || 'United Kingdom').trim();
     const currency = String(body?.currency || 'GBP').trim().toUpperCase();
-    const { data: business } = await supabase.from('business_profiles').select('business_name,default_currency,address').eq('user_id', user.id).maybeSingle();
-    const { data: quotes } = await supabase.from('quotes').select('quote_number,client_name,items,subtotal,total,currency,status,created_at').eq('user_id', user.id).order('created_at',{ ascending:false }).limit(20);
+    const { data: membership } = await supabase.from('team_memberships').select('owner_id').eq('member_id', user.id).neq('owner_id', user.id).maybeSingle();
+    const workspaceOwnerId = membership?.owner_id || user.id;
+    const { data: business } = await supabase.from('business_profiles').select('business_name,default_currency,address').eq('user_id', workspaceOwnerId).maybeSingle();
+    const { data: quotes } = await supabase.from('quotes').select('quote_number,client_name,items,subtotal,total,currency,status,created_at').eq('user_id', workspaceOwnerId).order('created_at',{ ascending:false }).limit(20);
     const fx = currency !== 'GBP' ? await getFx('GBP', currency) : { base:'GBP', date:new Date().toISOString().slice(0,10), rates:{ GBP:1 } };
     const isUk = /^(united kingdom|uk|great britain)$/i.test(market);
     const marketSources = sourcesForMarket(market);
