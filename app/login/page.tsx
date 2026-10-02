@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { Loader2, Mail } from 'lucide-react';
+import QuvotoLogo from '@/components/QuvotoLogo';
 
 function Brand(){return <QuvotoLogo className="h-14 w-auto"/>;}
 import { createClient } from '@/lib/supabase/client';
