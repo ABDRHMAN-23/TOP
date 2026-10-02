@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { qualifyFreeReferralAndReward } from '@/lib/free-referrals';
+import { notifyUser } from '@/lib/notifications';
 
 function mapQuoteError(message: string) {
   if (message.startsWith('QUOTE_LIMIT:')) {
@@ -50,6 +51,14 @@ export async function POST(req: Request) {
   }
 
   try { await qualifyFreeReferralAndReward(createAdminClient(), user.id); } catch { /* referral rewards must never block quote creation */ }
+
+  await notifyUser(user.id, {
+    title: 'Quote ready',
+    body: data?.quote_number ? 'Quote #' + data.quote_number + ' is ready for your review.' : 'Your new quote is ready for review.',
+    type: 'quote_created',
+    link: '/workspace',
+    tag: 'quote-created'
+  });
 
   return NextResponse.json(data);
 }
