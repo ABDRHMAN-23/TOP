@@ -326,8 +326,8 @@ export async function getBuildWatchPriceHistory(query: string, days = 30): Promi
     ? comparableSignals.reduce((sum, x) => sum + (x.changePercent || 0), 0) / comparableSignals.length
     : undefined;
 
-  const historicalPrices = points.map((point) => point.price).filter((price) => Number.isFinite(price));
-  const averagePrice = historicalPrices.length ? historicalPrices.reduce((sum, price) => sum + price, 0) / historicalPrices.length : undefined;
+  const historicalPrices = points.map((point: PriceHistoryPoint) => point.price).filter((price: number) => Number.isFinite(price));
+  const averagePrice = historicalPrices.length ? historicalPrices.reduce((sum: number, price: number) => sum + price, 0) / historicalPrices.length : undefined;
   const lowestPrice = historicalPrices.length ? Math.min(...historicalPrices) : undefined;
   const highestPrice = historicalPrices.length ? Math.max(...historicalPrices) : undefined;
   const direction = averageChange === undefined
