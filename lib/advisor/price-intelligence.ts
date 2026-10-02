@@ -297,7 +297,8 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
     // Do not re-split by the raw product spec string here, or equivalent pack formats
     // would be separated again before purchase-cost normalization.
     const currencies = new Set(offers.map((x) => x.currency));
-    const units = new Set(offers.map((x) => normalizeUnit(x.unit) || ''));
+    const comparableUnit = (offer: PriceQuote) => normalizeUnit(offer.packCoverageUnit || offer.unit);
+    const units = new Set(offers.map((x) => comparableUnit(x) || ''));
     const normalizedRequiredUnit = normalizeUnit(requiredUnit);
     if (currencies.size !== 1 || units.size !== 1 || (normalizedRequiredUnit && !units.has(normalizedRequiredUnit))) {
       return { productName: offers[0].productName, comparable: false, reason: 'Offers use different currencies, units, or requested units, so QUVOTO will not rank them as directly comparable.', offers };
@@ -307,7 +308,7 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
     const coverageInRequiredUnit = (offer: PriceQuote) => {
       const coverage = offer.packCoverage ?? offer.packQuantity;
       if (!coverage) return undefined;
-      const coverageUnit = normalizeUnit(offer.packCoverageUnit || offer.unit);
+      const coverageUnit = comparableUnit(offer);
       if (!normalizedRequiredUnit || !coverageUnit || coverageUnit !== normalizedRequiredUnit) return undefined;
       return coverage;
     };
