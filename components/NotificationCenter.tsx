@@ -22,11 +22,25 @@ export default function NotificationCenter(){
     if(typeof window==='undefined')return;
     setPermission('Notification' in window?Notification.permission:'unsupported');
     load();
-    if('Notification' in window&&Notification.permission==='default'&&!localStorage.getItem('quvoto_notification_prompt_seen')){
+    const vapidKey=process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    const standalone=window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone===true;
+    const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+    const pushReady=!!vapidKey && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window && (!isIOS || standalone);
+    if(pushReady && Notification.permission==='default'&&!localStorage.getItem('quvoto_notification_prompt_seen')){
       setPrompt(true);localStorage.setItem('quvoto_notification_prompt_seen','1');
     }
+    if(pushReady && Notification.permission==='granted') ensureSubscription();
     if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
   },[]);
+
+  const ensureSubscription=async()=>{
+    const key=process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if(!key||!('serviceWorker' in navigator)||!('PushManager' in window))return;
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(key)});
+    await fetch('/api/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:sub.toJSON()})});
+  };
 
   const enable=async()=>{
     setBusy(true);
@@ -34,11 +48,7 @@ export default function NotificationCenter(){
       if(!('Notification' in window)){setPermission('unsupported');return}
       const p=await Notification.requestPermission();setPermission(p);setPrompt(false);
       if(p!=='granted'||!('serviceWorker' in navigator)||!('PushManager' in window))return;
-      const reg=await navigator.serviceWorker.ready;
-      const key=process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if(!key)return;
-      const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(key)});
-      await fetch('/api/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:sub.toJSON()})});
+      await ensureSubscription();
     }finally{setBusy(false)}
   };
 
