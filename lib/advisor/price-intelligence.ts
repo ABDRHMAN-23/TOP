@@ -366,7 +366,7 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
       : undefined;
     const unavailableOffers = pricedOffers.filter((offer) => offer.availability === 'out_of_stock').map((offer) => ({ retailer: offer.retailer, reason: 'Source reports the product as out of stock.' }));
 
-    return { productName: lowest.productName, comparable: sorted.length >= 2, currency: lowest.currency, unit: lowest.unit, requiredQuantity, requiredUnit, offers: sorted, lowest, highest, average, spreadPercent, lowestPurchaseTotal, lowestTotalWithExtras, lowestCostBasis, lowestPackCount, requestedPurchaseTotals, unavailableOffers };
+    return { productName: (lowest || sorted[0]).productName, comparable: sorted.length >= 2, currency: (lowest || sorted[0]).currency, unit: (lowest || sorted[0]).unit, requiredQuantity, requiredUnit, offers: sorted, lowest, highest, average, spreadPercent, lowestPurchaseTotal, lowestTotalWithExtras, lowestCostBasis, lowestPackCount, requestedPurchaseTotals, unavailableOffers };
   });
 }
 
