@@ -27,7 +27,7 @@ export default function Pricing() {
       <div className="mx-auto max-w-3xl text-center">
         <div className="inline-flex items-center gap-2 rounded-full bg-[#1769E0]/5 px-3 py-1.5 text-xs font-bold text-[#1769E0]">Simple by design</div>
         <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-6xl">Professional quoting without the field-service software price.</h1>
-        <p className="mt-4 text-lg leading-8 text-slate-500">QUVOTO is focused on one job: helping contractors turn voice notes into professional quotes. You pay for the quoting workflow you actually use—not a full field-service suite.</p>
+        <p className="mt-4 text-lg leading-8 text-slate-500">QUVOTO is focused on one job: helping contractors turn voice notes into professional quotes. You pay for the quoting workflow you actually use—not a full field-service suite.</p><div className="mx-auto mt-5 max-w-2xl rounded-2xl border border-[#1769E0]/15 bg-[#1769E0]/5 p-4 text-sm font-semibold text-[#0A1E3D]">Refer a contractor on your same paid plan: your first qualified referral earns one free month; every 3 additional qualified referrals earns another month.</div>
       </div>
       <div className="mt-12 grid gap-5 lg:grid-cols-4">
         {plans.map((plan, i) => <div key={plan.name} className={'rounded-[2rem] border bg-white p-6 shadow-sm ' + (i===1 ? 'border-blue-300 ring-4 ring-[#2F8CFF]/10' : 'border-slate-200')}>
