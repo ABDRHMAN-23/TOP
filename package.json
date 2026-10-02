@@ -10,7 +10,8 @@
     "start": "next start",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "test:price": "node --experimental-strip-types scripts/test-price-intelligence.ts"
+    "test:price": "node --experimental-strip-types scripts/test-price-intelligence.ts",
+    "test:advisor:requirement": "node --experimental-strip-types scripts/test-project-requirement.ts"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "1.20.7",
