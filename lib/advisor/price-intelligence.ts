@@ -6,6 +6,8 @@ export type PriceQuote = {
   currency: string;
   unit?: string;
   packQuantity?: number;
+  packCoverage?: number;
+  packCoverageUnit?: string;
   purchaseTotal?: number;
   purchasePackCount?: number;
   effectiveUnitPrice?: number;
@@ -56,13 +58,53 @@ async function fetchBuildWatch(path: string) {
   return response.json() as Promise<any>;
 }
 
+function normalizeUnit(value?: string): string | undefined {
+  const unit = value?.trim().toLowerCase();
+  if (!unit) return undefined;
+  if (/^(m|metre|metres|meter|meters)$/.test(unit)) return 'm';
+  if (/^(kg|kilogram|kilograms)$/.test(unit)) return 'kg';
+  if (/^(l|litre|litres|liter|liters)$/.test(unit)) return 'l';
+  if (/^(pc|pcs|piece|pieces|unit|units)$/.test(unit)) return 'pcs';
+  return unit;
+}
+
+function parsePackDetails(unitLabel?: string, productName?: string): { quantity?: number; coverage?: number; coverageUnit?: string } {
+  const text = `${unitLabel || ''} ${productName || ''}`.toLowerCase().replace(/×/g, 'x');
+  const normalizedUnit = normalizeUnit(unitLabel);
+
+  // Examples: "10 x 3m", "10x3m", "10 x 3 m roll".
+  // The first number is the count of pieces and the second is the coverage of each piece.
+  const multiplied = text.match(/(?:^|\s|\b)(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*(m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/i);
+  if (multiplied) {
+    const count = Number(multiplied[1]);
+    const perUnit = Number(multiplied[2]);
+    const coverageUnit = normalizeUnit(multiplied[3]);
+    if (Number.isFinite(count) && count > 0 && Number.isFinite(perUnit) && perUnit > 0 && coverageUnit) {
+      return { quantity: count, coverage: count * perUnit, coverageUnit };
+    }
+  }
+
+  const explicitPack = text.match(/(?:pack|box|roll|coil|bundle|reel)\s*(?:of)?\s*(\d+(?:\.\d+)?)\s*(m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/i)
+    || text.match(/(\d+(?:\.\d+)?)\s*(m|metres?|meters?|kg|kilograms?|l|litres?|liters?)\s*(?:roll|coil|reel|pack|box|bundle)\b/i);
+  if (explicitPack) {
+    const value = Number(explicitPack[1]);
+    const coverageUnit = normalizeUnit(explicitPack[2]);
+    if (Number.isFinite(value) && value > 0 && coverageUnit) {
+      return { coverage: value, coverageUnit };
+    }
+  }
+
+  const quantityOnly = text.match(/(?:pack|box|bundle)\s*(?:of)?\s*(\d+(?:\.\d+)?)\s*(pcs?|pieces?|units?)\b/i);
+  if (quantityOnly) {
+    const value = Number(quantityOnly[1]);
+    if (Number.isFinite(value) && value > 0) return { quantity: value, coverage: value, coverageUnit: 'pcs' };
+  }
+
+  return normalizedUnit ? {} : {};
+}
+
 function parsePackQuantity(unitLabel?: string, productName?: string): number | undefined {
-  const text = `${unitLabel || ''} ${productName || ''}`;
-  const explicitPack = text.match(/(?:pack|box|roll|coil|bundle)\s*(?:of)?\s*(\d+(?:\.\d+)?)\s*(m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/i)
-    || text.match(/(\d+(?:\.\d+)?)\s*(m|metres?|meters?|kg|kilograms?|l|litres?|liters?)\s*(?:roll|coil|reel|pack|box)\b/i);
-  if (!explicitPack) return undefined;
-  const value = Number(explicitPack[1]);
-  return Number.isFinite(value) && value > 0 ? value : undefined;
+  return parsePackDetails(unitLabel, productName).coverage;
 }
 
 function extractSpecs(text: string) {
@@ -98,7 +140,7 @@ async function searchBuildWatchPrices(query: string): Promise<PriceQuote[]> {
       const price = Number(offer?.price_inc_vat);
       if (!Number.isFinite(price) || price < 0) continue;
       const unit = String(product?.unit_label || result?.unit_label || '').trim() || undefined;
-      const packQuantity = parsePackQuantity(unit, productName);
+      const packDetails = parsePackDetails(unit, productName);
       collected.push({
         productName,
         retailer: String(offer?.merchant_name || 'BuildWatch merchant').trim(),
@@ -106,7 +148,9 @@ async function searchBuildWatchPrices(query: string): Promise<PriceQuote[]> {
         price,
         currency: String(offer?.currency || 'GBP').toUpperCase(),
         unit,
-        packQuantity,
+        packQuantity: packDetails.quantity ?? parsePackQuantity(unit, productName),
+        packCoverage: packDetails.coverage,
+        packCoverageUnit: packDetails.coverageUnit,
         observedAt: String(offer?.scraped_at || new Date().toISOString()),
         sourceType: 'approved_aggregator',
         confidence: 'medium',
@@ -125,12 +169,17 @@ function normalize(item: any): PriceQuote | null {
   const name = String(item?.productName ?? item?.product_name ?? item?.name ?? '').trim();
   const retailer = String(item?.retailer ?? item?.merchant ?? item?.store ?? '').trim();
   const url = String(item?.url ?? item?.product_url ?? item?.link ?? '').trim();
-  const packQuantity = Number(item?.packQuantity ?? item?.pack_quantity ?? item?.quantity_per_pack ?? item?.unitsPerPack);
+  const rawPackQuantity = Number(item?.packQuantity ?? item?.pack_quantity ?? item?.quantity_per_pack ?? item?.unitsPerPack);
+  const rawPackCoverage = Number(item?.packCoverage ?? item?.pack_coverage ?? item?.coverage_per_pack);
   const shipping = Number(item?.shipping ?? item?.shipping_cost ?? item?.delivery ?? item?.delivery_cost);
   const tax = Number(item?.tax ?? item?.tax_amount ?? item?.vat);
   const shippingScope = item?.shipping_scope === 'pack' || item?.shippingScope === 'pack' ? 'pack' : item?.shipping_scope === 'order' || item?.shippingScope === 'order' ? 'order' : 'unknown';
   const taxIncluded = item?.tax_included === true || item?.taxIncluded === true ? true : item?.tax_included === false || item?.taxIncluded === false ? false : undefined;
   if (!name || !retailer || !url || !Number.isFinite(price) || price < 0) return null;
+  const parsed = parsePackDetails(item?.unit ? String(item.unit) : undefined, name);
+  const packQuantity = Number.isFinite(rawPackQuantity) && rawPackQuantity > 0 ? rawPackQuantity : parsed.quantity;
+  const packCoverage = Number.isFinite(rawPackCoverage) && rawPackCoverage > 0 ? rawPackCoverage : parsed.coverage;
+  const packCoverageUnit = item?.packCoverageUnit || item?.pack_coverage_unit || parsed.coverageUnit;
   return {
     productName: name,
     retailer,
@@ -138,7 +187,9 @@ function normalize(item: any): PriceQuote | null {
     price,
     currency: String(item?.currency ?? 'GBP').toUpperCase(),
     unit: item?.unit ? String(item.unit).trim() : undefined,
-    packQuantity: Number.isFinite(packQuantity) && packQuantity > 0 ? packQuantity : undefined,
+    packQuantity,
+    packCoverage,
+    packCoverageUnit: normalizeUnit(packCoverageUnit),
     shipping: Number.isFinite(shipping) && shipping >= 0 ? shipping : undefined,
     tax: Number.isFinite(tax) && tax >= 0 ? tax : undefined,
     shippingScope,
@@ -153,8 +204,6 @@ function normalize(item: any): PriceQuote | null {
 
 function productSpecKey(name: string) {
   const normalized = name.toLowerCase().replace(/×/g, 'x').replace(/\s+/g, ' ').trim();
-  // Preserve explicit dimensions/weights/volumes so similarly named but differently
-  // sized products are never treated as the same comparison group.
   const specs = normalized.match(/\b\d+(?:\.\d+)?\s*(?:mm|cm|m|kg|g|l|ml|in|inch|inches|ft|\")\b(?:\s*x\s*\d+(?:\.\d+)?\s*(?:mm|cm|m|kg|g|l|ml|in|inch|inches|ft|\")\b)*/g) || [];
   return specs.map((x) => x.replace(/\s+/g, '')).join('|');
 }
@@ -222,25 +271,29 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
     const bestSpecGroup = Array.from(specGroups.values()).sort((a, b) => b.length - a.length)[0] || offers;
     offers = bestSpecGroup;
     const currencies = new Set(offers.map((x) => x.currency));
-    const units = new Set(offers.map((x) => (x.unit || '').trim().toLowerCase()));
-    const normalizedRequiredUnit = requiredUnit?.trim().toLowerCase();
+    const units = new Set(offers.map((x) => normalizeUnit(x.unit) || ''));
+    const normalizedRequiredUnit = normalizeUnit(requiredUnit);
     if (currencies.size !== 1 || units.size !== 1 || (normalizedRequiredUnit && !units.has(normalizedRequiredUnit))) {
       return { productName: offers[0].productName, comparable: false, reason: 'Offers use different currencies, units, or requested units, so QUVOTO will not rank them as directly comparable.', offers };
     }
 
     const projectQuantity = requiredQuantity && requiredQuantity > 0 ? requiredQuantity : undefined;
+    const coverageInRequiredUnit = (offer: PriceQuote) => {
+      const coverage = offer.packCoverage ?? offer.packQuantity;
+      if (!coverage) return undefined;
+      const coverageUnit = normalizeUnit(offer.packCoverageUnit || offer.unit);
+      if (!normalizedRequiredUnit || !coverageUnit || coverageUnit !== normalizedRequiredUnit) return undefined;
+      return coverage;
+    };
     const purchaseCost = (offer: PriceQuote) => {
-      if (projectQuantity && offer.packQuantity && offer.unit) {
-        return Math.ceil(projectQuantity / offer.packQuantity) * offer.price;
-      }
-      return offer.price;
+      const coverage = projectQuantity ? coverageInRequiredUnit(offer) : undefined;
+      return coverage ? Math.ceil(projectQuantity! / coverage) * offer.price : offer.price;
     };
 
-    // When the user gives a project quantity, compare the actual number of packs
-    // required to complete the job—not just the sticker price of one pack.
     const pricedOffers = offers.map((offer) => {
-      const purchasePackCount = projectQuantity && offer.packQuantity && offer.unit
-        ? Math.ceil(projectQuantity / offer.packQuantity)
+      const coverage = projectQuantity ? coverageInRequiredUnit(offer) : undefined;
+      const purchasePackCount = coverage
+        ? Math.ceil(projectQuantity! / coverage)
         : undefined;
       const purchaseTotal = purchasePackCount !== undefined
         ? purchasePackCount * offer.price
@@ -262,7 +315,7 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
 
     const purchasable = pricedOffers.filter((offer) => offer.availability !== 'out_of_stock');
     const canCompareConfirmedTotals = purchasable.length >= 2 && purchasable.every((offer) => offer.totalWithExtras !== undefined);
-    const calculatedCost = (offer: any) => canCompareConfirmedTotals ? offer.totalWithExtras : purchaseCost(offer);
+    const calculatedCost = (offer: PriceQuote) => canCompareConfirmedTotals ? offer.totalWithExtras ?? purchaseCost(offer) : purchaseCost(offer);
     const sorted = [...pricedOffers].sort((a, b) => {
       const stockRank = (a.availability === 'in_stock' ? 0 : a.availability === 'unknown' ? 1 : 2) - (b.availability === 'in_stock' ? 0 : b.availability === 'unknown' ? 1 : 2);
       return calculatedCost(a) - calculatedCost(b) || stockRank || a.price - b.price;
@@ -305,8 +358,6 @@ export async function getBuildWatchPriceHistory(query: string, days = 30): Promi
 
   if (!points.length) return null;
 
-  // Compare like-for-like within the same retailer so a retailer switch
-  // cannot be mistaken for a price increase/decrease.
   const byRetailer = new Map<string, PriceHistoryPoint[]>();
   for (const point of points) {
     const list = byRetailer.get(point.retailer) || [];
