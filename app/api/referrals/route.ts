@@ -94,8 +94,13 @@ export async function GET(req:Request){
 
  const freeCount=(referrals||[]).filter(r=>!!r.free_qualified_at).length;
  const freeNext=Math.max(10,Math.ceil((freeCount+1)/10)*10);
- const monthlyNext=activePaid&&interval==='month'?nextMilestoneFor(monthlyCount,monthlyReward):null;
- const annualNext=activePaid&&interval==='year'?nextMilestoneFor(annualCount,annualRewardMonths):null;
+ const monthlyNext=activePaid?nextMilestoneFor(monthlyCount,monthlyReward):null;
+ const annualNext=activePaid?nextMilestoneFor(annualCount,annualRewardMonths):null;
+ const nudgeCandidates:any[]=[];
+ if(freeCount<freeNext) nudgeCandidates.push({id:'free',track:'free',title:freeNext-freeCount===1?'One more Free user.':'You are close to your Free-user reward.',detail:`${freeNext-freeCount} more qualified Free ${freeNext-freeCount===1?'user':'users'} to unlock ${'1 free Starter month'}.`,remaining:freeNext-freeCount,next:freeNext,count:freeCount});
+ if(activePaid&&monthlyNext!=null&&monthlyNext-monthlyCount<=2) nudgeCandidates.push({id:'monthly',track:'monthly',title:monthlyNext-monthlyCount===1?'One paid referral away.':'Your Monthly reward is getting close.',detail:`${monthlyNext-monthlyCount} more same-plan monthly ${monthlyNext-monthlyCount===1?'referral':'referrals'} to unlock 1 free month.`,remaining:monthlyNext-monthlyCount,next:monthlyNext,count:monthlyCount});
+ if(activePaid&&annualNext!=null&&annualNext-annualCount<=2) nudgeCandidates.push({id:'annual',track:'annual',title:annualNext-annualCount===1?'One annual referral away.':'Your Annual reward is getting close.',detail:`${annualNext-annualCount} more same-plan annual ${annualNext-annualCount===1?'referral':'referrals'} to unlock your next Annual reward.`,remaining:annualNext-annualCount,next:annualNext,count:annualCount});
+ const nudges=nudgeCandidates.sort((a,b)=>a.remaining-b.remaining).slice(0,3);
  const badges=[
    {id:'first-share',label:'First Share',description:'Your referral link is ready.',unlocked:true,icon:'↗'},
    {id:'free-builder',label:'Free Builder',description:'10 active Free users.',unlocked:freeCount>=10,icon:'★'},
@@ -142,6 +147,7 @@ export async function GET(req:Request){
    referrals:referrals||[],
    rewards:rewards||[],
    timeline,
+   nudges,
    loyalty:{level:loyaltyLevel.name,totalQualified,next:loyaltyLevel.next,remaining:nextLoyalty,progress:loyaltyProgress}
  });
 }
