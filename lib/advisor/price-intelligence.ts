@@ -40,6 +40,8 @@ export type PriceComparison = {
   average?: number;
   spreadPercent?: number;
   lowestPurchaseTotal?: number;
+  lowestTotalWithExtras?: number;
+  lowestCostBasis?: 'confirmed_total' | 'project_purchase' | 'listed_price';
   lowestPackCount?: number;
   requestedPurchaseTotals?: { retailer: string; packs: number; total: number; currency: string; availability: 'in_stock'|'out_of_stock'|'unknown' }[];
   unavailableOffers?: { retailer: string; reason: string }[];
@@ -242,6 +244,8 @@ export type PurchaseRecommendation = {
   url: string;
   reason: string;
   purchaseTotal?: number;
+  totalWithExtras?: number;
+  costBasis: 'confirmed_total' | 'project_purchase' | 'listed_price';
   packCount?: number;
   availability: 'in_stock' | 'out_of_stock' | 'unknown';
   confidence: 'high' | 'medium' | 'low';
@@ -251,8 +255,17 @@ export function getPurchaseRecommendations(comparisons: PriceComparison[]): Purc
   return comparisons.filter((comparison) => comparison.comparable && comparison.lowest).map((comparison) => {
     const offer = comparison.lowest!;
     const availabilityText = offer.availability === 'in_stock' ? 'reported in stock' : offer.availability === 'unknown' ? 'stock status is unknown' : 'reported out of stock';
-    const costText = offer.purchaseTotal !== undefined
-      ? `project purchase cost is ${offer.currency} ${offer.purchaseTotal.toFixed(2)}`
+    const costBasis = comparison.lowestCostBasis || 'listed_price';
+    const costValue = costBasis === 'confirmed_total'
+      ? offer.totalWithExtras
+      : offer.purchaseTotal;
+    const costLabel = costBasis === 'confirmed_total'
+      ? 'confirmed calculated total'
+      : costBasis === 'project_purchase'
+        ? 'project purchase cost'
+        : 'listed price';
+    const costText = costValue !== undefined
+      ? `${costLabel} is ${offer.currency} ${costValue.toFixed(2)}`
       : `listed price is ${offer.currency} ${offer.price.toFixed(2)}`;
     return {
       retailer: offer.retailer,
@@ -260,6 +273,8 @@ export function getPurchaseRecommendations(comparisons: PriceComparison[]): Purc
       url: offer.url,
       reason: `Comparable offer with ${availabilityText}; ${costText} for the requested quantity.`,
       purchaseTotal: offer.purchaseTotal,
+      totalWithExtras: offer.totalWithExtras,
+      costBasis,
       packCount: offer.purchasePackCount,
       availability: offer.availability || 'unknown',
       confidence: offer.confidence,
@@ -337,12 +352,18 @@ export function comparePriceOffers(prices: PriceQuote[], requiredQuantity?: numb
     const spreadPercent = lowest.price > 0 ? ((highest.price - lowest.price) / lowest.price) * 100 : undefined;
     const lowestPackCount = lowest.purchasePackCount;
     const lowestPurchaseTotal = lowest.purchaseTotal;
+    const lowestTotalWithExtras = lowest.totalWithExtras;
+    const lowestCostBasis = canCompareConfirmedTotals && lowest.totalWithExtras !== undefined
+      ? 'confirmed_total' as const
+      : lowest.purchaseTotal !== undefined
+        ? 'project_purchase' as const
+        : 'listed_price' as const;
     const requestedPurchaseTotals = projectQuantity
       ? pricedOffers.filter((offer) => offer.purchaseTotal !== undefined).map((offer) => ({ retailer: offer.retailer, packs: offer.purchasePackCount || 0, total: offer.purchaseTotal || 0, currency: offer.currency, availability: offer.availability || 'unknown' }))
       : undefined;
     const unavailableOffers = pricedOffers.filter((offer) => offer.availability === 'out_of_stock').map((offer) => ({ retailer: offer.retailer, reason: 'Source reports the product as out of stock.' }));
 
-    return { productName: lowest.productName, comparable: sorted.length >= 2, currency: lowest.currency, unit: lowest.unit, requiredQuantity, requiredUnit, offers: sorted, lowest, highest, average, spreadPercent, lowestPurchaseTotal, lowestPackCount, requestedPurchaseTotals, unavailableOffers };
+    return { productName: lowest.productName, comparable: sorted.length >= 2, currency: lowest.currency, unit: lowest.unit, requiredQuantity, requiredUnit, offers: sorted, lowest, highest, average, spreadPercent, lowestPurchaseTotal, lowestTotalWithExtras, lowestCostBasis, lowestPackCount, requestedPurchaseTotals, unavailableOffers };
   });
 }
 
