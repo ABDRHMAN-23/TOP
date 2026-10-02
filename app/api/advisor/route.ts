@@ -28,18 +28,34 @@ async function askGemma(prompt: string) {
 
 
 function extractProjectRequirement(question: string) {
-  const match = question.match(/(?:need|requires?|want|for)\s+(\d+(?:\.\d+)?)\s*(m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/i)
-    || question.match(/\b(\d+(?:\.\d+)?)\s*(m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/i);
+  const normalized = question.replace(/×/g, 'x').replace(/\s+/g, ' ').trim();
+  const match =
+    normalized.match(/(?:need|requires?|want|for|order|buy|quote)\s+(\d+(?:\.\d+)?)\s*(m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/i)
+    || normalized.match(/\b(\d+(?:\.\d+)?)\s*(m|metres?|meters?|kg|kilograms?|l|litres?|liters?|pcs?|pieces?|units?)\b/i);
+
   const requiredQuantity = match ? Number(match[1]) : undefined;
   const rawUnit = match?.[2]?.toLowerCase();
-  const requiredUnit = rawUnit ? (rawUnit.startsWith('m') ? 'm' : rawUnit.startsWith('kg') ? 'kg' : rawUnit.startsWith('l') ? 'l' : 'pcs') : undefined;
-  const productText = question
+  const requiredUnit = rawUnit
+    ? rawUnit.startsWith('m') ? 'm'
+      : rawUnit.startsWith('kg') ? 'kg'
+        : rawUnit.startsWith('l') ? 'l'
+          : 'pcs'
+    : undefined;
+
+  // Remove only the requested quantity/unit. Keep product specifications such as
+  // "22mm", "15kg", or "3m" when they are part of the product description.
+  const productText = normalized
     .replace(match?.[0] || '', ' ')
-    .replace(/\b(?:need|requires?|want|for|of)\b/gi, ' ')
+    .replace(/\b(?:i|we|you|please|need|requires?|want|for|of|order|buy|quote|get|find|me)\b/gi, ' ')
+    .replace(/[,:;]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-  const searchQuery = [productText, requiredUnit && requiredQuantity ? `${requiredQuantity} ${requiredUnit}` : ''].filter(Boolean).join(' ').trim();
-  return { requiredQuantity, requiredUnit, searchQuery: searchQuery || question };
+
+  return {
+    requiredQuantity,
+    requiredUnit,
+    searchQuery: productText || question,
+  };
 }
 
 export async function POST(req: Request) {
