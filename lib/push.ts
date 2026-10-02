@@ -1,5 +1,5 @@
 import webpush from 'web-push';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 type PushPayload={title:string;body:string;link?:string;tag?:string};
 
@@ -9,7 +9,7 @@ export async function sendPushToUser(userId:string,payload:PushPayload){
   const subject=process.env.VAPID_SUBJECT||'mailto:notifications@quvoto.com';
   if(!publicKey||!privateKey)return {sent:0,skipped:true};
   webpush.setVapidDetails(subject,publicKey,privateKey);
-  const supabase=await createClient();
+  const supabase=createAdminClient();
   const {data:subs}=await supabase.from('push_subscriptions').select('id,endpoint,p256dh,auth').eq('user_id',userId);
   let sent=0;
   for(const sub of subs||[]){
