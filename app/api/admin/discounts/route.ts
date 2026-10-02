@@ -22,7 +22,7 @@ export async function POST(req:Request){
  let b:any;try{b=await req.json()}catch{return NextResponse.json({error:'Invalid JSON.'},{status:400})}
  const code=String(b.code||'').trim().toUpperCase();const name=String(b.name||code).trim();const amountType=b.amountType==='fixed'?'fixed':'percent';const amount=Number(b.amount);
  const plans=Array.isArray(b.plans)?b.plans.filter((x:string)=>PLANS.includes(x as any)):[...PLANS];const intervals=Array.isArray(b.intervals)?b.intervals.filter((x:string)=>INTERVALS.includes(x as any)):[...INTERVALS];
- const duration=['once','repeating','forever'].includes(b.duration)?b.duration:'once';const durationMonths=duration==='repeating'?Number(b.durationMonths):null;const validDurationMonths=Number.isInteger(durationMonths)&&durationMonths>=1?durationMonths:null;
+ const duration=['once','repeating','forever'].includes(b.duration)?b.duration:'once';const durationMonths=duration==='repeating'?Number(b.durationMonths):1;const validDurationMonths=duration==='repeating'&&Number.isInteger(durationMonths)&&durationMonths>=1?durationMonths:null;
  const maxRedemptions=b.maxRedemptions===''||b.maxRedemptions==null?null:Number(b.maxRedemptions);const maxPerUser=b.maxRedemptionsPerUser===''||b.maxRedemptionsPerUser==null?null:Number(b.maxRedemptionsPerUser);
  const startsAt=b.startsAt?new Date(b.startsAt).toISOString():null;const expiresAt=b.expiresAt?new Date(b.expiresAt).toISOString():null;
  if(!/^[A-Z0-9]{3,64}$/.test(code)||!name)return NextResponse.json({error:'Invalid code or name.'},{status:400});
