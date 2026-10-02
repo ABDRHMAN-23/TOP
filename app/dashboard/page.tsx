@@ -23,14 +23,11 @@ export default async function DashboardPage() {
   const rewardLabel = rewardTrack === 'annual' ? 'Annual reward' : rewardTrack === 'monthly' ? 'Monthly reward' : 'Free-user reward';
   const isTeam = subscription?.plan === 'team' && ['active','trialing'].includes(subscription.status || '');
 
-  const [{ data: quotes }, { data: followups }, { data: invoices }, { data: jobs }] = await Promise.all([
-    supabase.from('quotes').select('id, quote_number, client_name, client_email, total, currency, status, created_at, public_token').order('created_at', { ascending: false }).limit(50),
-    supabase.from('followups').select('id, scheduled_for, note, status, quote_id, quotes(client_name)').eq('user_id', user.id).order('scheduled_for', { ascending: true }).limit(50),
-    supabase.from('invoices').select('id, invoice_number, amount, currency, status, due_date').eq('user_id', user.id).order('due_date', { ascending: true }).limit(50),
-    supabase.from('jobs').select('id, title, status').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50)
-  ]);
-  const briefFollowups=(followups||[]).map((x:any)=>({...x,client_name:x.quotes?.client_name||null}));
-
+    const { data: quotes } = await supabase
+    .from('quotes')
+    .select('id, quote_number, client_name, client_email, total, currency, status, created_at, public_token')
+    .order('created_at', { ascending: false })
+    .limit(50);
   return <main className="min-h-screen bg-[#f7faff]">
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
@@ -45,7 +42,7 @@ export default async function DashboardPage() {
     </header>
     <section className="mx-auto max-w-6xl px-4 py-7 sm:px-8 sm:py-10">
       <div><p className="text-sm font-extrabold tracking-[0.16em] text-[#1769E0]">WORKSPACE</p><h1 className="mt-1 text-[2rem] font-extrabold leading-tight tracking-[-0.04em] sm:text-4xl">Your quotes</h1><p className="mt-2 text-slate-500">{quotes?.length || 0} recent quotes in your QUVOTO workspace.</p></div>
-      <DailyBrief followups={briefFollowups} invoices={invoices||[]} quotes={quotes||[]} jobs={jobs||[]}/>
+      <DailyBrief quotes={quotes||[]}/>
       <a href="/rewards" className="mt-6 block overflow-hidden rounded-[1.5rem] border border-[#1769E0]/15 bg-white p-5 shadow-sm hover:border-[#2F8CFF] sm:mt-8 sm:p-6"><div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex items-center gap-2"><span className="rounded-full bg-[#1769E0]/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#1769E0]">Rewards</span><span className="text-xs font-bold text-slate-400">{rewardLabel}</span></div><h2 className="mt-2 text-xl font-black">You're {Math.max(0,rewardNext-rewardCount)} away from your next unlock.</h2><p className="mt-1 text-sm text-slate-500">Keep sharing QUVOTO. Your counter updates automatically.</p></div><div className="min-w-[11rem]"><div className="flex justify-between text-xs font-bold text-slate-500"><span>{rewardCount}</span><span>{rewardNext}</span></div><div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#1769E0]" style={{width:Math.min(100,(rewardCount/Math.max(1,rewardNext))*100)+'%'}}/></div></div></div></a>
       <div className="mt-6 overflow-hidden rounded-[1.5rem] sm:mt-8 sm:rounded-[1.7rem] border bg-white shadow-sm">
         {!quotes?.length ? <div className="p-12 text-center"><FileText className="mx-auto mb-3 text-slate-300" size={38}/><h2 className="text-xl font-bold">No quotes yet</h2><p className="mt-2 text-slate-500">Create your first voice quote.</p><a href="/app" className="mt-5 inline-flex rounded-xl bg-[#1769E0] px-5 py-3 font-bold text-white">Create quote</a></div> :
