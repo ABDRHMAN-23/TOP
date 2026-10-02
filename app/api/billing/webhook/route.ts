@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sendPushToUser } from '@/lib/push';
 import { createAdminClient } from '@/lib/supabase/admin';
 import crypto from 'node:crypto';
 
@@ -141,6 +142,12 @@ async function qualifyForUser(admin:any, uid:string){
     : 'You just unlocked 1 free month. Open your Reward Wallet and choose when to use it.',
    type:'reward',
    link:'/rewards'
+  });
+  await sendPushToUser(ref.referrer_user_id,{
+   title:interval==='year'?'🎉 Annual reward unlocked':'🎉 Reward unlocked',
+   body:interval==='year' ? (rewardMonths===12?'You just unlocked 1 free year.':'You just unlocked 6 free months.') : 'You just unlocked 1 free month.',
+   link:'/rewards',
+   tag:'reward-unlocked'
   });
  }
 }
