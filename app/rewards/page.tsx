@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Check, Copy, Gift, Users, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Gift, Users, Sparkles, Trophy, Lock, Zap, Share2 } from 'lucide-react';
 
 export default function RewardsPage() {
   const [ref, setRef] = useState<any>(null);
@@ -27,6 +27,12 @@ export default function RewardsPage() {
   const annualCount = Number(ref?.qualifiedCount || 0);
   const annualNext = ref?.nextMilestone || 2;
   const annualProgress = Math.min(100, (annualCount / annualNext) * 100);
+  const activeTrack = ref?.activeTrack || 'free';
+  const activeCount = Number(ref?.activeCount || 0);
+  const activeNext = Number(ref?.activeNext || 10);
+  const activeReward = ref?.activeReward || '1 free Starter month';
+  const badges = ref?.badges || [];
+  const activeTitle = activeTrack === 'annual' ? 'Annual momentum' : activeTrack === 'monthly' ? 'Monthly momentum' : 'Free-user momentum';
 
   return <main className="min-h-screen bg-white text-[#0A1E3D]">
     <header className="border-b border-slate-200 bg-white">
@@ -40,14 +46,14 @@ export default function RewardsPage() {
       <div className="mx-auto max-w-5xl px-5 py-14 text-center sm:px-8 sm:py-20">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#1769E0] text-white shadow-lg shadow-blue-600/20"><Gift size={27}/></div>
         <p className="mt-6 text-sm font-black uppercase tracking-[.18em] text-[#1769E0]">QUVOTO Rewards</p>
-        <h1 className="mx-auto mt-3 max-w-3xl text-4xl font-black tracking-[-.04em] sm:text-6xl">Invite good people. Get more time with QUVOTO.</h1>
-        <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">There are three simple reward tracks. Bring real contractors to QUVOTO, help them start using it, and we’ll take care of the reward automatically.</p>
+        <h1 className="mx-auto mt-3 max-w-3xl text-4xl font-black tracking-[-.04em] sm:text-6xl">Share QUVOTO. Hit milestones. Unlock rewards.</h1>
+        <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">Every qualified referral moves your counter. Cross a milestone, unlock a reward, earn a badge, and immediately see what is waiting next.</p>
         {ref?.link && <div className="mx-auto mt-8 flex max-w-xl flex-col gap-2 rounded-2xl border bg-white p-2 shadow-sm sm:flex-row"><div className="flex-1 truncate px-3 py-3 text-left text-sm font-semibold text-slate-600">{ref.link}</div><button onClick={copy} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1769E0] px-5 py-3 text-sm font-bold text-white">{copied ? <Check size={16}/> : <Copy size={16}/>} {copied ? 'Copied' : 'Copy referral link'}</button></div>}
       </div>
     </section>
 
     <section className="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16">
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="mb-6 overflow-hidden rounded-3xl bg-[#0A1E3D] p-6 text-white shadow-xl"><div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between"><div><div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-blue-200"><Zap size={13}/> Active track</div><h2 className="mt-4 text-3xl font-black">{activeTitle}</h2><p className="mt-2 text-slate-300">Next unlock: <b className="text-white">{activeReward}</b> at <b className="text-white">{activeNext}</b>.</p></div><div className="min-w-[16rem] lg:w-80"><div className="flex justify-between text-sm font-bold"><span>{activeCount} qualified</span><span>{activeNext}</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#2F8CFF]" style={{width:Math.min(100,(activeCount/Math.max(1,activeNext))*100)+'%'}}/></div><p className="mt-2 text-xs text-slate-400">{Math.max(0,activeNext-activeCount)} more to the next unlock</p></div></div></div><div className="grid gap-5 lg:grid-cols-3">
         <RewardCard
           icon={<Users size={23}/>}
           eyebrow="Free User Reward"
@@ -83,7 +89,7 @@ export default function RewardsPage() {
         />
       </div>
 
-      <div className="mt-8 rounded-3xl border bg-slate-50 p-6 sm:p-8">
+      <div className="mt-8 rounded-3xl border bg-slate-50 p-6 sm:p-8"><div><div className="flex items-center gap-3"><Trophy className="text-[#1769E0]" size={24}/><div><p className="text-xs font-black uppercase tracking-widest text-[#1769E0]">Milestone badges</p><h2 className="text-2xl font-black">Make every referral feel like progress.</h2></div></div><div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{badges.map((b:any)=><div key={b.id} className={'rounded-2xl border bg-white p-4 '+(b.unlocked?'border-[#1769E0]/25':'opacity-65')}><div className="flex items-center justify-between"><div className={'flex h-10 w-10 items-center justify-center rounded-xl '+(b.unlocked?'bg-[#1769E0] text-white':'bg-slate-100 text-slate-400')}>{b.unlocked?<Trophy size={18}/>:<Lock size={16}/>}</div><span>{b.icon}</span></div><p className="mt-3 font-black">{b.label}</p><p className="mt-1 text-xs leading-5 text-slate-500">{b.description}</p><p className={'mt-2 text-[10px] font-black '+(b.unlocked?'text-[#1769E0]':'text-slate-400')}>{b.unlocked?'UNLOCKED':'KEEP GOING'}</p></div>)}</div></div>
         <h2 className="text-2xl font-black">How the rewards work</h2>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           {[
