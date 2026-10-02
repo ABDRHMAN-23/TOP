@@ -109,7 +109,7 @@ export default function RewardsPage() {
       </div>
     </section>
 
-
+    <section className="mx-auto max-w-5xl px-5 pt-8 sm:px-8">
       <div className="rounded-[2rem] border border-[#1769E0]/15 bg-white p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="text-xs font-black uppercase tracking-[.18em] text-[#1769E0]">Reward Wallet</p><h2 className="mt-2 text-3xl font-black">You choose how to use it.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Each unlocked paid reward is yours to direct. Choose Monthly or Annual for this reward — your next unlocked reward can go the other way.</p></div>
