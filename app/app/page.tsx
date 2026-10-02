@@ -34,7 +34,7 @@ export default function AppPage() {
   const [error, setError] = useState('');
   const [saved, setSaved] = useState('');
   const [savedQuoteUrl, setSavedQuoteUrl] = useState('');
-  const [intelligence, setIntelligence] = useState<{summary:string;warnings:string[];suggestions:string[];questions:string[];confidence:string}|null>(null);
+  const [intelligence, setIntelligence] = useState<{summary:string;warnings:string[];suggestions:string[];questions:string[];confidence:string;priceHistory?:any[];priceComparison?:any[];specificationMatching?:any[]}|null>(null);
   const [reviewing, setReviewing] = useState(false);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [clientName, setClientName] = useState('');
@@ -336,7 +336,7 @@ export default function AppPage() {
                   {intelligence && <div className="mt-4 space-y-3">
                     <div className="rounded-xl bg-white p-4 text-sm leading-6 text-slate-700"><span className="font-bold">Advisor:</span> {intelligence.summary}</div>
                     {intelligence.warnings.map((x,i)=><div key={i} className="flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><CircleAlert size={17} className="mt-0.5 shrink-0"/><span>{x}</span></div>)}
-                    {intelligence.suggestions.map((x,i)=><div key={i} className="rounded-xl bg-white p-3 text-sm text-slate-600"><span className="font-bold text-[#1769E0]">Suggestion:</span> {x}</div>)}
+                    {intelligence.suggestions.map((x,i)=><div key={i} className="rounded-xl bg-white p-3 text-sm text-slate-600"><span className="font-bold text-[#1769E0]">Suggestion:</span> {x}</div>)}\n                    {(intelligence.priceComparison?.length || intelligence.specificationMatching?.length) ? <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="font-bold">Evidence from your quote history</p><div className="mt-3 space-y-2">{(intelligence.priceComparison||[]).map((x:any,i:number)=><div key={i} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 p-3 text-sm"><span>{x.description}</span><span className="text-xs font-bold text-slate-500">{x.sampleCount ? `History: ${x.min.toFixed(2)}–${x.max.toFixed(2)} · ${x.sampleCount} quote(s)` : 'No matching price history'}</span>{x.differencePercent!==null ? <span className={'rounded-full px-2 py-1 text-xs font-bold '+(Math.abs(x.differencePercent)>20?'bg-amber-50 text-amber-700':'bg-emerald-50 text-emerald-700')}>{x.differencePercent>0?'+':''}{x.differencePercent}% vs median</span> : null}</div>)}{(intelligence.specificationMatching||[]).map((x:any,i:number)=><div key={'s'+i} className="text-xs text-slate-500">{x.matched?'Specification match':'No exact specification match'} · {x.description} · {x.unit||'unit'} · {x.sampleCount} prior quote(s)</div>)}</div><p className="mt-3 text-[11px] text-slate-400">Historical signals only. QUVOTO does not invent a market price or change your quote automatically.</p></div> : null}
                   </div>}
                 </div>
 
