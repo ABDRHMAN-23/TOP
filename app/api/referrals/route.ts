@@ -56,25 +56,39 @@ export async function POST(req:Request){
      ? 'Reward saved for Annual billing. You can choose Monthly for your next unlocked reward.'
      : 'Reward saved for Monthly billing. You can choose Annual for your next unlocked reward.'
  });
+ }catch(error){
+   console.error('Rewards API GET failed',error);
+   return NextResponse.json({error:'Rewards service is temporarily unavailable. Please try again.'},{status:500});
+ }
 }
 
 export async function GET(req:Request){
- const supabase=await createClient();
- const {data:{user}}=await supabase.auth.getUser();
- if(!user)return NextResponse.json({error:'Authentication required'},{status:401});
+ try{
+  const supabase=await createClient();
+  const {data:{user},error:authError}=await supabase.auth.getUser();
+  if(authError) return NextResponse.json({error:'Authentication check failed.'},{status:500});
+  if(!user)return NextResponse.json({error:'Authentication required'},{status:401});
 
- let {data:code}=await supabase.from('referral_codes').select('*').eq('user_id',user.id).maybeSingle();
- if(!code){
-   const value=(String(user.id).replaceAll('-','').slice(0,6)+'-'+Math.random().toString(36).slice(2,7)).toUpperCase();
-   const r=await supabase.from('referral_codes').insert({user_id:user.id,code:value}).select().single();
-   code=r.data;
- }
+  let {data:code,error:codeError}=await supabase.from('referral_codes').select('*').eq('user_id',user.id).maybeSingle();
+  if(codeError) return NextResponse.json({error:'Could not load your referral code.'},{status:500});
+  if(!code){
+    const value=(String(user.id).replaceAll('-','').slice(0,6)+'-'+Math.random().toString(36).slice(2,7)).toUpperCase();
+    const inserted=await supabase.from('referral_codes').insert({user_id:user.id,code:value}).select().single();
+    if(inserted.error||!inserted.data) return NextResponse.json({error:'Could not create your referral code.'},{status:500});
+    code=inserted.data;
+  }
 
- const [{data:referrals},{data:rewards},{data:sub}]=await Promise.all([
-  supabase.from('referrals').select('*').eq('referrer_user_id',user.id).order('created_at',{ascending:false}),
-  supabase.from('referral_rewards').select('*').eq('user_id',user.id).order('earned_at',{ascending:false}),
-  supabase.from('subscriptions').select('plan,status,billing_interval').eq('user_id',user.id).maybeSingle()
- ]);
+  const [referralsResult,rewardsResult,subResult]=await Promise.all([
+    supabase.from('referrals').select('*').eq('referrer_user_id',user.id).order('created_at',{ascending:false}),
+    supabase.from('referral_rewards').select('*').eq('user_id',user.id).order('earned_at',{ascending:false}),
+    supabase.from('subscriptions').select('plan,status,billing_interval').eq('user_id',user.id).maybeSingle()
+  ]);
+  if(referralsResult.error||rewardsResult.error||subResult.error){
+    return NextResponse.json({error:'Could not load your Rewards data.'},{status:500});
+  }
+  const {data:referrals}=referralsResult;
+  const {data:rewards}=rewardsResult;
+  const {data:sub}=subResult;
 
  const activePaid=!!sub&&['starter','pro','team'].includes(sub.plan||'')&&sub.status==='active';
  const plan=activePaid?sub!.plan:'';
