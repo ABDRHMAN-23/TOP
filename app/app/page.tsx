@@ -106,7 +106,16 @@ export default function AppPage() {
       recorder.start();
       setRecording(true);
       setSeconds(0);
-      timer.current = setInterval(() => setSeconds((value) => value + 1), 1000);
+      timer.current = setInterval(() => setSeconds((value) => {
+        if (value >= 59) {
+          media.current?.stop();
+          setRecording(false);
+          if (timer.current) clearInterval(timer.current);
+          timer.current = null;
+          return 60;
+        }
+        return value + 1;
+      }), 1000);
     } catch (err) {
       const name = err instanceof DOMException ? err.name : '';
       if (name === 'NotAllowedError' || name === 'SecurityError') {
@@ -235,7 +244,7 @@ export default function AppPage() {
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-60 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
           <a href="/" aria-label="QUVOTO home" className="inline-flex items-center"><QuvotoLogo className="h-10 w-auto"/></a>
           <div className="flex items-center gap-2">
