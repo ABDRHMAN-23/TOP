@@ -9,77 +9,145 @@ function normalizeExtraction(value: any, transcript: string) {
     client: source?.client && typeof source.client === 'object' ? source.client : {},
     items: Array.isArray(source?.items) ? source.items.map((item: ExtractedItem) => ({
       description: String(item.description || ''),
-      quantity: Number(item.quantity || 0),
+      quantity: item.quantity == null ? null : Number(item.quantity),
       unit: String(item.unit || 'item'),
-      price: Number(item.price || 0),
+      price: item.price == null ? null : Number(item.price),
     })) : [],
     notes: Array.isArray(source?.notes) ? source.notes.map(String) : [],
     currency: String(source?.currency || 'GBP')
   };
 }
 
-async function transcribe(file: File) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return '';
-  const form = new FormData();
-  form.append('file', file, file.name || 'voice.webm');
-  form.append('model', process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-mini-transcribe');
-  const response = await fetch('https://api.openai.com/v1/audio/transcriptions', { method: 'POST', headers: { Authorization: 'Bearer ' + apiKey }, body: form });
-  if (!response.ok) throw new Error('Transcription provider returned an error.');
-  const data = await response.json();
-  return String(data.text || '').trim();
+function geminiBaseUrl() {
+  return (process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
 }
 
-async function extractWithGemma(transcript: string) {
-  const url = process.env.GEMMA_API_URL;
-  if (!url) return null;
+function geminiModelUrl(model: string) {
+  return `${geminiBaseUrl()}/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+}
 
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (process.env.GEMMA_API_KEY) headers.Authorization = 'Bearer ' + process.env.GEMMA_API_KEY;
+async function geminiGenerate(model: string, body: unknown) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('Gemini API is not configured. Add GEMINI_API_KEY to the deployment environment.');
 
+  const response = await fetch(geminiModelUrl(model), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const rawText = await response.text();
+  let data: any = {};
+  try { data = rawText ? JSON.parse(rawText) : {}; } catch {}
+
+  if (!response.ok) {
+    const providerMessage = data?.error?.message || rawText || `HTTP ${response.status}`;
+    throw new Error(`Gemini API error: ${providerMessage}`);
+  }
+
+  return data;
+}
+
+function responseText(data: any) {
+  return String(
+    data?.candidates?.[0]?.content?.parts?.map((part: any) => part?.text || '').join('') ||
+    data?.text ||
+    ''
+  ).trim();
+}
+
+async function transcribe(file: File) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const base64 = Buffer.from(bytes).toString('base64');
+  const mimeType = file.type || 'audio/webm';
+
+  const data = await geminiGenerate(
+    process.env.GEMINI_TRANSCRIBE_MODEL || 'gemini-3.5-transcribe',
+    {
+      contents: [{
+        parts: [
+          { text: 'Transcribe this contractor job-site recording exactly as spoken. Return only the transcription text. Preserve names, quantities, units, prices, addresses, phone numbers, and currency.' },
+          { inlineData: { mimeType, data: base64 } }
+        ]
+      }],
+      generationConfig: {
+        audioTranscriptionConfig: { mode: 'SMART' }
+      }
+    }
+  );
+
+  const text = responseText(data);
+  if (!text) throw new Error('Gemini returned an empty transcription.');
+  return text;
+}
+
+async function extractWithGemini(transcript: string) {
   const schema = {
-    client: { name: 'string|null', email: 'string|null', phone: 'string|null', address: 'string|null' },
-    items: [{ description: 'string', quantity: 'number|null', unit: 'string|null', price: 'number|null' }],
-    notes: ['string'],
-    currency: 'GBP'
+    type: 'object',
+    properties: {
+      client: {
+        type: 'object',
+        properties: {
+          name: { type: ['string', 'null'] },
+          email: { type: ['string', 'null'] },
+          phone: { type: ['string', 'null'] },
+          address: { type: ['string', 'null'] }
+        }
+      },
+      items: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            description: { type: 'string' },
+            quantity: { type: ['number', 'null'] },
+            unit: { type: ['string', 'null'] },
+            price: { type: ['number', 'null'] }
+          },
+          required: ['description']
+        }
+      },
+      notes: { type: 'array', items: { type: 'string' } },
+      currency: { type: 'string' }
+    },
+    required: ['client', 'items', 'notes', 'currency']
   };
 
-  const system = [
-    'You are the QUVOTO extraction engine.',
-    'Model requirement: Gemma 4 31B.',
-    'Return JSON only. Do not invent missing customer or pricing data.',
-    'Extract contractor quote details from the transcript.',
-    'Use numeric quantity and price values. Price means unit price.',
-    'Currency should be a three-letter code when known.',
-    JSON.stringify(schema)
-  ].join('\n');
+  const data = await geminiGenerate(
+    process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
+    {
+      contents: [{
+        parts: [{
+          text: [
+            'You are the QUVOTO quote extraction engine.',
+            'Extract contractor quote details from the transcript below.',
+            'Never invent missing customer details, quantities, units, prices, or currency.',
+            'Price means the unit price when the speaker gives a unit price.',
+            'Return only JSON matching the supplied schema.',
+            '',
+            transcript
+          ].join('\n')
+        }]
+      }],
+      generationConfig: {
+        temperature: 0,
+        responseMimeType: 'application/json',
+        responseSchema: schema
+      }
+    }
+  );
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      model: process.env.GEMMA_MODEL || 'gemma-4-31b-it',
-      temperature: 0,
-      response_format: { type: 'json_object' },
-      system,
-      prompt: transcript,
-      transcript,
-      schema,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: transcript }
-      ]
-    })
-  });
-  if (!response.ok) throw new Error('Gemma 4 31B extraction service returned an error.');
+  const text = responseText(data);
+  if (!text) throw new Error('Gemini returned empty extraction data.');
 
-  const raw = await response.json();
-  let payload = raw?.output ?? raw?.text ?? raw?.response ?? raw?.choices?.[0]?.message?.content ?? raw;
-  if (typeof payload === 'string') {
-    const cleaned = payload.replace(/^\s*\x60\x60\x60(?:json)?/i, '').replace(/\x60\x60\x60\s*$/i, '').trim();
-    try { payload = JSON.parse(cleaned); } catch { payload = {}; }
+  try {
+    return normalizeExtraction(JSON.parse(text), transcript);
+  } catch {
+    throw new Error('Gemini returned invalid structured quote data.');
   }
-  return normalizeExtraction(payload, transcript);
 }
 
 export async function POST(req: Request) {
@@ -87,21 +155,30 @@ export async function POST(req: Request) {
     const form = await req.formData();
     const notes = String(form.get('notes') || '').trim();
     const audio = form.get('audio');
-    if (!notes && !(audio instanceof File)) return NextResponse.json({ error: 'Add a recording or notes.' }, { status: 400 });
-    if (audio instanceof File && audio.size > 20 * 1024 * 1024) return NextResponse.json({ error: 'Recording is too large. Keep it under 20 MB.' }, { status: 400 });
 
-    let transcript = notes;
-    if (audio instanceof File && audio.size > 0) {
-      const audioTranscript = await transcribe(audio);
-      if (audioTranscript) transcript = notes ? notes + '\n' + audioTranscript : audioTranscript;
-      else if (!notes) transcript = 'Audio received. Add OPENAI_API_KEY to enable automatic transcription.';
+    if (!notes && !(audio instanceof File)) {
+      return NextResponse.json({ error: 'Add a recording or notes.' }, { status: 400 });
     }
 
-    const extracted = transcript ? await extractWithGemma(transcript) : null;
+    if (audio instanceof File && audio.size > 20 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Recording is too large. Keep it under 20 MB.' }, { status: 400 });
+    }
+
+    let transcript = notes;
+
+    if (audio instanceof File && audio.size > 0) {
+      const audioTranscript = await transcribe(audio);
+      transcript = notes ? notes + '\n' + audioTranscript : audioTranscript;
+    }
+
+    const extracted = transcript ? await extractWithGemini(transcript) : null;
     if (extracted) return NextResponse.json(extracted);
 
-    return NextResponse.json({ transcript, client: {}, items: [], notes: transcript ? [transcript] : [], currency: 'GBP' });
+    return NextResponse.json({ error: 'No text was available to analyze.' }, { status: 400 });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Analysis failed.' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Analysis failed.' },
+      { status: 500 }
+    );
   }
 }
