@@ -114,7 +114,7 @@ export default function RewardsPage(){
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
         <a href="/dashboard" aria-label="QUVOTO home"><QuvotoLogo className="h-10 w-auto"/></a>
         <div className="flex items-center gap-2">
-          <a href="/dashboard" className="rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-bold text-slate-600"><span className="hidden sm:inline">Dashboard</span><ArrowLeft className="sm:hidden" size={17}/></a>
+          <a href="/dashboard" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-black text-slate-600"><ArrowLeft size={16}/><span>Dashboard</span></a>
           <a href="/app" className="rounded-xl bg-[#1769E0] px-3.5 py-2.5 text-sm font-black text-white">New quote</a>
         </div>
       </div>
