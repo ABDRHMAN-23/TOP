@@ -76,27 +76,43 @@ export async function POST(req:Request){
  if(reward.status!=='earned'){
    return NextResponse.json({error:'This reward is no longer available for selection.'},{status:409});
  }
- const {data:sub}=await supabase.from('subscriptions').select('plan,status,billing_interval').eq('user_id',user.id).maybeSingle();
+ const {data:sub}=await supabase.from('subscriptions').select('plan,status,billing_interval,current_period_end').eq('user_id',user.id).maybeSingle();
  if(!sub || !['starter','pro','team'].includes(sub.plan) || sub.status!=='active'){
-   return NextResponse.json({error:'An active paid plan is required to redeem this reward.'},{status:409});
+   return NextResponse.json({error:'Your reward is unlocked, but you need an active paid subscription before it can be applied.'},{status:409});
  }
- if(reward.plan!==sub.plan){
-   return NextResponse.json({error:'This reward must stay on the same QUVOTO plan.'},{status:409});
- }
- if(reward.redemption_interval && reward.redemption_interval===redemptionInterval){
-   return NextResponse.json({ok:true,message:'Your reward is already scheduled for this billing track.'});
- }
+
+ // The counter that unlocked the reward may be Starter, Pro, or Team. It must NEVER
+ // prevent the owner from receiving the reward just because their own plan differs.
+ // The reward extends the owner's real current subscription.
  const now=new Date().toISOString();
- const {error:updateError}=await supabase.from('referral_rewards').update({
-   redemption_interval:redemptionInterval,
-   selected_at:now
- }).eq('id',rewardId).eq('user_id',user.id).eq('status','earned');
- if(updateError)return NextResponse.json({error:'Could not save your reward choice.'},{status:500});
+ const months=reward.reward_type==='free_year'?12:reward.reward_type==='free_6_months'?6:1;
+ const base=sub.current_period_end && new Date(sub.current_period_end)>new Date()
+   ? new Date(sub.current_period_end) : new Date();
+ const end=new Date(base);
+ end.setMonth(end.getMonth()+months);
+
+ const {error:subError}=await supabase.from('subscriptions').update({
+   current_period_end:end.toISOString(),
+   updated_at:now
+ }).eq('user_id',user.id).eq('status','active');
+ if(subError)return NextResponse.json({error:'Your reward could not be applied. Nothing was marked as used.'},{status:500});
+
+ const {data:applied,error:updateError}=await supabase.from('referral_rewards').update({
+   redemption_interval:sub.billing_interval,
+   selected_at:now,
+   status:'applied',
+   applied_at:now
+ }).eq('id',rewardId).eq('user_id',user.id).eq('status','earned').select('id').maybeSingle();
+
+ if(updateError||!applied){
+   // Do not pretend the reward was consumed if the reward row could not be updated.
+   // The subscription extension is already real; leave the reward visible for support/reconciliation.
+   return NextResponse.json({error:'The subscription time was added, but the reward record needs reconciliation.'},{status:500});
+ }
+
  return NextResponse.json({
    ok:true,
-   message:redemptionInterval==='year'
-     ? 'Reward saved for Annual billing. You can choose Monthly for your next unlocked reward.'
-     : 'Reward saved for Monthly billing. You can choose Annual for your next unlocked reward.'
+   message:months===12?'Your free year was applied to your current plan.':months===6?'Your 6 free months were applied to your current plan.':'Your free month was applied to your current plan.'
  });
  }catch(error){
    console.error('Rewards API GET failed',error);
