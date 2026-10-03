@@ -4,8 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 function annualRewardMonths(count:number){
   if(count===2)return 12;
   if(count===4)return 6;
-  if(count>=8 && (count-8)%6===0)return 12;
-  if(count>=10 && (count-10)%6===0)return 6;
+  if(count>=4 && count%2===0)return count%4===0 ? 12 : 6;
   return 0;
 }
 function nextMilestoneFor(count:number, rewardFn:(n:number)=>number){
@@ -13,7 +12,7 @@ function nextMilestoneFor(count:number, rewardFn:(n:number)=>number){
   return null;
 }
 function monthlyReward(count:number){
-  return count>=1 && (count-1)%3===0 ? 1 : 0;
+  return count>=1 && count%2===1 ? 1 : 0;
 }
 
 export async function POST(req:Request){
