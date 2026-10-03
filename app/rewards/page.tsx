@@ -19,8 +19,8 @@ function RewardRules(){
  const rows=tab==='free'
   ? [['10 qualified Free users','1 free Starter month','First Free reward']]
   : tab==='monthly'
-  ? [['1 qualified referral','1 free month','Same QUVOTO plan · Monthly billing'],['4 qualified referrals','1 free month','Same QUVOTO plan · Monthly billing'],['7 qualified referrals','1 free month','Same QUVOTO plan · Monthly billing'],['10 qualified referrals','1 free month','Then every 3 additional referrals']]
-  : [['2 qualified referrals','1 free year','Same QUVOTO plan · Annual billing'],['4 qualified referrals','6 free months','Same QUVOTO plan · Annual billing'],['8 qualified referrals','1 free year','Then repeats every 6 annual referrals'],['10 qualified referrals','6 free months','Then repeats every 6 annual referrals']];
+  ? [['1 qualified referral','1 free month','First referral on the same paid plan'],['3 qualified referrals','1 free month','Two new same-plan referrals after the first'],['5 qualified referrals','1 free month','Two new same-plan referrals'],['7 qualified referrals','1 free month','Two new same-plan referrals · repeat forever']]
+  : [['First 2 referrals','1 free year','Same paid plan · Annual billing'],['Next 2 referrals','6 free months','Same paid plan'],['Next 2 referrals','6 free months','Same paid plan'],['Next 4 referrals','1 free year','Every four new annual referrals in the cycle']];
  return <section className="mt-10">
   <div className="text-center"><p className="text-xs font-black uppercase tracking-[.16em] text-[#1769E0]">Reward rules</p><h2 className="mt-2 text-2xl font-black sm:text-3xl">See exactly what you can earn</h2><p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-500">Choose a reward track to see every milestone and what it unlocks.</p></div>
   <div className="mx-auto mt-5 max-w-2xl overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
