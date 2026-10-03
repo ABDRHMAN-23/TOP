@@ -145,18 +145,11 @@ export async function GET(req:Request){
  const plan=activePaid?sub!.plan:'';
  const interval=activePaid?sub!.billing_interval:'';
 
- const annualCount=(referrals||[]).filter(r=>
-   ['qualified','rewarded'].includes(r.status) &&
-   r.qualifying_plan===plan &&
-   r.qualifying_interval==='year'
- ).length;
-
- const monthlyCount=(referrals||[]).filter(r=>
-   ['qualified','rewarded'].includes(r.status) &&
-   r.qualifying_plan===plan &&
-   r.qualifying_interval==='month'
- ).length;
-
+ const paidPlans=['starter','pro','team'] as const;
+ const monthlyCounts=Object.fromEntries(paidPlans.map(p=>[p,(referrals||[]).filter(r=>['qualified','rewarded'].includes(r.status)&&r.qualifying_plan===p&&r.qualifying_interval==='month').length])) as Record<string,number>;
+ const annualCounts=Object.fromEntries(paidPlans.map(p=>[p,(referrals||[]).filter(r=>['qualified','rewarded'].includes(r.status)&&r.qualifying_plan===p&&r.qualifying_interval==='year').length])) as Record<string,number>;
+ const annualCount=Object.values(annualCounts).reduce((a,b)=>a+b,0);
+ const monthlyCount=Object.values(monthlyCounts).reduce((a,b)=>a+b,0);
  const freeCount=(referrals||[]).filter(r=>!!r.free_qualified_at).length;
  const freeNext=Math.max(10,Math.ceil((freeCount+1)/10)*10);
  const monthlyNext=activePaid?nextMilestoneFor(monthlyCount,monthlyReward):null;
@@ -189,6 +182,7 @@ export async function GET(req:Request){
  const activeTrack=challenge;
  const activeNext=activeTrack==='annual'?annualNext:activeTrack==='monthly'?monthlyNext:freeNext;
  const activeCount=activeTrack==='annual'?annualCount:activeTrack==='monthly'?monthlyCount:freeCount;
+ const activeCounts=activeTrack==='annual'?annualCounts:activeTrack==='monthly'?monthlyCounts:{starter:freeCount,pro:0,team:0};
  const activeReward=activeTrack==='annual'
    ? (annualNext==null?'next reward':annualRewardMonths(annualNext)===12?'1 free year':annualRewardMonths(annualNext)===6?'6 free months':'next reward')
    : activeTrack==='monthly'?'1 free month':'1 free Starter month';
@@ -214,6 +208,9 @@ export async function GET(req:Request){
    activeCount,
    activeNext,
    activeReward,
+   activeCounts,
+   monthlyCounts,
+   annualCounts,
    activeChallengeCompleted,
    badges,
    referrals:referrals||[],
