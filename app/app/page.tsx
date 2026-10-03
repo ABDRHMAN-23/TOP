@@ -56,6 +56,7 @@ export default function AppPage() {
   const media = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     return () => {
@@ -94,28 +95,54 @@ export default function AppPage() {
         return;
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      streamRef.current = stream;
       chunks.current = [];
-      const recorder = new MediaRecorder(stream);
+
+      const mimeCandidates = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/mp4'
+      ];
+      const mimeType = mimeCandidates.find((type) => MediaRecorder.isTypeSupported(type)) || '';
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
       media.current = recorder;
-      recorder.ondataavailable = (event) => event.data.size && chunks.current.push(event.data);
-      recorder.onstop = () => {
-        setAudio(new Blob(chunks.current, { type: recorder.mimeType || 'audio/webm' }));
-        stream.getTracks().forEach((track) => track.stop());
+
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) chunks.current.push(event.data);
       };
-      recorder.start();
+      recorder.onerror = () => {
+        setError('The browser could not record audio. Check microphone permission and try again.');
+        setRecording(false);
+        if (timer.current) clearInterval(timer.current);
+        timer.current = null;
+      };
+      recorder.onstop = () => {
+        const type = recorder.mimeType || chunks.current[0]?.type || 'audio/webm';
+        const blob = new Blob(chunks.current, { type });
+        setAudio(blob.size > 0 ? blob : null);
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      };
+
+      recorder.start(250);
       setRecording(true);
       setSeconds(0);
-      timer.current = setInterval(() => setSeconds((value) => {
-        if (value >= 59) {
-          media.current?.stop();
-          setRecording(false);
-          if (timer.current) clearInterval(timer.current);
-          timer.current = null;
-          return 60;
-        }
-        return value + 1;
-      }), 1000);
+      if (timer.current) clearInterval(timer.current);
+      timer.current = setInterval(() => {
+        setSeconds((value) => {
+          const next = value + 1;
+          if (next >= 60) {
+            if (media.current?.state === 'recording') media.current.stop();
+            setRecording(false);
+            if (timer.current) clearInterval(timer.current);
+            timer.current = null;
+            return 60;
+          }
+          return next;
+        });
+      }, 1000);
     } catch (err) {
       const name = err instanceof DOMException ? err.name : '';
       if (name === 'NotAllowedError' || name === 'SecurityError') {
@@ -127,7 +154,7 @@ export default function AppPage() {
   };
 
   const stop = () => {
-    media.current?.stop();
+    if (media.current?.state === 'recording') media.current.stop();
     setRecording(false);
     if (timer.current) clearInterval(timer.current);
     timer.current = null;
@@ -275,6 +302,12 @@ export default function AppPage() {
               </button>
               <p className="mt-4 font-semibold">{recording ? 'Recording… tap to stop' : audio ? 'Recording ready' : 'Tap to record'}</p>
               <p className="mt-1 text-sm text-slate-500">Use your normal job-site language.</p>
+              {audio && !recording && (
+                <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-3 text-left">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">Your recording</p>
+                  <audio controls preload="metadata" src={URL.createObjectURL(audio)} className="w-full" />
+                </div>
+              )}
             </div>
 
             <div className="mt-6">
