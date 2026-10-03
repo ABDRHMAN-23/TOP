@@ -192,6 +192,11 @@ export async function GET(req:Request){
  const activeReward=activeTrack==='annual'
    ? (annualNext==null?'next reward':annualRewardMonths(annualNext)===12?'1 free year':annualRewardMonths(annualNext)===6?'6 free months':'next reward')
    : activeTrack==='monthly'?'1 free month':'1 free Starter month';
+ const rewardRows=rewards||[];
+ const freeCompleted=freeCount>=10 && rewardRows.some((r:any)=>['earned','applied','scheduled'].includes(r.status)&&r.plan==='starter'&&r.billing_interval==='month'&&Number(r.milestone)>=10&&Number(r.milestone)%10===0);
+ const monthlyCompleted=activePaid && monthlyCount>=1 && rewardRows.some((r:any)=>['earned','applied','scheduled'].includes(r.status)&&r.plan===plan&&r.billing_interval==='month'&&Number(r.milestone)>=1&&Number(r.milestone)%2===1);
+ const annualCompleted=activePaid && annualCount>=2 && rewardRows.some((r:any)=>['earned','applied','scheduled'].includes(r.status)&&r.plan===plan&&r.billing_interval==='year'&&Number(r.milestone)>=2&&Number(r.milestone)%2===0);
+ const activeChallengeCompleted=activeTrack==='free'?freeCompleted:activeTrack==='monthly'?monthlyCompleted:annualCompleted;
 
  return NextResponse.json({
    code,
@@ -209,6 +214,7 @@ export async function GET(req:Request){
    activeCount,
    activeNext,
    activeReward,
+   activeChallengeCompleted,
    badges,
    referrals:referrals||[],
    rewards:rewards||[],
