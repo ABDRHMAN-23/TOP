@@ -61,18 +61,35 @@ export default function LoginPage() {
     rememberConsent();
 
     const supabase = createClient();
-    const result = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo:
-          window.location.origin +
-          '/auth/callback?next=' +
-          encodeURIComponent(next),
-      },
-    });
+    try {
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo:
+            window.location.origin +
+            '/auth/callback?next=' +
+            encodeURIComponent(next),
+        },
+      });
 
-    if (result.error) {
-      setError(result.error.message);
+      if (oauthError) {
+        setError(oauthError.message);
+        setLoading(false);
+        return;
+      }
+
+      // Explicitly navigate to the provider URL. This avoids leaving the
+      // button in a loading state on browsers where the automatic OAuth
+      // navigation is interrupted.
+      if (data?.url) {
+        window.location.assign(data.url);
+        return;
+      }
+
+      setError('The sign-in provider did not return a redirect URL. Please try again.');
+      setLoading(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not start secure sign-in.');
       setLoading(false);
     }
   };
