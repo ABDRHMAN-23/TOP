@@ -5,7 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
-  const next = url.searchParams.get('next') || '/app';
+  const requestedNext = url.searchParams.get('next');
+  const next = requestedNext || '/dashboard';
 
   if (code) {
     const supabase = await createClient();
@@ -36,7 +37,11 @@ export async function GET(request: Request) {
         email: data.user.email ?? null,
         updated_at: new Date().toISOString()
       });
-      const response=NextResponse.redirect(new URL(next, url.origin));
+      const configuredId = process.env.QUVOTO_SUPER_ADMIN_USER_ID;
+      const configuredEmail = process.env.QUVOTO_SUPER_ADMIN_EMAIL?.trim().toLowerCase();
+      const isSuperAdmin = Boolean((configuredId && data.user.id === configuredId) || (configuredEmail && data.user.email?.toLowerCase() === configuredEmail));
+      const destination = requestedNext ? next : (isSuperAdmin ? '/super-admin' : '/dashboard');
+      const response=NextResponse.redirect(new URL(destination, url.origin));
       response.cookies.set('quvoto_ref','',{maxAge:0,path:'/'});
       response.cookies.set('quvoto_legal_consent','',{maxAge:0,path:'/'});
       response.cookies.set('quvoto_referrer','',{maxAge:0,path:'/'});
