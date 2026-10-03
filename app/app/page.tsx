@@ -57,10 +57,31 @@ export default function AppPage() {
   const chunks = useRef<Blob[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const recordingStartedAt = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!recording) return;
+    const tick = () => {
+      const startedAt = recordingStartedAt.current;
+      if (!startedAt) return;
+      const elapsed = Math.min(60, Math.floor((Date.now() - startedAt) / 1000));
+      setSeconds(elapsed);
+      if (elapsed >= 60) {
+        if (media.current?.state === 'recording') media.current.stop();
+        setRecording(false);
+        recordingStartedAt.current = null;
+      }
+    };
+    tick();
+    const interval = window.setInterval(tick, 250);
+    return () => window.clearInterval(interval);
+  }, [recording]);
 
   useEffect(() => {
     return () => {
       if (timer.current) clearInterval(timer.current);
+      if (media.current?.state === 'recording') media.current.stop();
+      streamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, []);
 
@@ -127,22 +148,9 @@ export default function AppPage() {
       };
 
       recorder.start(250);
-      setRecording(true);
+      recordingStartedAt.current = Date.now();
       setSeconds(0);
-      if (timer.current) clearInterval(timer.current);
-      timer.current = setInterval(() => {
-        setSeconds((value) => {
-          const next = value + 1;
-          if (next >= 60) {
-            if (media.current?.state === 'recording') media.current.stop();
-            setRecording(false);
-            if (timer.current) clearInterval(timer.current);
-            timer.current = null;
-            return 60;
-          }
-          return next;
-        });
-      }, 1000);
+      setRecording(true);
     } catch (err) {
       const name = err instanceof DOMException ? err.name : '';
       if (name === 'NotAllowedError' || name === 'SecurityError') {
@@ -156,6 +164,7 @@ export default function AppPage() {
   const stop = () => {
     if (media.current?.state === 'recording') media.current.stop();
     setRecording(false);
+    recordingStartedAt.current = null;
     if (timer.current) clearInterval(timer.current);
     timer.current = null;
   };
@@ -163,6 +172,7 @@ export default function AppPage() {
   const reset = () => {
     if (recording) stop();
     setSeconds(0);
+    recordingStartedAt.current = null;
     setAudio(null);
     setManualNotes('');
     setAnalysis(null);
@@ -276,7 +286,7 @@ export default function AppPage() {
           <a href="/" aria-label="QUVOTO home" className="inline-flex items-center"><QuvotoLogo className="h-10 w-auto"/></a>
           <div className="flex items-center gap-2">
             {planInfo && <a href="/pricing" className="hidden rounded-full bg-[#2F8CFF]/10 px-3 py-2 text-xs font-bold text-[#1769E0] sm:inline-flex">{planInfo.label} · {planInfo.quota === null ? 'Unlimited' : planInfo.used + '/' + planInfo.quota}</a>}
-            <a href="/advisor" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Advisor</a><button onClick={signIn} className="min-h-11 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold hover:bg-slate-50">Sign in</button>
+            <a href="/analytics" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Analytics</a><a href="/advisor" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Advisor</a><button onClick={signIn} className="min-h-11 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold hover:bg-slate-50">Sign in</button>
             <button onClick={reset} aria-label="Start a new quote" className="flex min-h-11 items-center gap-2 rounded-xl bg-[#0A1E3D] px-3.5 text-sm font-semibold text-white"><RotateCcw size={15}/><span className="hidden sm:inline">New</span></button>
           </div>
         </div>
