@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import InstallPrompt from '@/components/InstallPrompt';
+import QuvotoLogo from '@/components/QuvotoLogo';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
@@ -21,5 +22,5 @@ export const metadata: Metadata = {
 };
 
 export default function Layout({children}:{children:React.ReactNode}) {
-  return <html lang="en"><body className={inter.className}>{children}<InstallPrompt/></body></html>;
+  return <html lang="en"><body className={inter.className}>{children}<footer className="border-t border-slate-200 bg-white px-4 py-8"><div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row"><a href="/" aria-label="QUVOTO home"><QuvotoLogo className="h-8 w-8"/></a><p className="text-xs font-semibold text-slate-400">QUVOTO · Speak. Quote. Done.</p></div></footer><InstallPrompt/></body></html>;
 }
