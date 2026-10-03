@@ -64,6 +64,7 @@ export async function POST(req:Request){
 
 export async function GET(req:Request){
  try{
+ try{
   const supabase=await createClient();
   const {data:{user},error:authError}=await supabase.auth.getUser();
   if(authError) return NextResponse.json({error:'Authentication check failed.'},{status:500});
@@ -164,4 +165,8 @@ export async function GET(req:Request){
    nudges,
    loyalty:{level:loyaltyLevel.name,totalQualified,next:loyaltyLevel.next,remaining:nextLoyalty,progress:loyaltyProgress}
  });
+ }catch(error){
+   console.error('Rewards API GET failed',error);
+   return NextResponse.json({error:'Rewards service is temporarily unavailable. Please try again.'},{status:500});
+ }
 }
