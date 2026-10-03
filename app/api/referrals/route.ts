@@ -17,119 +17,138 @@ function monthlyReward(count:number){
 }
 
 export async function POST(req:Request){
- try{
- const supabase=await createClient();
- const {data:{user}}=await supabase.auth.getUser();
- if(!user)return NextResponse.json({error:'Authentication required'},{status:401});
- let body:any;
- try{body=await req.json()}catch{return NextResponse.json({error:'Invalid JSON.'},{status:400})}
- const action=String(body?.action||'');
- if(action==='select_challenge'){
-   const requested=String(body?.challenge||'');
-   if(!['free','monthly','annual'].includes(requested)) return NextResponse.json({error:'Invalid reward challenge.'},{status:400});
-   const [{data:current},{data:referrals}]=await Promise.all([
-     supabase.from('referral_challenge_state').select('*').eq('user_id',user.id).maybeSingle(),
-     supabase.from('referrals').select('*').eq('referrer_user_id',user.id)
-   ]);
-   const active=current?.active_challenge||'free';
-   if(active===requested) return NextResponse.json({ok:true,challenge:active});
-   const {data:sub}=await supabase.from('subscriptions').select('plan,status,billing_interval').eq('user_id',user.id).maybeSingle();
-   const activePaid=!!sub&&sub.status==='active'&&['starter','pro','team'].includes(sub.plan||'');
-   const plan=activePaid?sub!.plan:'';
-   const rows=referrals||[];
-   const freeCount=rows.filter((r:any)=>!!r.free_qualified_at).length;
-   const monthlyCount=rows.filter((r:any)=>['qualified','rewarded'].includes(r.status)&&r.qualifying_plan===plan&&r.qualifying_interval==='month').length;
-   const annualCount=rows.filter((r:any)=>['qualified','rewarded'].includes(r.status)&&r.qualifying_plan===plan&&r.qualifying_interval==='year').length;
+  try{
+    const supabase=await createClient();
+    const {data:{user}}=await supabase.auth.getUser();
+    if(!user)return NextResponse.json({error:'Authentication required'},{status:401});
 
-   // Switching is unlocked only after the active challenge has produced a real reward record.
-   // Counts alone are not enough: a failed reward write must never look like a completed challenge.
-   const {data:earnedRewards}=await supabase.from('referral_rewards')
-     .select('id,milestone,status,plan,billing_interval')
-     .eq('user_id',user.id)
-     .in('status',['earned','applied','scheduled']);
+    let body:any;
+    try{body=await req.json()}catch{
+      return NextResponse.json({error:'Invalid JSON.'},{status:400});
+    }
 
-   const rewardRows=earnedRewards||[];
-   const freeCompleted=freeCount>=10 && rewardRows.some((r:any)=>
-     r.plan==='starter' && r.billing_interval==='month' && Number(r.milestone)>=10 && Number(r.milestone)%10===0
-   );
-   const monthlyCompleted=activePaid && monthlyCount>=1 && rewardRows.some((r:any)=>
-     r.plan===plan && r.billing_interval==='month' && Number(r.milestone)>=1 && Number(r.milestone)%2===1
-   );
-   const annualCompleted=activePaid && annualCount>=2 && rewardRows.some((r:any)=>
-     r.plan===plan && r.billing_interval==='year' && Number(r.milestone)>=2 && Number(r.milestone)%2===0
-   );
+    const action=String(body?.action||'');
 
-   const completed=active==='free' ? freeCompleted : active==='monthly' ? monthlyCompleted : annualCompleted;
-   if(!completed) return NextResponse.json({error:'Complete the active challenge and unlock its real reward before choosing another.'},{status:409});
-   const now=new Date().toISOString();
-   const {error:stateError}=await supabase.from('referral_challenge_state').upsert({user_id:user.id,active_challenge:requested,completed_at:null,updated_at:now},{onConflict:'user_id'});
-   if(stateError) return NextResponse.json({error:'Could not save your challenge choice.'},{status:500});
-   return NextResponse.json({ok:true,challenge:requested});
- }
- const rewardId=String(body?.rewardId||'');
- const redemptionInterval=String(body?.redemptionInterval||'');
- if(!rewardId||!['month','year'].includes(redemptionInterval)){
-   return NextResponse.json({error:'Choose Monthly or Annual.'},{status:400});
- }
- const {data:reward,error:rewardError}=await supabase.from('referral_rewards')
-   .select('*').eq('id',rewardId).eq('user_id',user.id).maybeSingle();
- if(rewardError||!reward)return NextResponse.json({error:'Reward not found.'},{status:404});
- if(reward.status!=='earned'){
-   return NextResponse.json({error:'This reward is no longer available for selection.'},{status:409});
- }
- const admin=createAdminClient();
- const {data:result,error:applyError}=await admin.rpc('apply_referral_reward',{
-   p_reward_id:rewardId,
-   p_user_id:user.id
- });
- if(applyError){
-   const msg=String(applyError.message||'');
-   if(msg.includes('ACTIVE_PAID_SUBSCRIPTION_REQUIRED')) return NextResponse.json({error:'Your reward is unlocked, but you need an active paid subscription before it can be applied.'},{status:409});
-   if(msg.includes('REWARD_NOT_AVAILABLE')) return NextResponse.json({error:'This reward is no longer available.'},{status:409});
-   if(msg.includes('REWARD_NOT_FOUND')) return NextResponse.json({error:'Reward not found.'},{status:404});
-   return NextResponse.json({error:'Your reward could not be applied.'},{status:500});
- }
- const months=Number(result?.months||0);
- return NextResponse.json({error:'Your reward is unlocked, but you need an active paid subscription before it can be applied.'},{status:409});
- }
+    if(action==='select_challenge'){
+      const requested=String(body?.challenge||'');
+      if(!['free','monthly','annual'].includes(requested)){
+        return NextResponse.json({error:'Invalid reward challenge.'},{status:400});
+      }
 
- // The counter that unlocked the reward may be Starter, Pro, or Team. It must NEVER
- // prevent the owner from receiving the reward just because their own plan differs.
- // The reward extends the owner's real current subscription.
- const now=new Date().toISOString();
- const months=reward.reward_type==='free_year'?12:reward.reward_type==='free_6_months'?6:1;
- const base=sub.current_period_end && new Date(sub.current_period_end)>new Date()
-   ? new Date(sub.current_period_end) : new Date();
- const end=new Date(base);
- end.setMonth(end.getMonth()+months);
+      const [{data:current},{data:referrals}]=await Promise.all([
+        supabase.from('referral_challenge_state').select('*').eq('user_id',user.id).maybeSingle(),
+        supabase.from('referrals').select('*').eq('referrer_user_id',user.id)
+      ]);
 
- const {error:subError}=await supabase.from('subscriptions').update({
-   current_period_end:end.toISOString(),
-   updated_at:now
- }).eq('user_id',user.id).eq('status','active');
- if(subError)return NextResponse.json({error:'Your reward could not be applied. Nothing was marked as used.'},{status:500});
+      const active=current?.active_challenge||'free';
+      if(active===requested)return NextResponse.json({ok:true,challenge:active});
 
- const {data:applied,error:updateError}=await supabase.from('referral_rewards').update({
-   redemption_interval:sub.billing_interval,
-   selected_at:now,
-   status:'applied',
-   applied_at:now
- }).eq('id',rewardId).eq('user_id',user.id).eq('status','earned').select('id').maybeSingle();
+      const {data:sub}=await supabase.from('subscriptions')
+        .select('plan,status,billing_interval')
+        .eq('user_id',user.id)
+        .maybeSingle();
 
- if(updateError||!applied){
-   // Do not pretend the reward was consumed if the reward row could not be updated.
-   // The subscription extension is already real; leave the reward visible for support/reconciliation.
-   return NextResponse.json({error:'The subscription time was added, but the reward record needs reconciliation.'},{status:500});
- }
+      const activePaid=!!sub&&sub.status==='active'&&['starter','pro','team'].includes(sub.plan||'');
+      const plan=activePaid?sub!.plan:'';
+      const rows=referrals||[];
 
- return NextResponse.json({
-   ok:true,
-   message:months===12?'Your free year was applied to your current plan.':months===6?'Your 6 free months were applied to your current plan.':'Your free month was applied to your current plan.'
- });
- }catch(error){
-   console.error('Rewards API GET failed',error);
-   return NextResponse.json({error:'Rewards service is temporarily unavailable. Please try again.'},{status:500});
- }
+      const freeCount=rows.filter((r:any)=>!!r.free_qualified_at).length;
+      const monthlyCount=rows.filter((r:any)=>
+        ['qualified','rewarded'].includes(r.status)&&r.qualifying_interval==='month'
+      ).length;
+      const annualCount=rows.filter((r:any)=>
+        ['qualified','rewarded'].includes(r.status)&&r.qualifying_interval==='year'
+      ).length;
+
+      const {data:earnedRewards}=await supabase.from('referral_rewards')
+        .select('id,milestone,status,plan,billing_interval')
+        .eq('user_id',user.id)
+        .in('status',['earned','applied','scheduled']);
+
+      const rewardRows=earnedRewards||[];
+
+      const freeCompleted=freeCount>=10&&rewardRows.some((r:any)=>
+        r.plan==='starter'&&r.billing_interval==='month'&&Number(r.milestone)>=10&&Number(r.milestone)%10===0
+      );
+      const monthlyCompleted=activePaid&&monthlyCount>=1&&rewardRows.some((r:any)=>
+        r.billing_interval==='month'&&Number(r.milestone)>=1&&Number(r.milestone)%2===1
+      );
+      const annualCompleted=activePaid&&annualCount>=2&&rewardRows.some((r:any)=>
+        r.billing_interval==='year'&&Number(r.milestone)>=2&&Number(r.milestone)%2===0
+      );
+
+      const completed=active==='free'?freeCompleted:active==='monthly'?monthlyCompleted:annualCompleted;
+      if(!completed){
+        return NextResponse.json(
+          {error:'Complete the active challenge and unlock its real reward before choosing another.'},
+          {status:409}
+        );
+      }
+
+      const now=new Date().toISOString();
+      const {error:stateError}=await supabase.from('referral_challenge_state')
+        .upsert(
+          {user_id:user.id,active_challenge:requested,completed_at:null,updated_at:now},
+          {onConflict:'user_id'}
+        );
+
+      if(stateError)return NextResponse.json({error:'Could not save your challenge choice.'},{status:500});
+      return NextResponse.json({ok:true,challenge:requested});
+    }
+
+    const rewardId=String(body?.rewardId||'');
+    if(!rewardId)return NextResponse.json({error:'Reward not found.'},{status:400});
+
+    const {data:reward,error:rewardError}=await supabase.from('referral_rewards')
+      .select('*')
+      .eq('id',rewardId)
+      .eq('user_id',user.id)
+      .maybeSingle();
+
+    if(rewardError||!reward)return NextResponse.json({error:'Reward not found.'},{status:404});
+    if(reward.status!=='earned'){
+      return NextResponse.json({error:'This reward is no longer available.'},{status:409});
+    }
+
+    const admin=createAdminClient();
+    const {data:result,error:applyError}=await admin.rpc('apply_referral_reward',{
+      p_reward_id:rewardId,
+      p_user_id:user.id
+    });
+
+    if(applyError){
+      const msg=String(applyError.message||'');
+      if(msg.includes('ACTIVE_PAID_SUBSCRIPTION_REQUIRED')){
+        return NextResponse.json(
+          {error:'Your reward is unlocked, but you need an active paid subscription before it can be applied.'},
+          {status:409}
+        );
+      }
+      if(msg.includes('REWARD_NOT_AVAILABLE')){
+        return NextResponse.json({error:'This reward is no longer available.'},{status:409});
+      }
+      if(msg.includes('REWARD_NOT_FOUND')){
+        return NextResponse.json({error:'Reward not found.'},{status:404});
+      }
+      return NextResponse.json({error:'Your reward could not be applied.'},{status:500});
+    }
+
+    const months=Number(result?.months||0);
+    return NextResponse.json({
+      ok:true,
+      message:months===12
+        ?'Your free year was applied to your current plan.'
+        :months===6
+          ?'Your 6 free months were applied to your current plan.'
+          :'Your free month was applied to your current plan.'
+    });
+  }catch(error){
+    console.error('Rewards API POST failed',error);
+    return NextResponse.json(
+      {error:'Rewards service is temporarily unavailable. Please try again.'},
+      {status:500}
+    );
+  }
 }
 
 export async function GET(req:Request){
