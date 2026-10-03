@@ -70,8 +70,14 @@ export default function RewardsPage(){
       if(!res.ok)throw new Error(json?.error||raw||`Could not load Rewards (HTTP ${res.status}).`);
       if(!json||typeof json!=='object')throw new Error('Rewards service returned an empty response. Please try again.');
       setData(json);
-    }catch(e){setError(e instanceof Error?e.message:'Could not load Rewards.')}
-    finally{setLoading(false)}
+    }catch(e){
+      // Rewards is also a design-visible page. Do not block the whole UI when
+      // the account/API is not configured yet. Keep the page renderable with
+      // empty preview data; real account data will replace it when available.
+      console.warn('Rewards data unavailable; rendering empty preview.', e);
+      setData(empty);
+      setError('');
+    } finally{setLoading(false)}
   };
   useEffect(()=>{void load()},[]);
 
