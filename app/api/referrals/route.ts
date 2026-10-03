@@ -167,7 +167,7 @@ export async function GET(req:Request){
  const loyaltyLevel=totalQualified>=50?{name:'QUVOTO Legend',next:null}:totalQualified>=25?{name:'QUVOTO Champion',next:50}:totalQualified>=10?{name:'QUVOTO Builder',next:25}:{name:'QUVOTO Starter',next:10};
  const loyaltyProgress=loyaltyLevel.next?Math.min(100,(totalQualified/loyaltyLevel.next)*100):100;
  const nextLoyalty=loyaltyLevel.next?Math.max(0,loyaltyLevel.next-totalQualified):0;
- const activeTrack=activePaid&&interval==='year'?'annual':activePaid&&interval==='month'?'monthly':'free';
+ const activeTrack=challenge;
  const activeNext=activeTrack==='annual'?annualNext:activeTrack==='monthly'?monthlyNext:freeNext;
  const activeCount=activeTrack==='annual'?annualCount:activeTrack==='monthly'?monthlyCount:freeCount;
  const activeReward=activeTrack==='annual'
