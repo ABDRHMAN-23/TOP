@@ -49,7 +49,6 @@ export async function POST(req:Request){
         .maybeSingle();
 
       const activePaid=!!sub&&sub.status==='active'&&['starter','pro','team'].includes(sub.plan||'');
-      const plan=activePaid?sub!.plan:'';
       const rows=referrals||[];
 
       const freeCount=rows.filter((r:any)=>!!r.free_qualified_at).length;
@@ -70,10 +69,10 @@ export async function POST(req:Request){
       const freeCompleted=freeCount>=10&&rewardRows.some((r:any)=>
         r.plan==='starter'&&r.billing_interval==='month'&&Number(r.milestone)>=10&&Number(r.milestone)%10===0
       );
-      const monthlyCompleted=activePaid&&monthlyCount>=1&&rewardRows.some((r:any)=>
+      const monthlyCompleted=monthlyCount>=1&&rewardRows.some((r:any)=>
         r.billing_interval==='month'&&Number(r.milestone)>=1&&Number(r.milestone)%2===1
       );
-      const annualCompleted=activePaid&&annualCount>=2&&rewardRows.some((r:any)=>
+      const annualCompleted=annualCount>=2&&rewardRows.some((r:any)=>
         r.billing_interval==='year'&&Number(r.milestone)>=2&&Number(r.milestone)%2===0
       );
 
@@ -203,16 +202,16 @@ export async function GET(req:Request){
  const annualNext=activePaid?nextMilestoneFor(annualCount,annualRewardMonths):null;
  const nudgeCandidates:any[]=[];
  if(freeCount<freeNext) nudgeCandidates.push({id:'free',track:'free',title:freeNext-freeCount===1?'One more Free user.':'You are close to your Free-user reward.',detail:`${freeNext-freeCount} more qualified Free ${freeNext-freeCount===1?'user':'users'} to unlock ${'1 free Starter month'}.`,remaining:freeNext-freeCount,next:freeNext,count:freeCount});
- if(activePaid&&monthlyNext!=null&&monthlyNext-monthlyCount<=2) nudgeCandidates.push({id:'monthly',track:'monthly',title:monthlyNext-monthlyCount===1?'One paid referral away.':'Your Monthly reward is getting close.',detail:`${monthlyNext-monthlyCount} more same-plan monthly ${monthlyNext-monthlyCount===1?'referral':'referrals'} to unlock 1 free month.`,remaining:monthlyNext-monthlyCount,next:monthlyNext,count:monthlyCount});
- if(activePaid&&annualNext!=null&&annualNext-annualCount<=2) nudgeCandidates.push({id:'annual',track:'annual',title:annualNext-annualCount===1?'One annual referral away.':'Your Annual reward is getting close.',detail:`${annualNext-annualCount} more same-plan annual ${annualNext-annualCount===1?'referral':'referrals'} to unlock your next Annual reward.`,remaining:annualNext-annualCount,next:annualNext,count:annualCount});
+ if(activePaid&&monthlyNext!=null&&monthlyNext-monthlyCount<=2) nudgeCandidates.push({id:'monthly',track:'monthly',title:monthlyNext-monthlyCount===1?'One paid referral away.':'Your Monthly reward is getting close.',detail:`${monthlyNext-monthlyCount} more qualifying monthly ${monthlyNext-monthlyCount===1?'referral':'referrals'} to unlock 1 free month.`,remaining:monthlyNext-monthlyCount,next:monthlyNext,count:monthlyCount});
+ if(activePaid&&annualNext!=null&&annualNext-annualCount<=2) nudgeCandidates.push({id:'annual',track:'annual',title:annualNext-annualCount===1?'One annual referral away.':'Your Annual reward is getting close.',detail:`${annualNext-annualCount} more plan-specific annual ${annualNext-annualCount===1?'referral':'referrals'} to unlock your next Annual reward.`,remaining:annualNext-annualCount,next:annualNext,count:annualCount});
  const nudges=nudgeCandidates.sort((a,b)=>a.remaining-b.remaining).slice(0,3);
  const badges=[
    {id:'first-share',label:'First Share',description:'Your referral link is ready.',unlocked:true,icon:'↗'},
    {id:'free-builder',label:'Free Builder',description:'10 active Free users.',unlocked:freeCount>=10,icon:'★'},
-   {id:'monthly-spark',label:'Monthly Spark',description:'1 qualified same-plan monthly referral.',unlocked:monthlyCount>=1,icon:'◆'},
-   {id:'monthly-engine',label:'Monthly Engine',description:'4 qualified same-plan monthly referrals.',unlocked:monthlyCount>=4,icon:'◆'},
-   {id:'annual-launch',label:'Annual Launch',description:'2 qualified same-plan annual referrals.',unlocked:annualCount>=2,icon:'✦'},
-   {id:'annual-elite',label:'Annual Elite',description:'8 qualified same-plan annual referrals.',unlocked:annualCount>=8,icon:'✦'},
+   {id:'monthly-spark',label:'Monthly Spark',description:'1 qualified plan-specific monthly referral.',unlocked:monthlyCount>=1,icon:'◆'},
+   {id:'monthly-engine',label:'Monthly Engine',description:'4 qualified plan-specific monthly referrals.',unlocked:monthlyCount>=4,icon:'◆'},
+   {id:'annual-launch',label:'Annual Launch',description:'2 qualified plan-specific annual referrals.',unlocked:annualCount>=2,icon:'✦'},
+   {id:'annual-elite',label:'Annual Elite',description:'8 qualified plan-specific annual referrals.',unlocked:annualCount>=8,icon:'✦'},
    {id:'referral-legend',label:'Referral Legend',description:'10+ qualified paid referrals across your active plan.',unlocked:(monthlyCount+annualCount)>=10,icon:'♛'}
  ];
  const timeline=(referrals||[]).flatMap((r:any)=>{
@@ -235,8 +234,8 @@ export async function GET(req:Request){
    : activeTrack==='monthly'?'1 free month':'1 free Starter month';
  const rewardRows=rewards||[];
  const freeCompleted=freeCount>=10 && rewardRows.some((r:any)=>['earned','applied','scheduled'].includes(r.status)&&r.plan==='starter'&&r.billing_interval==='month'&&Number(r.milestone)>=10&&Number(r.milestone)%10===0);
- const monthlyCompleted=activePaid && monthlyCount>=1 && rewardRows.some((r:any)=>['earned','applied','scheduled'].includes(r.status)&&r.plan===plan&&r.billing_interval==='month'&&Number(r.milestone)>=1&&Number(r.milestone)%2===1);
- const annualCompleted=activePaid && annualCount>=2 && rewardRows.some((r:any)=>['earned','applied','scheduled'].includes(r.status)&&r.plan===plan&&r.billing_interval==='year'&&Number(r.milestone)>=2&&Number(r.milestone)%2===0);
+ const monthlyCompleted=monthlyCount>=1 && rewardRows.some((r:any)=>['earned','applied','scheduled'].includes(r.status)&&r.billing_interval==='month'&&Number(r.milestone)>=1&&Number(r.milestone)%2===1);
+ const annualCompleted=annualCount>=2 && rewardRows.some((r:any)=>['earned','applied','scheduled'].includes(r.status)&&r.billing_interval==='year'&&Number(r.milestone)>=2&&Number(r.milestone)%2===0);
  const activeChallengeCompleted=activeTrack==='free'?freeCompleted:activeTrack==='monthly'?monthlyCompleted:annualCompleted;
 
  return NextResponse.json({
