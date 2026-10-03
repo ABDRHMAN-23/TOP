@@ -235,7 +235,7 @@ export default function AppPage() {
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-60 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
           <a href="/" aria-label="QUVOTO home" className="inline-flex items-center"><QuvotoLogo className="h-10 w-auto"/></a>
           <div className="flex items-center gap-2">
@@ -284,7 +284,7 @@ export default function AppPage() {
           <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <div className="flex items-center justify-between">
               <div><p className="text-sm font-semibold text-slate-400">STEP 2</p><h2 className="mt-1 text-2xl font-bold">Review quote</h2></div>
-              <FileText className="text-slate-300"/>
+              <FileText className="text-slate-600"/>
             </div>
 
             {!analysis ? (
@@ -363,8 +363,8 @@ export default function AppPage() {
                 </div>
 
                 <div className="rounded-2xl bg-[#0A1E3D] p-5 text-white">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-300"><Check size={17}/>Ready for the next step</div>
-                  <p className="mt-1 text-sm text-slate-300">Save this reviewed quote to your QUVOTO workspace.</p>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-600"><Check size={17}/>Ready for the next step</div>
+                  <p className="mt-1 text-sm text-slate-600">Save this reviewed quote to your QUVOTO workspace.</p>
                   <button onClick={saveQuote} disabled={saving} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 font-bold text-slate-900 disabled:opacity-60">
                     {saving ? <Loader2 className="animate-spin" size={17}/> : <Save size={17}/>}Save quote
                   </button>
