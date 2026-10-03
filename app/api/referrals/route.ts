@@ -190,7 +190,7 @@ export async function GET(req:Request){
  const activeNext=activeTrack==='annual'?annualNext:activeTrack==='monthly'?monthlyNext:freeNext;
  const activeCount=activeTrack==='annual'?annualCount:activeTrack==='monthly'?monthlyCount:freeCount;
  const activeReward=activeTrack==='annual'
-   ? (annualNext===2?'1 free year':annualNext===4?'6 free months':annualNext!=null && (annualNext-8)%6===0 && annualNext>=8?'1 free year':annualNext!=null && (annualNext-10)%6===0 && annualNext>=10?'6 free months':'next reward')
+   ? (annualNext==null?'next reward':annualRewardMonths(annualNext)===12?'1 free year':annualRewardMonths(annualNext)===6?'6 free months':'next reward')
    : activeTrack==='monthly'?'1 free month':'1 free Starter month';
 
  return NextResponse.json({
