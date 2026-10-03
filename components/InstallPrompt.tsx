@@ -130,9 +130,9 @@ export default function InstallPrompt(){
         {ios ? (
           <p className="mt-0.5 text-xs leading-5 text-slate-500"><Smartphone size={12} className="mr-1 inline"/>Tap <b>Share</b>, then <b>Add to Home Screen</b>.</p>
         ) : fallback && !deferred ? (
-          <p className="mt-0.5 text-xs leading-5 text-slate-500"><MoreVertical size={12} className="mr-1 inline"/>Open your browser menu <b>⋮</b> and choose <b>Install app</b> or <b>Add to Home screen</b>. After uninstalling, this is the reliable fallback when Chrome does not send the install event again yet.</p>
+          <p className="mt-0.5 text-xs leading-5 text-slate-500"><MoreVertical size={12} className="mr-1 inline"/>If an older QUVOTO app is still installed, uninstall it from your home screen first. Then open this page in Chrome, refresh once, and use the browser menu <b>⋮</b> → <b>Install app</b> or <b>Add to Home screen</b>.</p>
         ) : (
-          <p className="mt-0.5 text-xs leading-5 text-slate-500">Install QUVOTO on your phone or desktop for one-tap access.</p>
+          <p className="mt-0.5 text-xs leading-5 text-slate-500">If you previously installed QUVOTO, remove the old QUVOTO icon first, then reopen this page to install the current version.</p>
         )}
       </div>
       {!ios && deferred && <button onClick={install} className="shrink-0 rounded-xl bg-[#1769E0] px-3.5 py-2.5 text-xs font-black text-white">Install</button>}
