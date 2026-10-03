@@ -61,7 +61,12 @@ function responseText(data: any) {
 
 async function transcribe(file: File) {
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const base64 = Buffer.from(bytes).toString('base64');
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  const base64 = btoa(binary);
   const mimeType = file.type || 'audio/webm';
 
   const data = await geminiGenerate(
