@@ -25,7 +25,7 @@ export default function LoginPage(){
     <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center">
       <div className="text-center">
         <a href="/" aria-label="QUVOTO home" className="inline-flex flex-col items-center">
-          <QuvotoLogo className="h-20"/>
+          <QuvotoLogo className="h-20 w-20" stacked/>
         </a>
         <p className="mt-3 text-xs font-black uppercase tracking-[0.24em] text-[#1769E0]">Speak. Quote. Done.</p>
       </div>
