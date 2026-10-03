@@ -15,13 +15,13 @@ function isAnnualVariant(variant:string){return [process.env.LEMON_SQUEEZY_START
 function annualRewardMonthsForCount(count:number){
  if(count===2)return 12;
  if(count===4)return 6;
- if(count>=8 && (count-8)%6===0)return 12;
- if(count>=10 && (count-10)%6===0)return 6;
+ if(count>=4 && count%4===0)return 12;
+ if(count>=4 && count%2===0)return 6;
  return 0;
 }
 // Monthly referral milestones: 1 => +1 month, then every 3 additional qualified referrals.
 function monthlyRewardMonthsForCount(count:number){
- return count>=1 && (count-1)%3===0 ? 1 : 0;
+ return count>=1 && count%2===1 ? 1 : 0;
 }
 
 async function applyPendingRewards(admin:any, uid:string, plan:string, interval:string){
