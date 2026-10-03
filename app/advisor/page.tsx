@@ -1,3 +1,4 @@
+import QuvotoLogo from '@/components/QuvotoLogo';
 'use client';
 
 import { useState } from 'react';
@@ -35,7 +36,7 @@ export default function AdvisorPage() {
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
         <a href="/app" className="flex min-h-11 items-center gap-2 text-sm font-bold text-slate-600"><ArrowLeft size={17}/>Back to quote</a>
-        <div className="flex items-center"><img src="/logo.svg" alt="QUVOTO" className="h-10 w-auto"/></div>
+        <div className="flex items-center"><QuvotoLogo className="h-10 w-auto"/></div>
       </div>
     </header>
     <section className="mx-auto max-w-5xl px-4 py-7 sm:px-8 sm:py-10">
