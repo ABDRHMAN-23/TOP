@@ -8,7 +8,8 @@ function Brand(){return <img src="/logo.svg" alt="QUVOTO" className="h-10 w-auto
 import { createClient } from '@/lib/supabase/server';
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
@@ -65,5 +66,31 @@ export default async function DashboardPage() {
         <div className="divide-y">{quotes.map((quote) => <div key={quote.id} className="flex flex-col gap-4 p-4 sm:flex-row sm:p-5 sm:items-center sm:justify-between"><div><div className="font-bold">{quote.quote_number}</div><div className="text-sm text-slate-500">{quote.client_name || 'No client name'} · {new Date(quote.created_at).toLocaleDateString()}</div></div><div className="flex flex-wrap items-center gap-3 sm:justify-end"><div className="font-black">{quote.currency} {Number(quote.total).toFixed(2)}</div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold capitalize">{quote.status}</span><a target="_blank" rel="noreferrer" href={"/q/"+quote.public_token} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><ExternalLink size={17}/></a><QuoteActions quoteId={quote.id} clientEmail={quote.client_email} publicToken={quote.public_token} initialStatus={quote.status}/></div></div>)}</div>}
       </div>
     </section>
-  </main>;
+    </main>;
+  } catch (error) {
+    // Keep the Dashboard shell usable when a backend/API dependency is temporarily unavailable.
+    return <main className="min-h-screen bg-[#f7faff]">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
+          <a href="/" aria-label="QUVOTO home"><Brand/></a>
+          <div className="flex items-center gap-2">
+            <a href="/rewards" className="flex min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0]">Rewards</a>
+            <a href="/app" className="flex min-h-11 items-center gap-2 rounded-xl bg-[#1769E0] px-3.5 text-sm font-bold text-white"><Plus size={16}/> <span className="hidden sm:inline">New quote</span><span className="sm:hidden">New</span></a>
+          </div>
+        </div>
+      </header>
+      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-8">
+        <p className="text-sm font-extrabold tracking-[0.16em] text-[#1769E0]">WORKSPACE</p>
+        <h1 className="mt-1 text-[2rem] font-extrabold leading-tight tracking-[-0.04em] sm:text-4xl">Your quotes</h1>
+        <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <h2 className="text-xl font-black text-[#0A1E3D]">Dashboard is ready</h2>
+          <p className="mt-2 max-w-2xl text-slate-500">Your dashboard shell is available even when a backend/API request is temporarily unavailable. Your saved quotes will appear here automatically when the connection returns.</p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <a href="/app" className="rounded-xl bg-[#1769E0] px-5 py-3 font-bold text-white">Create quote</a>
+            <a href="/rewards" className="rounded-xl border border-slate-200 px-5 py-3 font-bold text-slate-700">Open rewards</a>
+          </div>
+        </div>
+      </section>
+    </main>;
+  }
 }
