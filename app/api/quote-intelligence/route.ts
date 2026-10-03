@@ -1,17 +1,60 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+function geminiUrl(model: string) {
+  const base = (process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
+  return `${base}/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+}
+
 async function ask(prompt: string) {
-  const url = process.env.GEMMA_API_URL;
-  if (!url) throw new Error('Quote Intelligence AI is not configured.');
-  const headers: Record<string,string> = {'Content-Type':'application/json'};
-  if (process.env.GEMMA_API_KEY) headers.Authorization='Bearer '+process.env.GEMMA_API_KEY;
-  const system='You are QUVOTO Quote Intelligence. Review contractor quote drafts. Never invent market facts. Use only supplied quote history and draft data. Identify missing costs, suspicious arithmetic, unusually low/high values versus the user history, missing commercial terms, and useful follow-up questions. Do not change prices automatically. Return JSON only: summary, warnings, suggestions, questions, confidence. Arrays for warnings/suggestions/questions; confidence low|medium|high.';
-  const res=await fetch(url,{method:'POST',headers,body:JSON.stringify({model:process.env.GEMMA_MODEL||'gemma-4-31b-it',temperature:.1,response_format:{type:'json_object'},system,prompt,messages:[{role:'system',content:system},{role:'user',content:prompt}]})});
-  if(!res.ok) throw new Error('Quote Intelligence provider returned an error.');
-  const raw=await res.json(); let p=raw?.output??raw?.text??raw?.response??raw?.choices?.[0]?.message?.content??raw;
-  if(typeof p==='string'){try{p=JSON.parse(p.replace(/^\s*```(?:json)?/i,'').replace(/```\s*$/,'').trim())}catch{throw new Error('Quote Intelligence returned invalid data.');}}
-  return {summary:String(p?.summary||''),warnings:Array.isArray(p?.warnings)?p.warnings.map(String):[],suggestions:Array.isArray(p?.suggestions)?p.suggestions.map(String):[],questions:Array.isArray(p?.questions)?p.questions.map(String):[],confidence:['low','medium','high'].includes(p?.confidence)?p.confidence:'low'};
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('Gemini API is not configured. Add GEMINI_API_KEY to the deployment environment.');
+
+  const system = 'You are QUVOTO Quote Intelligence. Review contractor quote drafts. Never invent market facts. Use only supplied quote history and draft data. Identify missing costs, suspicious arithmetic, unusually low/high values versus the user history, missing commercial terms, and useful follow-up questions. Do not change prices automatically. Return JSON only: summary, warnings, suggestions, questions, confidence. Arrays for warnings/suggestions/questions; confidence low|medium|high.';
+  const schema = {
+    type: 'object',
+    properties: {
+      summary: { type: 'string' },
+      warnings: { type: 'array', items: { type: 'string' } },
+      suggestions: { type: 'array', items: { type: 'string' } },
+      questions: { type: 'array', items: { type: 'string' } },
+      confidence: { type: 'string', enum: ['low', 'medium', 'high'] }
+    },
+    required: ['summary', 'warnings', 'suggestions', 'questions', 'confidence']
+  };
+
+  const res = await fetch(geminiUrl(process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: system + '\n\n' + prompt }] }],
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: 'application/json',
+        responseSchema: schema
+      }
+    })
+  });
+
+  const rawText = await res.text();
+  let raw: any = {};
+  try { raw = rawText ? JSON.parse(rawText) : {}; } catch {}
+
+  if (!res.ok) {
+    throw new Error(`Gemini API error: ${raw?.error?.message || rawText || `HTTP ${res.status}`}`);
+  }
+
+  const pText = String(raw?.candidates?.[0]?.content?.parts?.map((part:any) => part?.text || '').join('') || '').trim();
+  let p: any;
+  try { p = JSON.parse(pText); } catch { throw new Error('Quote Intelligence returned invalid structured data.'); }
+
+  return {
+    summary: String(p?.summary || ''),
+    warnings: Array.isArray(p?.warnings) ? p.warnings.map(String) : [],
+    suggestions: Array.isArray(p?.suggestions) ? p.suggestions.map(String) : [],
+    questions: Array.isArray(p?.questions) ? p.questions.map(String) : [],
+    confidence: ['low','medium','high'].includes(p?.confidence) ? p.confidence : 'low'
+  };
 }
 
 export async function POST(req:Request){
