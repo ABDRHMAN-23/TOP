@@ -10,7 +10,7 @@ export async function GET() {
   const { data: membership } = await supabase.from('team_memberships').select('owner_id').eq('member_id', user.id).neq('owner_id', user.id).maybeSingle();
   const billingOwnerId = membership?.owner_id || user.id;
   const [{ data: subscription }, { data: usage }] = await Promise.all([
-    supabase.from('subscriptions').select('plan,status,current_period_end').eq('user_id', billingOwnerId).maybeSingle(),
+    supabase.from('subscriptions').select('plan,status,current_period_end,billing_interval').eq('user_id', billingOwnerId).maybeSingle(),
     supabase.from('usage').select('quotes_count,period_start').eq('user_id', billingOwnerId).order('period_start', { ascending: false }).limit(1).maybeSingle()
   ]);
 
@@ -23,7 +23,10 @@ export async function GET() {
     plan,
     billingConfigured: Boolean(process.env.LEMON_SQUEEZY_API_KEY && process.env.LEMON_SQUEEZY_STORE_ID),
     label: catalog.label,
-    price: catalog.price,
+    price: subscription?.billing_interval === 'year' ? catalog.annualPrice : catalog.price,
+    monthlyPrice: catalog.price,
+    annualPrice: catalog.annualPrice,
+    billingInterval: subscription?.billing_interval || null,
     used,
     quota,
     remaining: quota === null ? null : Math.max(0, quota - used),
