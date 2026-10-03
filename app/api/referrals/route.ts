@@ -64,7 +64,6 @@ export async function POST(req:Request){
 
 export async function GET(req:Request){
  try{
- try{
   const supabase=await createClient();
   const {data:{user},error:authError}=await supabase.auth.getUser();
   if(authError) return NextResponse.json({error:'Authentication check failed.'},{status:500});
