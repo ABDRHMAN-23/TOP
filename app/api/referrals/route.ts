@@ -3,8 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 
 function annualRewardMonths(count:number){
   if(count===2)return 12;
-  if(count===4)return 6;
-  if(count>=4 && count%2===0)return count%4===0 ? 12 : 6;
+  if(count>=8 && count%4===0)return 12;
+  if(count>=4 && count%2===0)return 6;
   return 0;
 }
 function nextMilestoneFor(count:number, rewardFn:(n:number)=>number){
@@ -30,7 +30,7 @@ export async function POST(req:Request){
  const {data:reward,error:rewardError}=await supabase.from('referral_rewards')
    .select('*').eq('id',rewardId).eq('user_id',user.id).maybeSingle();
  if(rewardError||!reward)return NextResponse.json({error:'Reward not found.'},{status:404});
- if(!['earned','scheduled'].includes(reward.status)){
+ if(reward.status!=='earned'){
    return NextResponse.json({error:'This reward is no longer available for selection.'},{status:409});
  }
  const {data:sub}=await supabase.from('subscriptions').select('plan,status,billing_interval').eq('user_id',user.id).maybeSingle();
@@ -40,15 +40,14 @@ export async function POST(req:Request){
  if(reward.plan!==sub.plan){
    return NextResponse.json({error:'This reward must stay on the same QUVOTO plan.'},{status:409});
  }
- if(reward.status==='scheduled' && reward.redemption_interval && reward.redemption_interval===redemptionInterval){
+ if(reward.redemption_interval && reward.redemption_interval===redemptionInterval){
    return NextResponse.json({ok:true,message:'Your reward is already scheduled for this billing track.'});
  }
  const now=new Date().toISOString();
  const {error:updateError}=await supabase.from('referral_rewards').update({
    redemption_interval:redemptionInterval,
-   selected_at:now,
-   status:'scheduled'
- }).eq('id',rewardId).eq('user_id',user.id).in('status',['earned','scheduled']);
+   selected_at:now
+ }).eq('id',rewardId).eq('user_id',user.id).eq('status','earned');
  if(updateError)return NextResponse.json({error:'Could not save your reward choice.'},{status:500});
  return NextResponse.json({
    ok:true,
