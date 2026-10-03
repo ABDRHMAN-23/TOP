@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { requireSuperAdmin } from '@/lib/super-admin';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
