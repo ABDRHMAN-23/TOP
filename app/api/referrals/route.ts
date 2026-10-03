@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 function annualRewardMonths(count:number){
   if(count===2)return 12;
@@ -76,9 +77,20 @@ export async function POST(req:Request){
  if(reward.status!=='earned'){
    return NextResponse.json({error:'This reward is no longer available for selection.'},{status:409});
  }
- const {data:sub}=await supabase.from('subscriptions').select('plan,status,billing_interval,current_period_end').eq('user_id',user.id).maybeSingle();
- if(!sub || !['starter','pro','team'].includes(sub.plan) || sub.status!=='active'){
-   return NextResponse.json({error:'Your reward is unlocked, but you need an active paid subscription before it can be applied.'},{status:409});
+ const admin=createAdminClient();
+ const {data:result,error:applyError}=await admin.rpc('apply_referral_reward',{
+   p_reward_id:rewardId,
+   p_user_id:user.id
+ });
+ if(applyError){
+   const msg=String(applyError.message||'');
+   if(msg.includes('ACTIVE_PAID_SUBSCRIPTION_REQUIRED')) return NextResponse.json({error:'Your reward is unlocked, but you need an active paid subscription before it can be applied.'},{status:409});
+   if(msg.includes('REWARD_NOT_AVAILABLE')) return NextResponse.json({error:'This reward is no longer available.'},{status:409});
+   if(msg.includes('REWARD_NOT_FOUND')) return NextResponse.json({error:'Reward not found.'},{status:404});
+   return NextResponse.json({error:'Your reward could not be applied.'},{status:500});
+ }
+ const months=Number(result?.months||0);
+ return NextResponse.json({error:'Your reward is unlocked, but you need an active paid subscription before it can be applied.'},{status:409});
  }
 
  // The counter that unlocked the reward may be Starter, Pro, or Team. It must NEVER
