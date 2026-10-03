@@ -77,8 +77,23 @@ export default function AppPage() {
   }, []);
 
   const start = async () => {
+    setError('');
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      setError('Microphone access requires a secure HTTPS page. Open QUVOTO over HTTPS and try again.');
+      return;
+    }
+
     try {
-      setError('');
+      // Always request access again when the user taps the microphone.
+      // If the browser has a previous "Block" decision, browsers normally
+      // will not show a native prompt again; we surface the exact recovery
+      // action instead of leaving the user with a dead microphone button.
+      const permission = await navigator.permissions?.query({ name: 'microphone' as PermissionName }).catch(() => null);
+      if (permission?.state === 'denied') {
+        setError('Microphone is blocked for QUVOTO. Tap the site controls/lock icon in your browser, open Permissions or Site settings, set Microphone to Allow, then tap the microphone again.');
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       chunks.current = [];
       const recorder = new MediaRecorder(stream);
@@ -92,8 +107,13 @@ export default function AppPage() {
       setRecording(true);
       setSeconds(0);
       timer.current = setInterval(() => setSeconds((value) => value + 1), 1000);
-    } catch {
-      setError('Microphone permission was not granted.');
+    } catch (err) {
+      const name = err instanceof DOMException ? err.name : '';
+      if (name === 'NotAllowedError' || name === 'SecurityError') {
+        setError('Microphone access was blocked. Open your browser site controls/Permissions, set Microphone to Allow, then tap the microphone again.');
+      } else {
+        setError('Could not access the microphone. Check your browser microphone permission and try again.');
+      }
     }
   };
 
