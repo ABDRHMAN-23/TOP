@@ -66,17 +66,19 @@ async function qualifyForUser(admin:any, uid:string){
    admin.from('subscriptions').select('plan,status,billing_interval,current_period_end').eq('user_id',ref.referred_user_id).maybeSingle()
   ]);
 
-  const referrerActive=referrerSub&&referrerSub.status==='active'&&['starter','pro','team'].includes(referrerSub.plan);
   const referredActive=referredSub&&referredSub.status==='active'&&['starter','pro','team'].includes(referredSub.plan);
-  if(!referrerActive||!referredActive||referrerSub.plan!==referredSub.plan||referrerSub.billing_interval!==referredSub.billing_interval)continue;
+  if(!referredActive)continue;
 
-  const interval=referrerSub.billing_interval;
+  const interval=referredSub.billing_interval;
+  const referredPlan=referredSub.plan;
   if(interval!=='month'&&interval!=='year')continue;
 
+  // A referral belongs to the plan and billing interval the referred customer actually bought.
+  // The referrer's own current plan does not decide which counter receives the referral.
   if(ref.status!=='qualified'&&ref.status!=='rewarded'){
    await admin.from('referrals').update({
     status:'qualified',
-    qualifying_plan:referrerSub.plan,
+    qualifying_plan:referredPlan,
     qualifying_interval:interval,
     qualified_at:new Date().toISOString(),
     updated_at:new Date().toISOString()
@@ -85,7 +87,7 @@ async function qualifyForUser(admin:any, uid:string){
 
   const {count}=await admin.from('referrals').select('id',{count:'exact',head:true})
    .eq('referrer_user_id',ref.referrer_user_id)
-   .eq('qualifying_plan',referrerSub.plan)
+   .eq('qualifying_plan',referredPlan)
    .eq('qualifying_interval',interval)
    .in('status',['qualified','rewarded']);
 
@@ -98,7 +100,7 @@ async function qualifyForUser(admin:any, uid:string){
 
   const {data:existing}=await admin.from('referral_rewards').select('id')
    .eq('user_id',ref.referrer_user_id)
-   .eq('plan',referrerSub.plan)
+   .eq('plan',referredPlan)
    .eq('billing_interval',interval)
    .eq('milestone',qualifiedCount)
    .maybeSingle();
@@ -115,14 +117,13 @@ async function qualifyForUser(admin:any, uid:string){
    referral_id:ref.id,
    milestone:qualifiedCount,
    reward_type:rewardType,
-   plan:referrerSub.plan,
+   plan:referredPlan,
    billing_interval:interval,
    status:'earned',
    earned_at:now
   });
   if(rewardError)continue;
 
-  // The reward is earned but NOT applied yet. The referrer must choose Monthly or Annual in the Reward Wallet.
   await admin.from('referrals').update({status:'rewarded',updated_at:now}).eq('id',ref.id);
   await admin.from('referral_events').insert({
    referral_id:ref.id,
@@ -130,7 +131,7 @@ async function qualifyForUser(admin:any, uid:string){
    metadata:{
     milestone:qualifiedCount,
     reward_months:rewardMonths,
-    plan:referrerSub.plan,
+    plan:referredPlan,
     billing_interval:interval
    }
   });
