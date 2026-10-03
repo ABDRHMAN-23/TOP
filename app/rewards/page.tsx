@@ -14,6 +14,25 @@ const empty:RefData={link:null,plan:'',interval:'',freeCount:0,nextFreeMilestone
 const trackName=(t:string)=>t==='monthly'?'Monthly referrals':t==='annual'?'Annual referrals':'Free referrals';
 const rewardValue=(r:Reward)=>r.reward_type==='free_year'?'1 free year':r.reward_type==='free_6_months'?'6 free months':'1 free month';
 
+function RewardRules(){
+ const [tab,setTab]=useState<'free'|'monthly'|'annual'>('free');
+ const rows=tab==='free'
+  ? [['10 qualified Free users','1 free Starter month','First Free reward']]
+  : tab==='monthly'
+  ? [['1 qualified referral','1 free month','Same QUVOTO plan · Monthly billing'],['4 qualified referrals','1 free month','Same QUVOTO plan · Monthly billing'],['7 qualified referrals','1 free month','Same QUVOTO plan · Monthly billing'],['10 qualified referrals','1 free month','Then every 3 additional referrals']]
+  : [['2 qualified referrals','1 free year','Same QUVOTO plan · Annual billing'],['4 qualified referrals','6 free months','Same QUVOTO plan · Annual billing'],['8 qualified referrals','1 free year','Then repeats every 6 annual referrals'],['10 qualified referrals','6 free months','Then repeats every 6 annual referrals']];
+ return <section className="mt-10">
+  <div className="text-center"><p className="text-xs font-black uppercase tracking-[.16em] text-[#1769E0]">Reward rules</p><h2 className="mt-2 text-2xl font-black sm:text-3xl">See exactly what you can earn</h2><p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-500">Choose a reward track to see every milestone and what it unlocks.</p></div>
+  <div className="mx-auto mt-5 max-w-2xl overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+   <div className="grid grid-cols-3 border-b border-slate-200 bg-slate-50 p-1">
+    {([['free','Free users'],['monthly','Monthly'],['annual','Annual']] as const).map(([id,label])=><button key={id} onClick={()=>setTab(id)} className={'rounded-xl px-3 py-3 text-sm font-black transition '+(tab===id?'bg-white text-[#1769E0] shadow-sm':'text-slate-500')}>{label}</button>)}
+   </div>
+   <div className="divide-y divide-slate-100">{rows.map(([milestone,reward,note],i)=><div key={i} className="grid grid-cols-[1fr_auto] gap-4 p-4 sm:grid-cols-[1.1fr_1fr] sm:p-5"><div><p className="font-black">{milestone}</p><p className="mt-1 text-xs leading-5 text-slate-500">{note}</p></div><div className="flex items-center justify-end text-right"><span className="rounded-full bg-[#1769E0]/10 px-3 py-2 text-sm font-black text-[#1769E0]">{reward}</span></div></div>)}</div>
+   <div className="border-t border-slate-200 bg-[#F7FAFF] px-5 py-4 text-center text-xs font-semibold text-slate-500">{tab==='free'?'Free rewards are based on qualified Free users.':tab==='monthly'?'Monthly rewards count qualified referrals on the same QUVOTO plan.':'Annual rewards count qualified referrals on the same QUVOTO plan.'}</div>
+  </div>
+ </section>;
+}
+
 export default function RewardsPage(){
  const [data,setData]=useState<RefData|null>(null); const [loading,setLoading]=useState(true);
  const [copied,setCopied]=useState(false); const [busy,setBusy]=useState<string|null>(null); const [message,setMessage]=useState('');
@@ -49,21 +68,7 @@ export default function RewardsPage(){
     <div className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-sm font-black">Annual</p><p className="mt-2 text-2xl font-black">{d.qualifiedCount}</p><p className="mt-1 text-xs text-slate-500">Qualified annual referrals.</p></div>
    </div>
 
-   <section className="mt-10">
-    <div className="text-center"><p className="text-xs font-black uppercase tracking-[.16em] text-[#1769E0]">Reward rules</p><h2 className="mt-2 text-2xl font-black sm:text-3xl">See exactly what you can earn</h2><p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-500">Choose a reward track to see every milestone and what it unlocks.</p></div>
-    <div className="mx-auto mt-5 max-w-2xl overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
-      <div className="grid grid-cols-3 border-b border-slate-200 bg-slate-50 p-1">
-        <button className="rounded-xl bg-white px-3 py-3 text-sm font-black text-[#1769E0] shadow-sm">Free users</button>
-        <button className="rounded-xl px-3 py-3 text-sm font-black text-slate-500">Monthly</button>
-        <button className="rounded-xl px-3 py-3 text-sm font-black text-slate-500">Annual</button>
-      </div>
-      <div className="divide-y divide-slate-100">
-        <div className="grid grid-cols-[1fr_auto] gap-4 p-4 sm:grid-cols-[1.1fr_1fr] sm:p-5"><div><p className="font-black">10 qualified Free users</p><p className="mt-1 text-xs text-slate-500">The first Free reward</p></div><div className="flex items-center justify-end"><span className="rounded-full bg-[#1769E0]/10 px-3 py-2 text-sm font-black text-[#1769E0]">1 free Starter month</span></div></div>
-      </div>
-      <div className="border-t border-slate-200 bg-[#F7FAFF] px-5 py-4 text-center text-xs font-semibold text-slate-500">Free rewards are based on qualified Free users.</div>
-    </div>
-   </section>
-
+   <RewardRules/>
    <div className="mt-10 text-center"><p className="text-xs font-black uppercase tracking-[.16em] text-[#1769E0]">How it works</p><h2 className="mt-2 text-2xl font-black">Three simple steps.</h2></div>
    <div className="mt-5 grid gap-4 sm:grid-cols-3">{[['1','Share','Send your referral link.'],['2','They qualify','They join and reach the required milestone.'],['3','You earn','Your reward appears here.']].map(([n,t,desc])=><div key={n} className="rounded-2xl bg-white p-5 text-center ring-1 ring-slate-200"><div className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-[#1769E0] text-sm font-black text-white">{n}</div><h3 className="mt-4 font-black">{t}</h3><p className="mt-1 text-sm leading-6 text-slate-500">{desc}</p></div>)}</div>
 
