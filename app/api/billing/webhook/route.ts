@@ -19,7 +19,7 @@ function annualRewardMonthsForCount(count:number){
  if(count>=4 && count%2===0)return 6;
  return 0;
 }
-// Monthly referral milestones: 1 => +1 month, then every 3 additional qualified referrals.
+// Monthly referral milestones: 1 => +1 month, then every 2 additional qualified referrals.
 function monthlyRewardMonthsForCount(count:number){
  return count>=1 && count%2===1 ? 1 : 0;
 }
