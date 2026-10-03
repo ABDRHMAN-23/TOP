@@ -9,7 +9,7 @@ export default function LoginPage(){
   const next = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('next') || '/dashboard' : '/dashboard';
   const authError = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('error') : null;
   const [loading,setLoading]=useState(false); const [message,setMessage]=useState(''); const [error,setError]=useState(''); const [legal,setLegal]=useState(false);
-  const submit=async(e:React.FormEvent)=>{
+  const socialLogin=async(provider:'google'|'apple')=>{ setError(''); setMessage(''); if(!legal){setError('Please agree to the Terms of Service and acknowledge the Privacy Policy before continuing.');return;} setLoading(true); document.cookie='quvoto_legal_consent=2026-10-02; Max-Age=900; Path=/; SameSite=Lax'; const supabase=createClient(); const result=await supabase.auth.signInWithOAuth({provider,options:{redirectTo:window.location.origin+'/auth/callback?next='+encodeURIComponent(next)}}); if(result.error){setError(result.error.message);setLoading(false);} };\n  const submit=async(e:React.FormEvent)=>{
     e.preventDefault();setError('');setMessage('');
     if(!legal){setError('Please agree to the Terms of Service and acknowledge the Privacy Policy before continuing.');return;}
     if(!email.trim())return;
