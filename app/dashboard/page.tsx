@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation';
 import { FileText, Plus, ExternalLink, Settings } from 'lucide-react';
 import QuoteActions from './QuoteActions';
+import QuvotoLogo from '@/components/QuvotoLogo';
 import NotificationCenter from '@/components/NotificationCenter';
 import DailyBrief from '@/components/DailyBrief';
 
-function Brand(){return <img src="/logo.svg" alt="QUVOTO" className="h-10 w-auto"/>;}
+function Brand(){return <QuvotoLogo className="h-10"/>;}
 import { createClient } from '@/lib/supabase/server';
 
 export default async function DashboardPage() {
