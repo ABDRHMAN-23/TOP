@@ -17,6 +17,7 @@ function monthlyReward(count:number){
 }
 
 export async function POST(req:Request){
+ try{
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)return NextResponse.json({error:'Authentication required'},{status:401});
