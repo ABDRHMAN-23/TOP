@@ -22,6 +22,30 @@ export async function POST(req:Request){
  if(!user)return NextResponse.json({error:'Authentication required'},{status:401});
  let body:any;
  try{body=await req.json()}catch{return NextResponse.json({error:'Invalid JSON.'},{status:400})}
+ const action=String(body?.action||'');
+ if(action==='select_challenge'){
+   const requested=String(body?.challenge||'');
+   if(!['free','monthly','annual'].includes(requested)) return NextResponse.json({error:'Invalid reward challenge.'},{status:400});
+   const [{data:current},{data:referrals}]=await Promise.all([
+     supabase.from('referral_challenge_state').select('*').eq('user_id',user.id).maybeSingle(),
+     supabase.from('referrals').select('*').eq('referrer_user_id',user.id)
+   ]);
+   const active=current?.active_challenge||'free';
+   if(active===requested) return NextResponse.json({ok:true,challenge:active});
+   const {data:sub}=await supabase.from('subscriptions').select('plan,status,billing_interval').eq('user_id',user.id).maybeSingle();
+   const activePaid=!!sub&&sub.status==='active'&&['starter','pro','team'].includes(sub.plan||'');
+   const plan=activePaid?sub!.plan:'';
+   const rows=referrals||[];
+   const freeCount=rows.filter((r:any)=>!!r.free_qualified_at).length;
+   const monthlyCount=rows.filter((r:any)=>['qualified','rewarded'].includes(r.status)&&r.qualifying_plan===plan&&r.qualifying_interval==='month').length;
+   const annualCount=rows.filter((r:any)=>['qualified','rewarded'].includes(r.status)&&r.qualifying_plan===plan&&r.qualifying_interval==='year').length;
+   const completed=active==='free' ? freeCount>=10 : active==='monthly' ? monthlyCount>=1 : annualCount>=2;
+   if(!completed) return NextResponse.json({error:'Complete the active challenge before choosing another.'},{status:409});
+   const now=new Date().toISOString();
+   const {error:stateError}=await supabase.from('referral_challenge_state').upsert({user_id:user.id,active_challenge:requested,completed_at:null,updated_at:now},{onConflict:'user_id'});
+   if(stateError) return NextResponse.json({error:'Could not save your challenge choice.'},{status:500});
+   return NextResponse.json({ok:true,challenge:requested});
+ }
  const rewardId=String(body?.rewardId||'');
  const redemptionInterval=String(body?.redemptionInterval||'');
  if(!rewardId||!['month','year'].includes(redemptionInterval)){
@@ -75,6 +99,15 @@ export async function GET(req:Request){
     const inserted=await supabase.from('referral_codes').insert({user_id:user.id,code:value}).select().single();
     if(inserted.error||!inserted.data) return NextResponse.json({error:'Could not create your referral code.'},{status:500});
     code=inserted.data;
+  }
+
+  let challenge='free';
+  const {data:challengeState}=await supabase.from('referral_challenge_state').select('active_challenge').eq('user_id',user.id).maybeSingle();
+  if(challengeState?.active_challenge) challenge=challengeState.active_challenge;
+  if(!challengeState){
+    const now=new Date().toISOString();
+    const {data:createdChallenge}=await supabase.from('referral_challenge_state').insert({user_id:user.id,active_challenge:'free',updated_at:now,created_at:now}).select('active_challenge').single();
+    if(createdChallenge?.active_challenge) challenge=createdChallenge.active_challenge;
   }
 
   const [referralsResult,rewardsResult,subResult]=await Promise.all([
@@ -152,6 +185,7 @@ export async function GET(req:Request){
    nextMonthlyMilestone:monthlyNext,
    qualifiedCount:annualCount,
    nextMilestone:annualNext,
+   challenge,
    activeTrack,
    activeCount,
    activeNext,
