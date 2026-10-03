@@ -91,10 +91,10 @@ async function extractWithGemini(transcript: string) {
       client: {
         type: 'object',
         properties: {
-          name: { type: ['string', 'null'] },
-          email: { type: ['string', 'null'] },
-          phone: { type: ['string', 'null'] },
-          address: { type: ['string', 'null'] }
+          name: { type: 'string' },
+          email: { type: 'string' },
+          phone: { type: 'string' },
+          address: { type: 'string' }
         }
       },
       items: {
@@ -103,9 +103,9 @@ async function extractWithGemini(transcript: string) {
           type: 'object',
           properties: {
             description: { type: 'string' },
-            quantity: { type: ['number', 'null'] },
-            unit: { type: ['string', 'null'] },
-            price: { type: ['number', 'null'] }
+            quantity: { type: 'number' },
+            unit: { type: 'string' },
+            price: { type: 'number' }
           },
           required: ['description']
         }
@@ -125,6 +125,7 @@ async function extractWithGemini(transcript: string) {
             'You are the QUVOTO quote extraction engine.',
             'Extract contractor quote details from the transcript below.',
             'Never invent missing customer details, quantities, units, prices, or currency.',
+            'When a value is not spoken, use an empty string for text fields and 0 for numeric fields.',
             'Price means the unit price when the speaker gives a unit price.',
             'Return only JSON matching the supplied schema.',
             '',
