@@ -1,6 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
 import {Copy,Gift,Package,Users,BriefcaseBusiness,Clock3} from 'lucide-react';
+import QuvotoLogo from '@/components/QuvotoLogo';
 
 export default function WorkspacePage(){
  const [data,setData]=useState<any>({customers:[],savedItems:[],templates:[],jobs:[],followups:[],referrals:[],rewards:[]});
@@ -12,7 +13,7 @@ export default function WorkspacePage(){
  const [template,setTemplate]=useState({name:'',items:'',notes:''});
  const [customer,setCustomer]=useState({name:'',email:'',phone:'',address:''});
  const tabs=[['overview','Overview'],['customers','Customers'],['items','Saved items'],['templates','Templates'],['jobs','Jobs'],['followups','Follow-ups'],['referrals','Refer & Earn']];
- return <main className="min-h-screen bg-[#f7faff] text-[#0A1E3D]"><header className="border-b bg-white"><div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-8"><a href="/dashboard" aria-label="QUVOTO home" className="inline-flex items-center"><img src="/logo.svg" alt="QUVOTO" className="h-10 w-auto"/></a><div className="flex items-center gap-2"><a href="/rewards" className="rounded-xl bg-[#1769E0]/10 px-4 py-2.5 text-sm font-bold text-[#1769E0]">Rewards</a><a href="/app" className="rounded-xl bg-[#1769E0] px-4 py-2.5 text-sm font-bold text-white">New quote</a></div></div></header>
+ return <main className="min-h-screen bg-[#f7faff] text-[#0A1E3D]"><header className="border-b bg-white"><div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-8"><a href="/dashboard" aria-label="QUVOTO home" className="inline-flex items-center"><QuvotoLogo className="h-10"/></a><div className="flex items-center gap-2"><a href="/rewards" className="rounded-xl bg-[#1769E0]/10 px-4 py-2.5 text-sm font-bold text-[#1769E0]">Rewards</a><a href="/app" className="rounded-xl bg-[#1769E0] px-4 py-2.5 text-sm font-bold text-white">New quote</a></div></div></header>
  <section className="mx-auto max-w-6xl px-4 py-7 sm:px-8"><p className="text-sm font-bold tracking-widest text-[#1769E0]">WORKSPACE TOOLS</p><h1 className="mt-1 text-3xl font-black sm:text-4xl">Everything after the quote</h1><p className="mt-2 text-slate-500">Customers, reusable items, jobs, reminders and referrals without turning QUVOTO into a heavy CRM.</p>
  <div className="mt-6 flex gap-2 overflow-x-auto pb-2">{tabs.map(([id,label])=><button key={id} onClick={()=>setTab(id)} className={'whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold '+(tab===id?'bg-[#0A1E3D] text-white':'bg-white text-slate-600 border')}>{label}</button>)}</div>
  {message&&<div className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">{message}</div>}
