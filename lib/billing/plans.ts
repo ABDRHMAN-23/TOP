@@ -1,5 +1,3 @@
-import type { } from 'react';
-
 export type PlanKey = 'free' | 'starter' | 'pro' | 'team';
 
 export const PLAN_CATALOG: Record<PlanKey, {
