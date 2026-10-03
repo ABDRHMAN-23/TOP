@@ -64,8 +64,11 @@ export default function RewardsPage(){
     try{
       const res=await fetch('/api/referrals',{cache:'no-store',credentials:'same-origin'});
       if(res.status===401){window.location.href='/login?next=/rewards';return}
-      const json=await res.json();
-      if(!res.ok)throw new Error(json?.error||'Could not load Rewards.');
+      const raw=await res.text();
+      let json:any=null;
+      try{json=raw?JSON.parse(raw):null}catch{}
+      if(!res.ok)throw new Error(json?.error||raw||`Could not load Rewards (HTTP ${res.status}).`);
+      if(!json||typeof json!=='object')throw new Error('Rewards service returned an empty response. Please try again.');
       setData(json);
     }catch(e){setError(e instanceof Error?e.message:'Could not load Rewards.')}
     finally{setLoading(false)}
@@ -76,9 +79,12 @@ export default function RewardsPage(){
     setBusy(id+interval);setMessage('');
     try{
       const res=await fetch('/api/referrals',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({rewardId:id,redemptionInterval:interval})});
-      const json=await res.json();
+      const raw=await res.text();
+      let json:any=null;
+      try{json=raw?JSON.parse(raw):null}catch{}
       if(res.status===401){window.location.href='/login?next=/rewards';return}
-      if(!res.ok)throw new Error(json?.error||'Could not save your reward choice.');
+      if(!res.ok)throw new Error(json?.error||raw||`Could not save your reward choice (HTTP ${res.status}).`);
+      if(!json||typeof json!=='object')throw new Error('Rewards service returned an empty response. Please try again.');
       setMessage(json?.message||'Reward choice saved.'); await load();
     }catch(e){setMessage(e instanceof Error?e.message:'Could not save your reward choice.')}
     finally{setBusy(null)}
@@ -107,7 +113,7 @@ export default function RewardsPage(){
 
   if(loading)return <main className="min-h-screen bg-[#f7faff] text-[#0A1E3D] flex items-center justify-center"><div className="text-center"><Loader2 className="mx-auto animate-spin text-[#1769E0]" size={30}/><p className="mt-3 font-bold">Loading your Rewards…</p></div></main>;
 
-  if(error)return <main className="min-h-screen bg-[#f7faff] text-[#0A1E3D]"><header className="border-b bg-white"><div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4"><a href="/dashboard"><QuvotoLogo className="h-10 w-auto"/></a><a href="/workspace" className="rounded-xl border px-4 py-2 text-sm font-bold">Workspace</a></div></header><div className="mx-auto max-w-xl px-5 py-24 text-center"><div className="text-5xl">🎁</div><h1 className="mt-5 text-3xl font-black">Rewards could not load.</h1><p className="mt-3 text-slate-500">{error}</p><button onClick={()=>void load()} className="mt-6 rounded-xl bg-[#1769E0] px-5 py-3 font-bold text-white">Try again</button></div></main>;
+  if(error)return <main className="min-h-screen bg-[#f7faff] text-[#0A1E3D]"><header className="border-b bg-white"><div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-4"><a href="/dashboard" aria-label="QUVOTO dashboard"><QuvotoLogo className="h-10 w-auto"/></a><div className="flex items-center gap-2"><a href="/dashboard" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-black text-slate-600"><ArrowLeft size={16}/><span>Dashboard</span></a><a href="/app" className="rounded-xl bg-[#1769E0] px-3.5 py-2.5 text-sm font-black text-white">New quote</a></div></div></header><div className="mx-auto max-w-xl px-5 py-24 text-center"><div className="text-5xl">🎁</div><h1 className="mt-5 text-3xl font-black">Rewards could not load.</h1><p className="mt-3 text-slate-500">{error}</p><button onClick={()=>void load()} className="mt-6 rounded-xl bg-[#1769E0] px-5 py-3 font-bold text-white">Try again</button></div></main>;
 
   return <main className="min-h-screen bg-[#f7faff] text-[#0A1E3D]">
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
