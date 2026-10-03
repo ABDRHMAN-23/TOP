@@ -39,8 +39,27 @@ export async function POST(req:Request){
    const freeCount=rows.filter((r:any)=>!!r.free_qualified_at).length;
    const monthlyCount=rows.filter((r:any)=>['qualified','rewarded'].includes(r.status)&&r.qualifying_plan===plan&&r.qualifying_interval==='month').length;
    const annualCount=rows.filter((r:any)=>['qualified','rewarded'].includes(r.status)&&r.qualifying_plan===plan&&r.qualifying_interval==='year').length;
-   const completed=active==='free' ? freeCount>=10 : active==='monthly' ? monthlyCount>=1 : annualCount>=2;
-   if(!completed) return NextResponse.json({error:'Complete the active challenge before choosing another.'},{status:409});
+
+   // Switching is unlocked only after the active challenge has produced a real reward record.
+   // Counts alone are not enough: a failed reward write must never look like a completed challenge.
+   const {data:earnedRewards}=await supabase.from('referral_rewards')
+     .select('id,milestone,status,plan,billing_interval')
+     .eq('user_id',user.id)
+     .in('status',['earned','applied','scheduled']);
+
+   const rewardRows=earnedRewards||[];
+   const freeCompleted=freeCount>=10 && rewardRows.some((r:any)=>
+     r.plan==='starter' && r.billing_interval==='month' && Number(r.milestone)>=10 && Number(r.milestone)%10===0
+   );
+   const monthlyCompleted=activePaid && monthlyCount>=1 && rewardRows.some((r:any)=>
+     r.plan===plan && r.billing_interval==='month' && Number(r.milestone)>=1 && Number(r.milestone)%2===1
+   );
+   const annualCompleted=activePaid && annualCount>=2 && rewardRows.some((r:any)=>
+     r.plan===plan && r.billing_interval==='year' && Number(r.milestone)>=2 && Number(r.milestone)%2===0
+   );
+
+   const completed=active==='free' ? freeCompleted : active==='monthly' ? monthlyCompleted : annualCompleted;
+   if(!completed) return NextResponse.json({error:'Complete the active challenge and unlock its real reward before choosing another.'},{status:409});
    const now=new Date().toISOString();
    const {error:stateError}=await supabase.from('referral_challenge_state').upsert({user_id:user.id,active_challenge:requested,completed_at:null,updated_at:now},{onConflict:'user_id'});
    if(stateError) return NextResponse.json({error:'Could not save your challenge choice.'},{status:500});
