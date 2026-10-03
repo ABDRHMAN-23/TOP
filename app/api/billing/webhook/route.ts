@@ -15,7 +15,7 @@ function isAnnualVariant(variant:string){return [process.env.LEMON_SQUEEZY_START
 function annualRewardMonthsForCount(count:number){
  if(count===2)return 12;
  if(count===4)return 6;
- if(count>=4 && count%4===0)return 12;
+ if(count>=8 && count%4===0)return 12;
  if(count>=4 && count%2===0)return 6;
  return 0;
 }
