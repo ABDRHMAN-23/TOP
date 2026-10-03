@@ -5,12 +5,14 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, Check, Gift, Loader2, Share2, Users } from 'lucide-react';
 
 type Reward = { id:string; status:string; reward_type:string; plan:string; milestone:number; billing_interval?:string|null; redemption_interval?:'month'|'year'|null };
+type PlanCounts = {starter:number; pro:number; team:number};
 type RefData = {
   link:string|null; plan:string; interval:string; freeCount:number; nextFreeMilestone:number;
   monthlyCount:number; nextMonthlyMilestone:number|null; qualifiedCount:number; nextMilestone:number|null;
+  monthlyCounts:PlanCounts; annualCounts:PlanCounts;
   challenge?:'free'|'monthly'|'annual'; activeTrack:string; activeCount:number; activeNext:number|null; activeReward:string; activeChallengeCompleted?:boolean; rewards:Reward[];
 };
-const empty:RefData={link:null,plan:'',interval:'',freeCount:0,nextFreeMilestone:10,monthlyCount:0,nextMonthlyMilestone:null,qualifiedCount:0,nextMilestone:null,activeTrack:'free',activeCount:0,activeNext:10,activeReward:'1 free Starter month',rewards:[]};
+const empty:RefData={link:null,plan:'',interval:'',freeCount:0,nextFreeMilestone:10,monthlyCount:0,nextMonthlyMilestone:null,qualifiedCount:0,nextMilestone:null,monthlyCounts:{starter:0,pro:0,team:0},annualCounts:{starter:0,pro:0,team:0},activeTrack:'free',activeCount:0,activeNext:10,activeReward:'1 free Starter month',rewards:[]};
 const trackName=(t:string)=>t==='monthly'?'Monthly referrals':t==='annual'?'Annual referrals':'Free referrals';
 const rewardValue=(r:Reward)=>r.reward_type==='free_year'?'1 free year':r.reward_type==='free_6_months'?'6 free months':'1 free month';
 
