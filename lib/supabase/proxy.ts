@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { QUVOTO_SUPABASE_PUBLISHABLE_KEY, QUVOTO_SUPABASE_URL } from './supabase/public-config';
-import { runtimeEnv } from './runtime-env';
+import { QUVOTO_SUPABASE_PUBLISHABLE_KEY, QUVOTO_SUPABASE_URL } from './public-config';
+import { runtimeEnv } from '../runtime-env';
 
 export async function updateSession(request: NextRequest) {
   const supabaseUrl = runtimeEnv('NEXT_PUBLIC_SUPABASE_URL') || QUVOTO_SUPABASE_URL;
