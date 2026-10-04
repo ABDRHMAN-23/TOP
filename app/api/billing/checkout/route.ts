@@ -4,18 +4,18 @@ import { runtimeEnv } from '@/lib/runtime-env';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const LEGAL_VERSION='2026-10-02';
-const VARIANTS: Record<string,string|undefined> = {
- starter: runtimeEnv('LEMON_SQUEEZY_STARTER_VARIANT_ID'),
- pro: runtimeEnv('LEMON_SQUEEZY_PRO_VARIANT_ID'),
- team: runtimeEnv('LEMON_SQUEEZY_TEAM_VARIANT_ID')
-};
-const ANNUAL_VARIANTS: Record<string,string|undefined> = {
- starter: runtimeEnv('LEMON_SQUEEZY_STARTER_ANNUAL_VARIANT_ID'),
- pro: runtimeEnv('LEMON_SQUEEZY_PRO_ANNUAL_VARIANT_ID'),
- team: runtimeEnv('LEMON_SQUEEZY_TEAM_ANNUAL_VARIANT_ID')
-};
-
 export async function POST(req: Request) {
+ const VARIANTS: Record<string,string|undefined> = {
+  starter: runtimeEnv('LEMON_SQUEEZY_STARTER_VARIANT_ID'),
+  pro: runtimeEnv('LEMON_SQUEEZY_PRO_VARIANT_ID'),
+  team: runtimeEnv('LEMON_SQUEEZY_TEAM_VARIANT_ID')
+ };
+ const ANNUAL_VARIANTS: Record<string,string|undefined> = {
+  starter: runtimeEnv('LEMON_SQUEEZY_STARTER_ANNUAL_VARIANT_ID'),
+  pro: runtimeEnv('LEMON_SQUEEZY_PRO_ANNUAL_VARIANT_ID'),
+  team: runtimeEnv('LEMON_SQUEEZY_TEAM_ANNUAL_VARIANT_ID')
+ };
+
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
  if(!user) return NextResponse.json({error:'Authentication required'},{status:401});
