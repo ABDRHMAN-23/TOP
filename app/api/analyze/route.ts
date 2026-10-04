@@ -59,23 +59,88 @@ function responseText(data: any) {
   ).trim();
 }
 
-async function transcribe(file: File) {
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  let binary = '';
-  const chunkSize = 0x8000;
-  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
-  }
-  const base64 = btoa(binary);
+async function uploadToGemini(file: File) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('Gemini API is not configured. Add GEMINI_API_KEY to the deployment environment.');
+
+  const bytes = await file.arrayBuffer();
   const mimeType = file.type || 'audio/webm';
+
+  // Gemini's documented audio flow uses the Files API, then references the
+  // uploaded file from generateContent. This avoids putting the whole audio
+  // recording into an inline base64 JSON request.
+  const startResponse = await fetch(`${geminiBaseUrl()}/upload/v1beta/files`, {
+    method: 'POST',
+    headers: {
+      'x-goog-api-key': apiKey,
+      'X-Goog-Upload-Protocol': 'resumable',
+      'X-Goog-Upload-Command': 'start',
+      'X-Goog-Upload-Header-Content-Length': String(file.size),
+      'X-Goog-Upload-Header-Content-Type': mimeType,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      file: {
+        display_name: file.name || 'quvoto-voice.webm',
+      },
+    }),
+  });
+
+  if (!startResponse.ok) {
+    const message = await startResponse.text();
+    throw new Error(`Gemini file upload initialization failed: ${message || `HTTP ${startResponse.status}`}`);
+  }
+
+  const uploadUrl = startResponse.headers.get('x-goog-upload-url');
+  if (!uploadUrl) {
+    throw new Error('Gemini file upload did not return an upload URL.');
+  }
+
+  const uploadResponse = await fetch(uploadUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Length': String(file.size),
+      'X-Goog-Upload-Offset': '0',
+      'X-Goog-Upload-Command': 'upload, finalize',
+    },
+    body: bytes,
+  });
+
+  const uploadRaw = await uploadResponse.text();
+  let uploadData: any = {};
+  try { uploadData = uploadRaw ? JSON.parse(uploadRaw) : {}; } catch {}
+
+  if (!uploadResponse.ok) {
+    const message = uploadData?.error?.message || uploadRaw || `HTTP ${uploadResponse.status}`;
+    throw new Error(`Gemini file upload failed: ${message}`);
+  }
+
+  const fileUri = uploadData?.file?.uri;
+  const uploadedMimeType = uploadData?.file?.mimeType || mimeType;
+  if (!fileUri) {
+    throw new Error('Gemini file upload completed without a file URI.');
+  }
+
+  return { fileUri, mimeType: uploadedMimeType };
+}
+
+async function transcribe(file: File) {
+  const { fileUri, mimeType } = await uploadToGemini(file);
 
   const data = await geminiGenerate(
     process.env.GEMINI_TRANSCRIBE_MODEL || 'gemini-3.5-transcribe',
     {
       contents: [{
         parts: [
-          { text: 'Transcribe this contractor job-site recording exactly as spoken. Return only the transcription text. Preserve names, quantities, units, prices, addresses, phone numbers, and currency.' },
-          { inlineData: { mimeType, data: base64 } }
+          {
+            text: 'Transcribe this contractor job-site recording exactly as spoken. Return only the transcription text. Preserve names, quantities, units, prices, addresses, phone numbers, and currency.'
+          },
+          {
+            fileData: {
+              mimeType,
+              fileUri,
+            }
+          }
         ]
       }],
       generationConfig: {
