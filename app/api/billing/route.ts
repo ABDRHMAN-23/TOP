@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { runtimeEnv } from '@/lib/runtime-env';
 import { PLAN_CATALOG, normalizePlan } from '@/lib/billing/plans';
 
 function errorResponse(stage: string, error: unknown) {
@@ -22,13 +23,14 @@ export async function GET() {
     try {
       const result = await supabase.auth.getUser();
       user = result.data.user;
+      if (result.error && !user) return errorResponse('auth', result.error);
     } catch (error) {
       return errorResponse('auth', error);
     }
 
     if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
 
-    let membership = null;
+    let membership: { owner_id: string } | null = null;
     try {
       const result = await supabase
         .from('team_memberships')
@@ -82,7 +84,9 @@ export async function GET() {
 
     return NextResponse.json({
       plan,
-      billingConfigured: Boolean(process.env.LEMON_SQUEEZY_API_KEY && process.env.LEMON_SQUEEZY_STORE_ID),
+      billingConfigured: Boolean(
+        runtimeEnv('LEMON_SQUEEZY_API_KEY') && runtimeEnv('LEMON_SQUEEZY_STORE_ID')
+      ),
       label: catalog.label,
       price: subscription?.billing_interval === 'year' ? catalog.annualPrice : catalog.price,
       monthlyPrice: catalog.price,
