@@ -3,13 +3,17 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function updateSession(request: NextRequest) {
-  const context = await getCloudflareContext({ async: true });
-  const env = context.env as unknown as Record<string, string | undefined>;
-  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabasePublishableKey = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  let supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-  // Keep public pages available if Supabase is not configured.
-  // In Cloudflare production the values come from Worker runtime bindings.
+  try {
+    const { env } = getCloudflareContext();
+    const runtimeEnv = env as unknown as Record<string, string | undefined>;
+    supabaseUrl = runtimeEnv.NEXT_PUBLIC_SUPABASE_URL || supabaseUrl;
+    supabasePublishableKey =
+      runtimeEnv.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || supabasePublishableKey;
+  } catch {}
+
   if (!supabaseUrl || !supabasePublishableKey) {
     return NextResponse.next({ request });
   }
@@ -24,13 +28,18 @@ export async function updateSession(request: NextRequest) {
         setAll: (cookiesToSet, headers) => {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
           Object.entries(headers).forEach(([key, value]) => response.headers.set(key, value));
         },
       },
     },
   );
 
-  await supabase.auth.getClaims();
+  try {
+    await supabase.auth.getClaims();
+  } catch {}
+
   return response;
 }
