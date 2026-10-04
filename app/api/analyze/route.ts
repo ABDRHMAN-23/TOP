@@ -1,6 +1,17 @@
 import { NextResponse } from 'next/server';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 type ExtractedItem = { description?: string; quantity?: number|null; unit?: string|null; price?: number|null };
+
+function runtimeEnv(name: string) {
+  try {
+    const { env } = getCloudflareContext();
+    const value = (env as Record<string, unknown>)[name];
+    if (typeof value === 'string' && value) return value;
+  } catch {}
+  const fallback = process.env[name];
+  return typeof fallback === 'string' && fallback ? fallback : undefined;
+}
 
 function normalizeExtraction(value: any, transcript: string) {
   const source = value?.result && typeof value.result === 'object' ? value.result : value;
@@ -19,7 +30,7 @@ function normalizeExtraction(value: any, transcript: string) {
 }
 
 function geminiBaseUrl() {
-  return (process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
+  return (runtimeEnv('GEMINI_API_URL') || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
 }
 
 function geminiModelUrl(model: string) {
@@ -38,17 +49,12 @@ class GeminiError extends Error {
 }
 
 async function geminiGenerate(model: string, body: unknown, stage: GeminiError['stage']) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new GeminiError('Gemini API key is not available in the QUVOTO server runtime.', 'config', 500);
-  }
+  const apiKey = runtimeEnv('GEMINI_API_KEY');
+  if (!apiKey) throw new GeminiError('Gemini API key is not available in the Cloudflare runtime.', 'config', 500);
 
   const response = await fetch(geminiModelUrl(model), {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey,
-    },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify(body),
   });
 
@@ -73,10 +79,8 @@ function responseText(data: any) {
 }
 
 async function uploadToGemini(file: File) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new GeminiError('Gemini API key is not available in the QUVOTO server runtime.', 'config', 500);
-  }
+  const apiKey = runtimeEnv('GEMINI_API_KEY');
+  if (!apiKey) throw new GeminiError('Gemini API key is not available in the Cloudflare runtime.', 'config', 500);
 
   const bytes = await file.arrayBuffer();
   const mimeType = file.type || 'audio/webm';
@@ -91,26 +95,16 @@ async function uploadToGemini(file: File) {
       'X-Goog-Upload-Header-Content-Type': mimeType,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      file: {
-        display_name: file.name || 'quvoto-voice.webm',
-      },
-    }),
+    body: JSON.stringify({ file: { display_name: file.name || 'quvoto-voice.webm' } }),
   });
 
   if (!startResponse.ok) {
     const message = await startResponse.text();
-    throw new GeminiError(
-      `Gemini file upload initialization failed (${startResponse.status}): ${message || 'unknown error'}`,
-      'transcribe',
-      startResponse.status
-    );
+    throw new GeminiError(`Gemini file upload initialization failed (${startResponse.status}): ${message || 'unknown error'}`, 'transcribe', startResponse.status);
   }
 
   const uploadUrl = startResponse.headers.get('x-goog-upload-url');
-  if (!uploadUrl) {
-    throw new GeminiError('Gemini file upload did not return an upload URL.', 'transcribe');
-  }
+  if (!uploadUrl) throw new GeminiError('Gemini file upload did not return an upload URL.', 'transcribe');
 
   const uploadResponse = await fetch(uploadUrl, {
     method: 'POST',
@@ -128,39 +122,23 @@ async function uploadToGemini(file: File) {
 
   if (!uploadResponse.ok) {
     const message = uploadData?.error?.message || uploadRaw || `HTTP ${uploadResponse.status}`;
-    throw new GeminiError(
-      `Gemini file upload failed (${uploadResponse.status}): ${message}`,
-      'transcribe',
-      uploadResponse.status
-    );
+    throw new GeminiError(`Gemini file upload failed (${uploadResponse.status}): ${message}`, 'transcribe', uploadResponse.status);
   }
 
   const fileUri = uploadData?.file?.uri;
   const uploadedMimeType = uploadData?.file?.mimeType || mimeType;
-  if (!fileUri) {
-    throw new GeminiError('Gemini file upload completed without a file URI.', 'transcribe');
-  }
+  if (!fileUri) throw new GeminiError('Gemini file upload completed without a file URI.', 'transcribe');
 
   return { fileUri, mimeType: uploadedMimeType };
 }
 
 async function transcribe(file: File) {
   const { fileUri, mimeType } = await uploadToGemini(file);
-
   const data = await geminiGenerate(
-    process.env.GEMINI_TRANSCRIBE_MODEL || 'gemini-3.5-transcribe',
+    runtimeEnv('GEMINI_TRANSCRIBE_MODEL') || 'gemini-3.5-transcribe',
     {
-      contents: [{
-        parts: [{
-          fileData: {
-            mimeType,
-            fileUri,
-          },
-        }],
-      }],
-      generationConfig: {
-        audioTranscriptionConfig: { mode: 'SMART' }
-      }
+      contents: [{ parts: [{ fileData: { mimeType, fileUri } }] }],
+      generationConfig: { audioTranscriptionConfig: { mode: 'SMART' } }
     },
     'transcribe'
   );
@@ -171,27 +149,17 @@ async function transcribe(file: File) {
 }
 
 function parseJsonObject(text: string) {
-  const cleaned = text
-    .replace(/^\s*\`\`\`(?:json)?\s*/i, '')
-    .replace(/\s*\`\`\`\s*$/i, '')
-    .trim();
-
-  try {
-    return JSON.parse(cleaned);
-  } catch {}
-
+  const cleaned = text.replace(/^\s*\`\`\`(?:json)?\s*/i, '').replace(/\s*\`\`\`\s*$/i, '').trim();
+  try { return JSON.parse(cleaned); } catch {}
   const start = cleaned.indexOf('{');
   const end = cleaned.lastIndexOf('}');
-  if (start >= 0 && end > start) {
-    return JSON.parse(cleaned.slice(start, end + 1));
-  }
-
+  if (start >= 0 && end > start) return JSON.parse(cleaned.slice(start, end + 1));
   throw new Error('No JSON object found in Gemini response.');
 }
 
 async function extractWithGemini(transcript: string) {
   const data = await geminiGenerate(
-    process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
+    runtimeEnv('GEMINI_MODEL') || 'gemini-3.5-flash-lite',
     {
       contents: [{
         parts: [{
@@ -216,11 +184,8 @@ async function extractWithGemini(transcript: string) {
   const text = responseText(data);
   if (!text) throw new GeminiError('Gemini returned empty extraction data.', 'extract');
 
-  try {
-    return normalizeExtraction(parseJsonObject(text), transcript);
-  } catch {
-    throw new GeminiError('Gemini returned invalid quote JSON.', 'extract');
-  }
+  try { return normalizeExtraction(parseJsonObject(text), transcript); }
+  catch { throw new GeminiError('Gemini returned invalid quote JSON.', 'extract'); }
 }
 
 export async function POST(req: Request) {
@@ -229,16 +194,10 @@ export async function POST(req: Request) {
     const notes = String(form.get('notes') || '').trim();
     const audio = form.get('audio');
 
-    if (!notes && !(audio instanceof File)) {
-      return NextResponse.json({ error: 'Add a recording or notes.' }, { status: 400 });
-    }
-
-    if (audio instanceof File && audio.size > 20 * 1024 * 1024) {
-      return NextResponse.json({ error: 'Recording is too large. Keep it under 20 MB.' }, { status: 400 });
-    }
+    if (!notes && !(audio instanceof File)) return NextResponse.json({ error: 'Add a recording or notes.' }, { status: 400 });
+    if (audio instanceof File && audio.size > 20 * 1024 * 1024) return NextResponse.json({ error: 'Recording is too large. Keep it under 20 MB.' }, { status: 400 });
 
     let transcript = notes;
-
     if (audio instanceof File && audio.size > 0) {
       const audioTranscript = await transcribe(audio);
       transcript = notes ? notes + '\n' + audioTranscript : audioTranscript;
@@ -246,23 +205,11 @@ export async function POST(req: Request) {
 
     const extracted = transcript ? await extractWithGemini(transcript) : null;
     if (extracted) return NextResponse.json(extracted);
-
     return NextResponse.json({ error: 'No text was available to analyze.' }, { status: 400 });
   } catch (error) {
     if (error instanceof GeminiError) {
-      return NextResponse.json(
-        {
-          error: error.message,
-          stage: error.stage,
-          hint: 'Server-to-Gemini analysis failed.'
-        },
-        { status: error.status }
-      );
+      return NextResponse.json({ error: error.message, stage: error.stage, hint: 'Server-to-Gemini analysis failed.' }, { status: error.status });
     }
-
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Analysis failed.' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Analysis failed.' }, { status: 500 });
   }
 }
