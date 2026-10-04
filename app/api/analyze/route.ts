@@ -74,6 +74,8 @@ function responseText(data: any) {
   return String(
     data?.candidates?.[0]?.content?.parts?.map((part: any) => part?.text || '').join('') ||
     data?.text ||
+    data?.output_text ||
+    data?.output?.filter((part: any) => part?.type === 'text').map((part: any) => part?.text || '').join('') ||
     ''
   ).trim();
 }
@@ -134,14 +136,27 @@ async function uploadToGemini(file: File) {
 
 async function transcribe(file: File) {
   const { fileUri, mimeType } = await uploadToGemini(file);
-  const data = await geminiGenerate(
-    runtimeEnv('GEMINI_TRANSCRIBE_MODEL') || 'gemini-3.5-transcribe',
-    {
-      contents: [{ parts: [{ fileData: { mimeType, fileUri } }] }],
-      generationConfig: { audioTranscriptionConfig: { mode: 'SMART' } }
-    },
-    'transcribe'
-  );
+  const apiKey = runtimeEnv('GEMINI_API_KEY');
+  if (!apiKey) throw new GeminiError('Gemini API key is not available in the Cloudflare runtime.', 'config', 500);
+
+  const response = await fetch(`${geminiBaseUrl()}/v1beta/interactions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+    body: JSON.stringify({
+      model: runtimeEnv('GEMINI_TRANSCRIBE_MODEL') || 'gemini-3.5-transcribe',
+      input: [{ type: 'audio', uri: fileUri, mime_type: mimeType }],
+      generation_config: { transcription_config: { mode: 'smart' } },
+    }),
+  });
+
+  const rawText = await response.text();
+  let data: any = {};
+  try { data = rawText ? JSON.parse(rawText) : {}; } catch {}
+
+  if (!response.ok) {
+    const providerMessage = data?.error?.message || rawText || `HTTP ${response.status}`;
+    throw new GeminiError(`Gemini transcription error (${response.status}): ${providerMessage}`, 'transcribe', response.status);
+  }
 
   const text = responseText(data);
   if (!text) throw new GeminiError('Gemini returned an empty transcription.', 'transcribe');
@@ -159,7 +174,7 @@ function parseJsonObject(text: string) {
 
 async function extractWithGemini(transcript: string) {
   const data = await geminiGenerate(
-    runtimeEnv('GEMINI_MODEL') || 'gemini-3.5-flash-lite',
+    runtimeEnv('GEMINI_MODEL') || 'gemini-3.8-flash',
     {
       contents: [{
         parts: [{
