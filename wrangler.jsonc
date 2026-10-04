@@ -4,6 +4,13 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-09-30",
   "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://djpfjbjjybpquvzacmtj.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_TkjtLbzWTqXlE18tcvGpow_XFxdTvmz",
+    "GEMINI_API_URL": "https://generativelanguage.googleapis.com",
+    "GEMINI_TRANSCRIBE_MODEL": "gemini-3.5-transcribe",
+    "GEMINI_MODEL": "gemini-3.8-flash"
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
