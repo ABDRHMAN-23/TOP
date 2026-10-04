@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server';
 import { notifyUser } from '@/lib/notifications';
+import { runtimeEnv } from '@/lib/runtime-env';
 import { createAdminClient } from '@/lib/supabase/admin';
 import crypto from 'node:crypto';
 
 function verify(raw:string, signature:string){
- const secret=process.env.LEMON_SQUEEZY_WEBHOOK_SECRET; if(!secret) return false;
+ const secret=runtimeEnv('LEMON_SQUEEZY_WEBHOOK_SECRET'); if(!secret) return false;
  const expected=crypto.createHmac('sha256',secret).update(raw).digest('hex');
  return signature.length===expected.length && crypto.timingSafeEqual(Buffer.from(signature),Buffer.from(expected));
 }
 function addMonths(value:string|null, months:number){const d=value?new Date(value):new Date();d.setMonth(d.getMonth()+months);return d.toISOString();}
-function isAnnualVariant(variant:string){return [process.env.LEMON_SQUEEZY_STARTER_ANNUAL_VARIANT_ID,process.env.LEMON_SQUEEZY_PRO_ANNUAL_VARIANT_ID,process.env.LEMON_SQUEEZY_TEAM_ANNUAL_VARIANT_ID].filter(Boolean).includes(variant);}
+function isAnnualVariant(variant:string){return [runtimeEnv('LEMON_SQUEEZY_STARTER_ANNUAL_VARIANT_ID'),runtimeEnv('LEMON_SQUEEZY_PRO_ANNUAL_VARIANT_ID'),runtimeEnv('LEMON_SQUEEZY_TEAM_ANNUAL_VARIANT_ID')].filter(Boolean).includes(variant);}
 
 // Annual referral milestones: 2 => +12 months, 4 total => +6 months, 8 total => +12 months, then repeat.
 function annualRewardMonthsForCount(count:number){
@@ -152,7 +153,7 @@ export async function POST(req:Request){
  let body:any;try{body=JSON.parse(raw)}catch{return NextResponse.json({error:'Invalid JSON.'},{status:400})}
  const event=String(body?.meta?.event_name||'');const a=body?.data?.attributes||{};const userEmail=a?.user_email||a?.customer_email||body?.meta?.custom_data?.email;const userId=body?.meta?.custom_data?.user_id;if(!userId&&!userEmail)return NextResponse.json({ok:true});
  const admin=createAdminClient();let uid=userId;if(!uid&&userEmail){const {data}=await admin.auth.admin.listUsers({page:1,perPage:1000});uid=data.users.find((u:any)=>u.email?.toLowerCase()===String(userEmail).toLowerCase())?.id;}if(!uid)return NextResponse.json({ok:true});
- if(event==='order_created'&&process.env.LEMON_SQUEEZY_API_KEY){
+ if(event==='order_created'&&runtimeEnv('LEMON_SQUEEZY_API_KEY')){
   const orderId=String(body?.data?.id||'');
   const custom=body?.meta?.custom_data||{};
   let redemption:any=null;
@@ -162,7 +163,7 @@ export async function POST(req:Request){
    if(d)redemption=d;
   }
   if(!redemption&&orderId){
-   const rr=await fetch('https://api.lemonsqueezy.com/v1/discount-redemptions?filter[order_id]='+encodeURIComponent(orderId),{headers:{Authorization:'Bearer '+process.env.LEMON_SQUEEZY_API_KEY,Accept:'application/vnd.api+json','Content-Type':'application/vnd.api+json'}});
+   const rr=await fetch('https://api.lemonsqueezy.com/v1/discount-redemptions?filter[order_id]='+encodeURIComponent(orderId),{headers:{Authorization:'Bearer '+runtimeEnv('LEMON_SQUEEZY_API_KEY'),Accept:'application/vnd.api+json','Content-Type':'application/vnd.api+json'}});
    if(rr.ok){
     const rb=await rr.json().catch(()=>null); const item=rb?.data?.[0]; const code=String(item?.attributes?.discount_code||'').toUpperCase();
     if(code){const {data:d}=await admin.from('discount_codes').select('id,code').eq('code',code).maybeSingle();if(d)redemption={...d,amount:item?.attributes?.amount,currency:a?.currency||null};}
@@ -172,7 +173,7 @@ export async function POST(req:Request){
    await admin.from('discount_redemptions').upsert({discount_id:redemption.id,user_id:uid,order_id:orderId||null,code:redemption.code,amount:redemption.amount??null,currency:redemption.currency??a?.currency??null},{onConflict:'order_id'});
   }
  }
- const variant=String(a.variant_id||'');const plan=variant===process.env.LEMON_SQUEEZY_TEAM_VARIANT_ID||variant===process.env.LEMON_SQUEEZY_TEAM_ANNUAL_VARIANT_ID?'team':variant===process.env.LEMON_SQUEEZY_PRO_VARIANT_ID||variant===process.env.LEMON_SQUEEZY_PRO_ANNUAL_VARIANT_ID?'pro':variant===process.env.LEMON_SQUEEZY_STARTER_VARIANT_ID||variant===process.env.LEMON_SQUEEZY_STARTER_ANNUAL_VARIANT_ID?'starter':'free';const billingInterval=isAnnualVariant(variant)?'year':'month';
+ const variant=String(a.variant_id||'');const plan=variant===runtimeEnv('LEMON_SQUEEZY_TEAM_VARIANT_ID')||variant===runtimeEnv('LEMON_SQUEEZY_TEAM_ANNUAL_VARIANT_ID')?'team':variant===runtimeEnv('LEMON_SQUEEZY_PRO_VARIANT_ID')||variant===runtimeEnv('LEMON_SQUEEZY_PRO_ANNUAL_VARIANT_ID')?'pro':variant===runtimeEnv('LEMON_SQUEEZY_STARTER_VARIANT_ID')||variant===runtimeEnv('LEMON_SQUEEZY_STARTER_ANNUAL_VARIANT_ID')?'starter':'free';const billingInterval=isAnnualVariant(variant)?'year':'month';
  const active=['subscription_created','subscription_updated','subscription_resumed','subscription_payment_success'].includes(event);const canceled=['subscription_cancelled','subscription_expired'].includes(event);const paymentSuccess=event==='subscription_payment_success';const refundOrFailure=event.includes('refund')||event.includes('failed');
  const {data:existing}=await admin.from('subscriptions').select('current_period_start,current_period_end,billing_interval').eq('user_id',uid).maybeSingle();
  const nextPeriodStart=event==='subscription_created'?(a.created_at?new Date(a.created_at).toISOString():null):paymentSuccess?(existing?.current_period_end||existing?.current_period_start||null):(existing?.current_period_start||(a.created_at?new Date(a.created_at).toISOString():null));
