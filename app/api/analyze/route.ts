@@ -26,9 +26,22 @@ function geminiModelUrl(model: string) {
   return `${geminiBaseUrl()}/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 }
 
-async function geminiGenerate(model: string, body: unknown) {
+class GeminiError extends Error {
+  stage: 'config' | 'transcribe' | 'extract';
+  status: number;
+  constructor(message: string, stage: 'config' | 'transcribe' | 'extract', status = 502) {
+    super(message);
+    this.name = 'GeminiError';
+    this.stage = stage;
+    this.status = status;
+  }
+}
+
+async function geminiGenerate(model: string, body: unknown, stage: GeminiError['stage']) {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('Gemini API is not configured. Add GEMINI_API_KEY to the deployment environment.');
+  if (!apiKey) {
+    throw new GeminiError('Gemini API key is not available in the QUVOTO server runtime.', 'config', 500);
+  }
 
   const response = await fetch(geminiModelUrl(model), {
     method: 'POST',
@@ -45,7 +58,7 @@ async function geminiGenerate(model: string, body: unknown) {
 
   if (!response.ok) {
     const providerMessage = data?.error?.message || rawText || `HTTP ${response.status}`;
-    throw new Error(`Gemini API error: ${providerMessage}`);
+    throw new GeminiError(`Gemini API error (${response.status}): ${providerMessage}`, stage, response.status);
   }
 
   return data;
@@ -61,14 +74,13 @@ function responseText(data: any) {
 
 async function uploadToGemini(file: File) {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('Gemini API is not configured. Add GEMINI_API_KEY to the deployment environment.');
+  if (!apiKey) {
+    throw new GeminiError('Gemini API key is not available in the QUVOTO server runtime.', 'config', 500);
+  }
 
   const bytes = await file.arrayBuffer();
   const mimeType = file.type || 'audio/webm';
 
-  // Gemini's documented audio flow uses the Files API, then references the
-  // uploaded file from generateContent. This avoids putting the whole audio
-  // recording into an inline base64 JSON request.
   const startResponse = await fetch(`${geminiBaseUrl()}/upload/v1beta/files`, {
     method: 'POST',
     headers: {
@@ -88,12 +100,16 @@ async function uploadToGemini(file: File) {
 
   if (!startResponse.ok) {
     const message = await startResponse.text();
-    throw new Error(`Gemini file upload initialization failed: ${message || `HTTP ${startResponse.status}`}`);
+    throw new GeminiError(
+      `Gemini file upload initialization failed (${startResponse.status}): ${message || 'unknown error'}`,
+      'transcribe',
+      startResponse.status
+    );
   }
 
   const uploadUrl = startResponse.headers.get('x-goog-upload-url');
   if (!uploadUrl) {
-    throw new Error('Gemini file upload did not return an upload URL.');
+    throw new GeminiError('Gemini file upload did not return an upload URL.', 'transcribe');
   }
 
   const uploadResponse = await fetch(uploadUrl, {
@@ -112,13 +128,17 @@ async function uploadToGemini(file: File) {
 
   if (!uploadResponse.ok) {
     const message = uploadData?.error?.message || uploadRaw || `HTTP ${uploadResponse.status}`;
-    throw new Error(`Gemini file upload failed: ${message}`);
+    throw new GeminiError(
+      `Gemini file upload failed (${uploadResponse.status}): ${message}`,
+      'transcribe',
+      uploadResponse.status
+    );
   }
 
   const fileUri = uploadData?.file?.uri;
   const uploadedMimeType = uploadData?.file?.mimeType || mimeType;
   if (!fileUri) {
-    throw new Error('Gemini file upload completed without a file URI.');
+    throw new GeminiError('Gemini file upload completed without a file URI.', 'transcribe');
   }
 
   return { fileUri, mimeType: uploadedMimeType };
@@ -131,61 +151,45 @@ async function transcribe(file: File) {
     process.env.GEMINI_TRANSCRIBE_MODEL || 'gemini-3.5-transcribe',
     {
       contents: [{
-        parts: [
-          {
-            text: 'Transcribe this contractor job-site recording exactly as spoken. Return only the transcription text. Preserve names, quantities, units, prices, addresses, phone numbers, and currency.'
+        parts: [{
+          fileData: {
+            mimeType,
+            fileUri,
           },
-          {
-            fileData: {
-              mimeType,
-              fileUri,
-            }
-          }
-        ]
+        }],
       }],
       generationConfig: {
         audioTranscriptionConfig: { mode: 'SMART' }
       }
-    }
+    },
+    'transcribe'
   );
 
   const text = responseText(data);
-  if (!text) throw new Error('Gemini returned an empty transcription.');
+  if (!text) throw new GeminiError('Gemini returned an empty transcription.', 'transcribe');
   return text;
 }
 
-async function extractWithGemini(transcript: string) {
-  const schema = {
-    type: 'object',
-    properties: {
-      client: {
-        type: 'object',
-        properties: {
-          name: { type: 'string' },
-          email: { type: 'string' },
-          phone: { type: 'string' },
-          address: { type: 'string' }
-        }
-      },
-      items: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            description: { type: 'string' },
-            quantity: { type: 'number' },
-            unit: { type: 'string' },
-            price: { type: 'number' }
-          },
-          required: ['description']
-        }
-      },
-      notes: { type: 'array', items: { type: 'string' } },
-      currency: { type: 'string' }
-    },
-    required: ['client', 'items', 'notes', 'currency']
-  };
+function parseJsonObject(text: string) {
+  const cleaned = text
+    .replace(/^\s*\`\`\`(?:json)?\s*/i, '')
+    .replace(/\s*\`\`\`\s*$/i, '')
+    .trim();
 
+  try {
+    return JSON.parse(cleaned);
+  } catch {}
+
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start >= 0 && end > start) {
+    return JSON.parse(cleaned.slice(start, end + 1));
+  }
+
+  throw new Error('No JSON object found in Gemini response.');
+}
+
+async function extractWithGemini(transcript: string) {
   const data = await geminiGenerate(
     process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
     {
@@ -197,27 +201,25 @@ async function extractWithGemini(transcript: string) {
             'Never invent missing customer details, quantities, units, prices, or currency.',
             'When a value is not spoken, use an empty string for text fields and 0 for numeric fields.',
             'Price means the unit price when the speaker gives a unit price.',
-            'Return only JSON matching the supplied schema.',
+            'Return ONLY one valid JSON object. Do not use markdown fences.',
+            'Use exactly this shape:',
+            '{"client":{"name":"","email":"","phone":"","address":""},"items":[{"description":"","quantity":0,"unit":"item","price":0}],"notes":[],"currency":"GBP"}',
             '',
             transcript
           ].join('\n')
         }]
-      }],
-      generationConfig: {
-        temperature: 0,
-        responseMimeType: 'application/json',
-        responseSchema: schema
-      }
-    }
+      }]
+    },
+    'extract'
   );
 
   const text = responseText(data);
-  if (!text) throw new Error('Gemini returned empty extraction data.');
+  if (!text) throw new GeminiError('Gemini returned empty extraction data.', 'extract');
 
   try {
-    return normalizeExtraction(JSON.parse(text), transcript);
+    return normalizeExtraction(parseJsonObject(text), transcript);
   } catch {
-    throw new Error('Gemini returned invalid structured quote data.');
+    throw new GeminiError('Gemini returned invalid quote JSON.', 'extract');
   }
 }
 
@@ -247,6 +249,17 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ error: 'No text was available to analyze.' }, { status: 400 });
   } catch (error) {
+    if (error instanceof GeminiError) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          stage: error.stage,
+          hint: 'Server-to-Gemini analysis failed.'
+        },
+        { status: error.status }
+      );
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Analysis failed.' },
       { status: 500 }
