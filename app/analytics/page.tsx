@@ -10,10 +10,14 @@ type Analytics = { periodDays:number; metrics:{totalQuotes:number;sent:number;ac
 export default function AnalyticsPage() {
   const [data, setData] = useState<Analytics|null>(null);
   const [error, setError] = useState('');
+  const [authError, setAuthError] = useState(false);
   useEffect(() => {
     fetch('/api/analytics').then(async r => {
       const body = await r.json();
-      if (!r.ok) throw new Error(body.error || 'Could not load analytics.');
+      if (!r.ok) {
+        setAuthError(r.status === 401);
+        throw new Error(body.error || 'Could not load analytics.');
+      }
       setData(body);
     }).catch(e => setError(e instanceof Error ? e.message : 'Could not load analytics.'));
   }, []);
@@ -27,7 +31,7 @@ export default function AnalyticsPage() {
     </header>
     <section className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
       <div className="mb-8"><div className="inline-flex items-center gap-2 rounded-full bg-[#1769E0]/10 px-3 py-1.5 text-xs font-bold text-[#1769E0]"><BarChart3 size={14}/> ANALYTICS</div><h1 className="mt-3 text-4xl font-black tracking-tight">Quote performance</h1><p className="mt-2 text-slate-500">Your last 30 days, based on quotes in your QUVOTO workspace.</p></div>
-      {error ? <div className="rounded-2xl bg-red-50 p-5 font-semibold text-red-700">{error}<div className="mt-3"><a href="/login" className="font-bold underline">Sign in</a></div></div> : !data ? <div className="flex items-center gap-2 rounded-2xl bg-white p-8 text-slate-500"><Loader2 className="animate-spin"/>Loading analytics…</div> :
+      {error ? <div className="rounded-2xl bg-red-50 p-5 font-semibold text-red-700">{error}{authError && <div className="mt-3"><a href="/login" className="font-bold underline">Sign in</a></div>}</div> : !data ? <div className="flex items-center gap-2 rounded-2xl bg-white p-8 text-slate-500"><Loader2 className="animate-spin"/>Loading analytics…</div> :
       <>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[['Quotes',data.metrics.totalQuotes,FileText],['Sent',data.metrics.sent,Send],['Accepted',data.metrics.accepted,CheckCircle2],['Accepted value',data.metrics.revenue.toFixed(2),TrendingUp]].map(([label,value,Icon]:any)=><div key={label} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><Icon size={20} className="text-[#1769E0]"/><p className="mt-5 text-sm font-semibold text-slate-500">{label}</p><p className="mt-1 text-3xl font-black">{value}</p></div>)}
