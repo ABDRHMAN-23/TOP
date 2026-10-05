@@ -332,32 +332,99 @@ function parseJsonObject(text: string) {
 }
 
 async function extractWithGemini(transcript: string) {
-  const data = await geminiGenerate(
-    runtimeEnv('GEMINI_MODEL') || 'gemini-3.8-flash',
-    {
-      contents: [
-        {
-          parts: [
-            {
-              text: [
-                'You are the QUVOTO quote extraction engine.',
-                'Extract contractor quote details from the transcript below.',
-                'Never invent missing customer details, quantities, units, prices, or currency.',
-                'When a value is not spoken, use an empty string for text fields and 0 for numeric fields.',
-                'Price means the unit price when the speaker gives a unit price.',
-                'Return ONLY one valid JSON object. Do not use markdown fences.',
-                'Use exactly this shape:',
-                '{"client":{"name":"","email":"","phone":"","address":""},"items":[{"description":"","quantity":0,"unit":"item","price":0}],"notes":[],"currency":"GBP"}',
-                '',
-                transcript,
-              ].join('\n'),
-            },
-          ],
+  const apiKey = requireGeminiApiKey();
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      client: {
+        type: 'OBJECT',
+        properties: {
+          name: { type: 'STRING' },
+          email: { type: 'STRING' },
+          phone: { type: 'STRING' },
+          address: { type: 'STRING' },
         },
-      ],
+        required: ['name', 'email', 'phone', 'address'],
+      },
+      items: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            description: { type: 'STRING' },
+            quantity: { type: 'NUMBER' },
+            unit: { type: 'STRING' },
+            price: { type: 'NUMBER' },
+          },
+          required: ['description', 'quantity', 'unit', 'price'],
+        },
+      },
+      notes: {
+        type: 'ARRAY',
+        items: { type: 'STRING' },
+      },
+      currency: { type: 'STRING' },
     },
-    'extract'
-  );
+    required: ['client', 'items', 'notes', 'currency'],
+  };
+
+  let response: Response;
+  try {
+    response = await fetch(`${geminiBaseUrl()}/v1beta/interactions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        model: runtimeEnv('GEMINI_MODEL') || 'gemini-3.8-flash',
+        input: [
+          'You are the QUVOTO quote extraction engine.',
+          'Extract contractor quote details from the transcript below.',
+          'Never invent missing customer details, quantities, units, prices, or currency.',
+          'Use 0 for missing numeric fields and empty strings for missing text fields.',
+          '',
+          transcript,
+        ].join('\\n'),
+        response_format: [
+          {
+            type: 'text',
+            mime_type: 'application/json',
+            schema,
+          },
+        ],
+      }),
+    });
+  } catch (error) {
+    throw new GeminiError(
+      `Could not reach Gemini extraction API: ${error instanceof Error ? error.message : 'network error'}`,
+      'extract',
+      502
+    );
+  }
+
+  const rawText = await response.text();
+  let data: any = {};
+  try {
+    data = rawText ? JSON.parse(rawText) : {};
+  } catch {}
+
+  if (!response.ok) {
+    const providerMessage =
+      data?.error?.message || rawText || `HTTP ${response.status}`;
+    throw new GeminiError(
+      `Gemini extraction error (${response.status}): ${providerMessage}`,
+      'extract',
+      response.status
+    );
+  }
+
+  if (data?.status && data.status !== 'completed') {
+    throw new GeminiError(
+      `Gemini extraction did not complete (status: ${data.status}).`,
+      'extract'
+    );
+  }
 
   const text = responseText(data);
   if (!text) {
@@ -371,7 +438,7 @@ async function extractWithGemini(transcript: string) {
     return normalizeExtraction(parseJsonObject(text), transcript);
   } catch {
     throw new GeminiError(
-      'Gemini returned invalid quote JSON.',
+      'Gemini returned invalid structured quote JSON.',
       'extract'
     );
   }
