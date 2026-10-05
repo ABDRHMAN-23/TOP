@@ -23,7 +23,12 @@ export async function GET() {
     try {
       const result = await supabase.auth.getUser();
       user = result.data.user;
-      if (result.error && !user) return errorResponse('auth', result.error);
+      if (result.error && !user) {
+        return NextResponse.json(
+          { error: 'Authentication required', stage: 'auth' },
+          { status: 401 }
+        );
+      }
     } catch (error) {
       return errorResponse('auth', error);
     }
