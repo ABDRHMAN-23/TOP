@@ -9,6 +9,15 @@
     "GEMINI_TRANSCRIBE_MODEL": "gemini-3.5-transcribe",
     "GEMINI_MODEL": "gemini-3.8-flash"
   },
+  "secrets": {
+    "required": [
+      "GEMINI_API_KEY",
+      "SUPABASE_SECRET_KEY",
+      "LEMON_SQUEEZY_API_KEY",
+      "LEMON_SQUEEZY_STORE_ID",
+      "LEMON_SQUEEZY_WEBHOOK_SECRET"
+    ]
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
