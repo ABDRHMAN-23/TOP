@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   buildPersonalizedSalesPrompt,
   buildVerifiedFactTokens,
+  matchVerifiedProperties,
   mergeBuyerProfile,
   sanitizeVerifiedProperties,
   validateSalesDraft,
@@ -56,6 +57,18 @@ assert.equal(
 assert.deepEqual(properties[0].verifiedFeatures, ["Balcony"], "features must be cleaned and deduplicated");
 assert.equal("inventedAmenity" in properties[0], false, "unlisted fields must not leak into the prompt");
 assert.equal(properties[0].currency, "USD");
+
+const matches = matchVerifiedProperties(
+  { intent: "buy", budgetMax: 100000, currency: "USD", bedroomsMin: 3, preferredAreas: ["Aden"] },
+  [
+    { id: "fit", title: "Fit", purpose: "sale", price: 98000, currency: "USD", bedrooms: 3, locationLabel: "Aden" },
+    { id: "over-budget", title: "Over budget", purpose: "sale", price: 120000, currency: "USD", bedrooms: 4, locationLabel: "Aden" },
+    { id: "unknown-currency", title: "Unknown currency", purpose: "sale", price: 50000, bedrooms: 3, locationLabel: "Aden" },
+  ],
+);
+assert.equal(matches[0].property.id, "fit", "eligible, matching properties should rank first");
+assert.equal(matches.find((match) => match.property.id === "over-budget")?.eligible, false, "known budget violations must be excluded");
+assert.ok(matches.find((match) => match.property.id === "unknown-currency")?.unknowns.includes("budget_comparison_unavailable"), "unknown currency must not be treated as a budget match");
 
 const tokens = buildVerifiedFactTokens(properties);
 assert.ok(tokens.includes("property-1: bedrooms=3"));
