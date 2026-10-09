@@ -41,7 +41,7 @@
 **الإجراء المقترح:** بعد استقرار بنية AqarFlow، ثبّت الاعتماديات وcommit lockfile، وأضف اختبارات وحدة/تكامل وعزل tenant، وlint/typecheck وdependency/security scan، واختبار بناء ونشر معاينة لا يغيّر الإنتاج.
 
 ### 6. جرد أسرار التشغيل غير مكتمل في ملف Wrangler
-**الدليل:** `.env.example` يعلن متغيرات لتكاملات الأسعار والبريد وWeb Push، بينما `wrangler.jsonc` يحدد مجموعة أصغر من المتغيرات المطلوبة. لم نتحقق من إعدادات Worker الفعلية في لوحة Cloudflare، لذلك لا يمكن الجزم بأن كل تكامل معطل.
+**الدليل:** `.env.example` يعلن متغيرات لتكامل الأسعار وWeb Push، لكنه لا يذكر `RESEND_API_KEY` و`RESEND_FROM_EMAIL` اللذين تقرؤهما `app/api/team/route.ts`. كما أن قائمة `secrets.required` في `wrangler.jsonc` لا تذكر متغيرات Resend أو Price Intelligence أو VAPID. لم نتحقق من إعدادات Worker الفعلية في لوحة Cloudflare، لذلك لا يمكن الجزم بأن أي تكامل معطل؛ لكن جرد المتغيرات ناقص داخل المستودع.
 
 **الإجراء المقترح:** إعداد مصفوفة لكل endpoint والمتغيرات المطلوبة ومكانها (secret/variable) وخطة الفشل الآمن. لا تُرسل قيم الأسرار إلى GitHub أو وثائق المشروع.
 
