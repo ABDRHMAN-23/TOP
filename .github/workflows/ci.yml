@@ -17,6 +17,7 @@ jobs:
       - run: npm run test:price
       - run: npm run test:advisor:requirement
       - run: npm run test:aqarflow:sales
+      - run: npm run test:safe-redirect
       - run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
