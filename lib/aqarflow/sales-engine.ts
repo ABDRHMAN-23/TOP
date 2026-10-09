@@ -56,6 +56,7 @@ export type SalesDraft = {
 const MAX_TEXT = 1200;
 const MAX_LISTINGS = 5;
 const MAX_FEATURES = 12;
+const MAX_AVAILABILITY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function cleanText(value: unknown, max = MAX_TEXT): string {
   if (typeof value !== "string") return "";
@@ -130,9 +131,17 @@ export function sanitizeVerifiedProperties(properties: unknown): VerifiedPropert
     if (!id || !title || seenIds.has(id)) continue;
     seenIds.add(id);
 
-    const availability = item.availability === "available" || item.availability === "unavailable"
+    const factsLastVerifiedAt = cleanText(item.factsLastVerifiedAt, 40) || null;
+    const verifiedAtMs = factsLastVerifiedAt ? Date.parse(factsLastVerifiedAt) : Number.NaN;
+    const ageMs = Date.now() - verifiedAtMs;
+    const availabilityIsFresh = Number.isFinite(verifiedAtMs)
+      && ageMs >= -5 * 60 * 1000
+      && ageMs <= MAX_AVAILABILITY_AGE_MS;
+    const rawAvailability = item.availability === "available" || item.availability === "unavailable"
       ? item.availability
       : "unknown";
+    // Availability changes quickly: never repeat it as fact without a fresh verification timestamp.
+    const availability = availabilityIsFresh ? rawAvailability : "unknown";
     result.push({
       id,
       title,
@@ -147,7 +156,7 @@ export function sanitizeVerifiedProperties(properties: unknown): VerifiedPropert
       verifiedFeatures: uniqueClean(item.verifiedFeatures, MAX_FEATURES),
       description: cleanText(item.description, 500) || null,
       availability,
-      factsLastVerifiedAt: cleanText(item.factsLastVerifiedAt, 40) || null,
+      factsLastVerifiedAt,
     });
     if (result.length >= MAX_LISTINGS) break;
   }
