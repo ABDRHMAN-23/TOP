@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   buildPersonalizedSalesPrompt,
+  buildVerifiedFactTokens,
   mergeBuyerProfile,
   sanitizeVerifiedProperties,
   validateSalesDraft,
@@ -43,6 +44,11 @@ assert.deepEqual(properties[0].verifiedFeatures, ["Balcony"], "features must be 
 assert.equal("inventedAmenity" in properties[0], false, "unlisted fields must not leak into the prompt");
 assert.equal(properties[0].currency, "USD");
 
+const tokens = buildVerifiedFactTokens(properties);
+assert.ok(tokens.includes("property-1: bedrooms=3"));
+assert.ok(tokens.includes("property-1: feature=Balcony"));
+assert.ok(!tokens.some((token) => token.includes("private pool")), "unverified amenities must never become fact tokens");
+
 const prompt = buildPersonalizedSalesPrompt({
   customerMessage: "أريد شقة بثلاث غرف ضمن ميزانيتي",
   buyerProfile: prior,
@@ -61,6 +67,24 @@ assert.equal(validateSalesDraft({
   askOneQuestion: null,
   handoffRequired: false,
 })?.nextBestAction, "send_photos");
+
+assert.equal(validateSalesDraft({
+  replyDraft: "توجد شقة بثلاث غرف.",
+  factsUsed: ["property-1: bedrooms=3"],
+  unknowns: [],
+  nextBestAction: "send_photos",
+  askOneQuestion: null,
+  handoffRequired: false,
+}, properties)?.nextBestAction, "send_photos", "an exact verified fact token should pass");
+
+assert.equal(validateSalesDraft({
+  replyDraft: "توجد شقة مع مسبح خاص.",
+  factsUsed: ["property-1: feature=private pool"],
+  unknowns: [],
+  nextBestAction: "send_photos",
+  askOneQuestion: null,
+  handoffRequired: false,
+}, properties), null, "an invented or unknown fact citation must be rejected");
 
 assert.equal(validateSalesDraft({
   replyDraft: "",
