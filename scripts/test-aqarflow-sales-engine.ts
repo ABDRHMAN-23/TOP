@@ -77,6 +77,11 @@ assert.equal(matches[0].property.id, "fit", "eligible, matching properties shoul
 assert.equal(matches.find((match) => match.property.id === "over-budget")?.eligible, false, "known budget violations must be excluded");
 assert.ok(matches.find((match) => match.property.id === "unknown-currency")?.unknowns.includes("budget_comparison_unavailable"), "unknown currency must not be treated as a budget match");
 
+assert.doesNotThrow(() => matchVerifiedProperties(
+  { preferredAreas: "Aden" as unknown as string[] },
+  [{ id: "malformed-profile", title: "Property", locationLabel: "Aden" }],
+), "malformed preference input must not crash property matching");
+
 const tokens = buildVerifiedFactTokens(properties);
 assert.ok(tokens.includes("property-1: bedrooms=3"));
 assert.ok(tokens.includes("property-1: feature=Balcony"));
