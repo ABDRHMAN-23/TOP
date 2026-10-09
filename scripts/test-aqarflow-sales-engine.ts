@@ -66,6 +66,35 @@ assert.deepEqual(properties[0].verifiedFeatures, ["Balcony"], "features must be 
 assert.equal("inventedAmenity" in properties[0], false, "unlisted fields must not leak into the prompt");
 assert.equal(properties[0].currency, "USD");
 
+const absentAvailabilityProof = sanitizeVerifiedProperties([
+  { id: "availability-no-proof", title: "Listing", availability: "available" },
+])[0];
+assert.equal(absentAvailabilityProof.availability, "unknown", "availability without a verification timestamp must remain unknown");
+
+const freshAvailability = sanitizeVerifiedProperties([
+  {
+    id: "availability-fresh",
+    title: "Fresh listing",
+    availability: "available",
+    factsLastVerifiedAt: new Date().toISOString(),
+  },
+])[0];
+assert.equal(freshAvailability.availability, "available", "freshly verified availability may be used");
+
+const staleAvailability = sanitizeVerifiedProperties([
+  {
+    id: "availability-stale",
+    title: "Stale listing",
+    availability: "available",
+    factsLastVerifiedAt: new Date(Date.now() - 8 * 86400000).toISOString(),
+  },
+])[0];
+assert.equal(staleAvailability.availability, "unknown", "availability older than seven days must not be stated as current");
+assert.ok(
+  !buildVerifiedFactTokens([staleAvailability]).some((token) => token.includes("availability=available")),
+  "stale availability must not become a verified fact token",
+);
+
 const matches = matchVerifiedProperties(
   { intent: "buy", budgetMax: 100000, currency: "USD", bedroomsMin: 3, preferredAreas: ["Aden"] },
   [
