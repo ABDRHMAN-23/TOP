@@ -131,6 +131,8 @@ assert.equal(specMatchScore('30m 22mm copper pipe', '22mm copper pipe 2 x 15m ro
 assert.equal(specMatchScore('15kg cement', '20kg cement bag'), 0);
 assert.equal(specMatchScore('15kg cement', 'cement 3 x 5kg bags'), 1);
 
+const historyDate = (daysAgo: number) => new Date(Date.now() - daysAgo * 86400000).toISOString();
+
 const originalFetch = globalThis.fetch;
 try {
   globalThis.fetch = (async (input: RequestInfo | URL) => {
@@ -146,11 +148,11 @@ try {
       ok: true,
       json: async () => ({
         history: [
-          { scraped_at: '2026-09-05T10:00:00.000Z', merchant_name: 'A', price_inc_vat: 40, currency: 'GBP', in_stock: true },
-          { scraped_at: '2026-09-10T10:00:00.000Z', merchant_name: 'B', price_inc_vat: 70, currency: 'GBP', in_stock: false },
-          { scraped_at: '2026-09-15T10:00:00.000Z', merchant_name: 'A', price_inc_vat: 44, currency: 'GBP', in_stock: true },
-          { scraped_at: '2026-09-20T10:00:00.000Z', merchant_name: 'A', price_inc_vat: 48, currency: 'USD', in_stock: true },
-          { scraped_at: '2026-09-25T10:00:00.000Z', merchant_name: 'A', price_inc_vat: 50, currency: 'GBP', in_stock: true },
+          { scraped_at: historyDate(25), merchant_name: 'A', price_inc_vat: 40, currency: 'GBP', in_stock: true },
+          { scraped_at: historyDate(20), merchant_name: 'B', price_inc_vat: 70, currency: 'GBP', in_stock: false },
+          { scraped_at: historyDate(15), merchant_name: 'A', price_inc_vat: 44, currency: 'GBP', in_stock: true },
+          { scraped_at: historyDate(10), merchant_name: 'A', price_inc_vat: 48, currency: 'USD', in_stock: true },
+          { scraped_at: historyDate(5), merchant_name: 'A', price_inc_vat: 50, currency: 'GBP', in_stock: true },
           { scraped_at: 'not-a-date', merchant_name: 'A', price_inc_vat: 999, currency: 'GBP', in_stock: true },
         ],
       }),
