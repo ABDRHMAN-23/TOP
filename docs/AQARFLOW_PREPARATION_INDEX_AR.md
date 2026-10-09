@@ -30,6 +30,7 @@
 4. [نموذج البيانات المقترح](./AQARFLOW_TARGET_MODEL_AR.md)
 5. [موانع الأمن قبل الترحيل](./AQARFLOW_PRE_MIGRATION_BLOCKERS_AR.md)
 6. [دليل النسخ الاحتياطي والاستعادة](./TOP_BACKUP_AND_RESTORE_RUNBOOK_AR.md)
+7. [بحث محرك المبيعات الحوارية الشخصية](./AQARFLOW_CONVERSATIONAL_SALES_ENGINE_RESEARCH_AR.md)
 
 ## قرار GO / NO-GO
 
