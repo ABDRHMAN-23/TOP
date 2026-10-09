@@ -125,6 +125,33 @@ assert.equal(validateSalesDraft({
 }, properties), null, "an invented or unknown fact citation must be rejected");
 
 assert.equal(validateSalesDraft({
+  replyDraft: "رد صالح شكليًا",
+  factsUsed: [],
+  unknowns: [],
+  nextBestAction: "answer_question",
+  askOneQuestion: [],
+  handoffRequired: false,
+}, properties), null, "non-string question fields must be rejected");
+
+assert.equal(validateSalesDraft({
+  replyDraft: "رد صالح شكليًا",
+  factsUsed: [],
+  unknowns: [42],
+  nextBestAction: "answer_question",
+  askOneQuestion: null,
+  handoffRequired: false,
+}, properties), null, "non-string unknowns must be rejected");
+
+assert.equal(validateSalesDraft({
+  replyDraft: "رد صالح شكليًا",
+  factsUsed: [],
+  unknowns: [],
+  nextBestAction: "answer_question",
+  askOneQuestion: null,
+  handoffRequired: "false",
+}, properties), null, "handoffRequired must be a boolean");
+
+assert.equal(validateSalesDraft({
   replyDraft: "",
   factsUsed: [],
   unknowns: [],
