@@ -30,6 +30,13 @@ assert.deepEqual(
   "partial extraction must not erase previously captured requirements",
 );
 
+const malformedProfile = mergeBuyerProfile(
+  { preferredAreas: "Aden" as unknown as string[], mustHaves: ["parking"] },
+  { preferredAreas: "Sanaa" as unknown as string[], mustHaves: null as unknown as string[] },
+);
+assert.deepEqual(malformedProfile.preferredAreas, [], "malformed preference strings must not be split into characters");
+assert.deepEqual(malformedProfile.mustHaves, ["parking"], "malformed extracted arrays must not erase valid prior preferences");
+
 const properties = sanitizeVerifiedProperties([
   {
     id: "property-1",
