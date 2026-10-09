@@ -99,12 +99,12 @@ assert.match(prompt, /Apartment A/);
 
 assert.equal(validateSalesDraft({
   replyDraft: "توجد شقة بثلاث غرف ضمن الخيارات المتاحة.",
-  factsUsed: ["property-1: 3 bedrooms"],
+  factsUsed: ["property-1: bedrooms=3"],
   unknowns: [],
   nextBestAction: "send_photos",
   askOneQuestion: null,
   handoffRequired: false,
-})?.nextBestAction, "send_photos");
+}, properties)?.nextBestAction, "send_photos");
 
 assert.equal(validateSalesDraft({
   replyDraft: "توجد شقة بثلاث غرف.",
@@ -158,7 +158,7 @@ assert.equal(validateSalesDraft({
   nextBestAction: "send_photos",
   askOneQuestion: null,
   handoffRequired: false,
-}), null, "empty replies must be rejected");
+}, properties), null, "empty replies must be rejected");
 
 assert.equal(validateSalesDraft({
   replyDraft: "رد",
@@ -167,7 +167,7 @@ assert.equal(validateSalesDraft({
   nextBestAction: "delete_database",
   askOneQuestion: null,
   handoffRequired: false,
-}), null, "unsupported actions must be rejected");
+}, properties), null, "unsupported actions must be rejected");
 
 assert.equal(validateSalesDraft({
   replyDraft: "رد",
@@ -176,6 +176,6 @@ assert.equal(validateSalesDraft({
   nextBestAction: "ask_one_question",
   askOneQuestion: "هل تريد صورًا؟ وهل تريد معاينة؟",
   handoffRequired: false,
-}), null, "multiple explicit questions must be rejected");
+}, properties), null, "multiple explicit questions must be rejected");
 
 console.log("AqarFlow sales-engine tests passed.");
