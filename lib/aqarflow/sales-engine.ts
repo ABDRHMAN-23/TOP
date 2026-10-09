@@ -112,6 +112,7 @@ export function mergeBuyerProfile(
     const extractedValues = Array.isArray(next[key]) ? next[key] as string[] : [];
     const value = uniqueClean([...previousValues, ...extractedValues]);
     if (value.length) merged[key] = value;
+    else if (key in before && !Array.isArray(before[key])) merged[key] = [];
   }
   return merged;
 }
