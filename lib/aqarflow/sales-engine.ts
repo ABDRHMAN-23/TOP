@@ -62,12 +62,12 @@ function cleanText(value: unknown, max = MAX_TEXT): string {
   return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim().slice(0, max);
 }
 
-function uniqueClean(values: unknown, maxItems = 12): string[] {
+function uniqueClean(values: unknown, maxItems = 12, maxText = 160): string[] {
   if (!Array.isArray(values)) return [];
   const seen = new Set<string>();
   const result: string[] = [];
   for (const raw of values) {
-    const value = cleanText(raw, 160);
+    const value = cleanText(raw, maxText);
     const key = value.toLocaleLowerCase();
     if (!value || seen.has(key)) continue;
     seen.add(key);
@@ -239,7 +239,7 @@ export function validateSalesDraft(value: unknown, verifiedProperties?: unknown)
   const askOneQuestion = cleanText(raw.askOneQuestion, 300) || null;
   const handoffRequired = raw.handoffRequired === true;
   if (raw.factsUsed.some((fact) => typeof fact !== "string")) return null;
-  const factsUsed = uniqueClean(raw.factsUsed, 20);
+  const factsUsed = uniqueClean(raw.factsUsed, 20, 400);
   if (factsUsed.length !== raw.factsUsed.length) return null;
 
   // If a property inventory is supplied, every cited fact must match an exact
