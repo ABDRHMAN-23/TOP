@@ -105,7 +105,9 @@ export function mergeBuyerProfile(
     if (value !== null) merged[key] = value;
   }
   for (const key of ["preferredAreas", "mustHaves", "dealBreakers"] as const) {
-    const value = uniqueClean(next[key]);
+    // Extraction is usually partial. Union new observations with known preferences;
+    // removing a preference should be an explicit product action, not an empty LLM field.
+    const value = uniqueClean([...(before[key] || []), ...(next[key] || [])]);
     if (value.length) merged[key] = value;
   }
   return merged;
@@ -115,12 +117,14 @@ export function mergeBuyerProfile(
 export function sanitizeVerifiedProperties(properties: unknown): VerifiedProperty[] {
   if (!Array.isArray(properties)) return [];
   const result: VerifiedProperty[] = [];
+  const seenIds = new Set<string>();
   for (const raw of properties) {
     if (!raw || typeof raw !== "object") continue;
     const item = raw as Record<string, unknown>;
     const id = cleanText(item.id, 100);
     const title = cleanText(item.title, 180);
-    if (!id || !title) continue;
+    if (!id || !title || seenIds.has(id)) continue;
+    seenIds.add(id);
 
     const availability = item.availability === "available" || item.availability === "unavailable"
       ? item.availability
