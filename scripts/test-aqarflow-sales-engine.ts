@@ -23,6 +23,11 @@ const merged = mergeBuyerProfile(prior, {
 assert.equal(merged.budgetMax, 100000, "null extraction must not erase known budget");
 assert.deepEqual(merged.preferredAreas, ["Aden"], "empty extraction must not erase known areas");
 assert.deepEqual(merged.mustHaves, ["3 bedrooms", "balcony"], "new preferences should merge");
+assert.deepEqual(
+  mergeBuyerProfile({ mustHaves: ["balcony", "parking"] }, { mustHaves: ["sea view"] }).mustHaves,
+  ["balcony", "parking", "sea view"],
+  "partial extraction must not erase previously captured requirements",
+);
 
 const properties = sanitizeVerifiedProperties([
   {
@@ -40,6 +45,14 @@ const properties = sanitizeVerifiedProperties([
 ]);
 
 assert.equal(properties.length, 1, "records without a stable ID must be excluded");
+assert.equal(
+  sanitizeVerifiedProperties([
+    { id: "same", title: "First", bedrooms: 2 },
+    { id: "same", title: "Conflicting second", bedrooms: 9 },
+  ])[0].bedrooms,
+  2,
+  "duplicate IDs must not introduce conflicting facts",
+);
 assert.deepEqual(properties[0].verifiedFeatures, ["Balcony"], "features must be cleaned and deduplicated");
 assert.equal("inventedAmenity" in properties[0], false, "unlisted fields must not leak into the prompt");
 assert.equal(properties[0].currency, "USD");
