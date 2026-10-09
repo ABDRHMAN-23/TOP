@@ -154,7 +154,6 @@ export function sanitizeVerifiedProperties(properties: unknown): VerifiedPropert
       bathrooms: finiteOrNull(item.bathrooms),
       locationLabel: cleanText(item.locationLabel, 180) || null,
       verifiedFeatures: uniqueClean(item.verifiedFeatures, MAX_FEATURES),
-      description: cleanText(item.description, 500) || null,
       availability,
       factsLastVerifiedAt,
     });
