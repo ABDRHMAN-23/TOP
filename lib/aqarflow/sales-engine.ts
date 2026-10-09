@@ -107,7 +107,10 @@ export function mergeBuyerProfile(
   for (const key of ["preferredAreas", "mustHaves", "dealBreakers"] as const) {
     // Extraction is usually partial. Union new observations with known preferences;
     // removing a preference should be an explicit product action, not an empty LLM field.
-    const value = uniqueClean([...(before[key] || []), ...(next[key] || [])]);
+    // Treat runtime inputs as untrusted: malformed LLM output must not be spread as an iterable string.
+    const previousValues = Array.isArray(before[key]) ? before[key] as string[] : [];
+    const extractedValues = Array.isArray(next[key]) ? next[key] as string[] : [];
+    const value = uniqueClean([...previousValues, ...extractedValues]);
     if (value.length) merged[key] = value;
   }
   return merged;
