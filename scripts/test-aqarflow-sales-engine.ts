@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   buildPersonalizedSalesPrompt,
   buildVerifiedFactTokens,
+  findUnsupportedNumericClaims,
   matchVerifiedProperties,
   mergeBuyerProfile,
   sanitizeVerifiedProperties,
@@ -105,6 +106,33 @@ assert.equal(validateSalesDraft({
   askOneQuestion: null,
   handoffRequired: false,
 }, properties)?.nextBestAction, "send_photos");
+
+assert.deepEqual(
+  findUnsupportedNumericClaims("شقة من 3 غرف بسعر 98,000 ومساحتها 120 مترًا.", properties),
+  ["120"],
+  "numeric copy must not introduce a property area absent from the verified inventory",
+);
+assert.deepEqual(
+  findUnsupportedNumericClaims("الشقة فيها ٣ غرف بسعر ٩٨٬٠٠٠ دولار.", properties),
+  [],
+  "Arabic digits and thousands separators should normalize to verified values",
+);
+assert.equal(validateSalesDraft({
+  replyDraft: "هذه الشقة بسعر 90,000 دولار.",
+  factsUsed: ["property-1: price=98000 USD"],
+  unknowns: [],
+  nextBestAction: "answer_question",
+  askOneQuestion: null,
+  handoffRequired: false,
+}, properties), null, "unsupported numeric claims must prevent a draft from passing validation");
+assert.equal(validateSalesDraft({
+  replyDraft: "هذه الشقة فيها 3 غرف وسعرها 98,000 دولار.",
+  factsUsed: ["property-1: bedrooms=3", "property-1: price=98000 USD"],
+  unknowns: [],
+  nextBestAction: "answer_question",
+  askOneQuestion: null,
+  handoffRequired: false,
+}, properties)?.nextBestAction, "answer_question", "numbers supported by verified inventory should pass");
 
 assert.equal(validateSalesDraft({
   replyDraft: "توجد شقة بثلاث غرف.",
