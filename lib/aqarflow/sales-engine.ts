@@ -173,6 +173,7 @@ export function matchVerifiedProperties(
   const profile = buyer || {};
   const properties = sanitizeVerifiedProperties(rawProperties);
   const currency = cleanText(profile.currency, 8).toUpperCase();
+  const preferredAreas = uniqueClean(profile.preferredAreas);
   return properties.map((property) => {
     const matchedSignals: string[] = [];
     const conflicts: string[] = [];
@@ -205,9 +206,9 @@ export function matchVerifiedProperties(
       }
     }
 
-    if (profile.preferredAreas?.length) {
+    if (preferredAreas.length) {
       if (!property.locationLabel) unknowns.push("location_unknown");
-      else if (profile.preferredAreas.some((area) =>
+      else if (preferredAreas.some((area) =>
         property.locationLabel!.toLocaleLowerCase().includes(area.toLocaleLowerCase())
       )) {
         matchedSignals.push("preferred_area");
