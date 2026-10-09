@@ -335,9 +335,12 @@ export function validateSalesDraft(value: unknown, verifiedProperties?: unknown)
   const replyDraft = cleanText(raw.replyDraft, 1800);
   if (!replyDraft || !Array.isArray(raw.factsUsed) || !Array.isArray(raw.unknowns)) return null;
   if (!actions.includes(String(raw.nextBestAction))) return null;
-  const askOneQuestion = cleanText(raw.askOneQuestion, 300) || null;
-  const handoffRequired = raw.handoffRequired === true;
+  if (raw.askOneQuestion !== null && typeof raw.askOneQuestion !== "string") return null;
+  if (typeof raw.handoffRequired !== "boolean") return null;
   if (raw.factsUsed.some((fact) => typeof fact !== "string")) return null;
+  if (raw.unknowns.some((item) => typeof item !== "string")) return null;
+  const askOneQuestion = cleanText(raw.askOneQuestion, 300) || null;
+  const handoffRequired = raw.handoffRequired;
   const factsUsed = uniqueClean(raw.factsUsed, 20, 400);
   if (factsUsed.length !== raw.factsUsed.length) return null;
 
