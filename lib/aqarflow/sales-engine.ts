@@ -321,7 +321,7 @@ export function buildPersonalizedSalesPrompt(input: {
 }
 
 /** Validate the response shape before it can be shown to a user or sent to a channel. */
-export function validateSalesDraft(value: unknown, verifiedProperties?: unknown): SalesDraft | null {
+export function validateSalesDraft(value: unknown, verifiedProperties: unknown): SalesDraft | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
   const actions = [
@@ -344,13 +344,10 @@ export function validateSalesDraft(value: unknown, verifiedProperties?: unknown)
   const factsUsed = uniqueClean(raw.factsUsed, 20, 400);
   if (factsUsed.length !== raw.factsUsed.length) return null;
 
-  // If a property inventory is supplied, every cited fact must match an exact
-  // allowlisted token generated from that inventory. This checks citations, not
-  // every natural-language claim in replyDraft; a separate claim verifier is needed.
-  if (verifiedProperties !== undefined) {
-    const allowed = new Set(buildVerifiedFactTokens(verifiedProperties));
-    if (factsUsed.some((fact) => !allowed.has(fact))) return null;
-  }
+  // Ground citations against the caller-supplied, workspace-verified inventory on every call.
+  // This checks citations, not every natural-language claim in replyDraft; a separate claim verifier is needed.
+  const allowed = new Set(buildVerifiedFactTokens(verifiedProperties));
+  if (factsUsed.some((fact) => !allowed.has(fact))) return null;
 
   // The model may suggest only one question; reject an output that embeds multiple
   // separate question marks in the explicit question field.
