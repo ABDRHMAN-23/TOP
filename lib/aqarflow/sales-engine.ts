@@ -146,6 +146,27 @@ export function sanitizeVerifiedProperties(properties: unknown): VerifiedPropert
   return result;
 }
 
+/** Build exact, allowlisted claim tokens from explicitly supplied structured facts. */
+export function buildVerifiedFactTokens(properties: unknown): string[] {
+  const listings = sanitizeVerifiedProperties(properties);
+  const tokens: string[] = [];
+  for (const property of listings) {
+    tokens.push(`${property.id}: title=${property.title}`);
+    if (property.propertyType) tokens.push(`${property.id}: propertyType=${property.propertyType}`);
+    if (property.purpose) tokens.push(`${property.id}: purpose=${property.purpose}`);
+    if (property.price !== null && property.price !== undefined) {
+      tokens.push(`${property.id}: price=${property.price} ${property.currency || "currency unspecified"}`);
+    }
+    if (property.area !== null && property.area !== undefined) tokens.push(`${property.id}: area=${property.area}`);
+    if (property.bedrooms !== null && property.bedrooms !== undefined) tokens.push(`${property.id}: bedrooms=${property.bedrooms}`);
+    if (property.bathrooms !== null && property.bathrooms !== undefined) tokens.push(`${property.id}: bathrooms=${property.bathrooms}`);
+    if (property.locationLabel) tokens.push(`${property.id}: location=${property.locationLabel}`);
+    if (property.availability !== "unknown") tokens.push(`${property.id}: availability=${property.availability}`);
+    for (const feature of property.verifiedFeatures || []) tokens.push(`${property.id}: feature=${feature}`);
+  }
+  return tokens;
+}
+
 /**
  * Build a short, bounded prompt. Caller must supply properties obtained through a
  * verified workspace-scoped query; this function cannot prove tenant ownership.
@@ -173,7 +194,7 @@ export function buildPersonalizedSalesPrompt(input: {
     "Give one next step only. Never claim a viewing is booked unless a booking system confirmed it.",
     "Return JSON only with keys: replyDraft, factsUsed, unknowns, nextBestAction, askOneQuestion, handoffRequired.",
     "nextBestAction must be one of: send_photos, compare_properties, book_viewing, answer_question, ask_one_question, handoff_to_agent.",
-    "factsUsed must contain only property IDs followed by the exact fact being used, e.g. 'property-id: 3 bedrooms'.",
+    "factsUsed must contain only exact strings copied from verified_fact_tokens. Never invent, paraphrase, or modify a token.",
     "If a key fact is missing or stale, list it in unknowns and do not state it as true.",
   ].join("\n");
 
@@ -196,11 +217,12 @@ export function buildPersonalizedSalesPrompt(input: {
       timeline: cleanText(profile.timeline, 80) || null,
     },
     verified_properties: properties,
+    verified_fact_tokens: buildVerifiedFactTokens(properties),
   });
 }
 
 /** Validate the response shape before it can be shown to a user or sent to a channel. */
-export function validateSalesDraft(value: unknown): SalesDraft | null {
+export function validateSalesDraft(value: unknown, verifiedProperties?: unknown): SalesDraft | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
   const actions = [
@@ -216,6 +238,17 @@ export function validateSalesDraft(value: unknown): SalesDraft | null {
   if (!actions.includes(String(raw.nextBestAction))) return null;
   const askOneQuestion = cleanText(raw.askOneQuestion, 300) || null;
   const handoffRequired = raw.handoffRequired === true;
+  if (raw.factsUsed.some((fact) => typeof fact !== "string")) return null;
+  const factsUsed = uniqueClean(raw.factsUsed, 20);
+  if (factsUsed.length !== raw.factsUsed.length) return null;
+
+  // If a property inventory is supplied, every cited fact must match an exact
+  // allowlisted token generated from that inventory. This checks citations, not
+  // every natural-language claim in replyDraft; a separate claim verifier is needed.
+  if (verifiedProperties !== undefined) {
+    const allowed = new Set(buildVerifiedFactTokens(verifiedProperties));
+    if (factsUsed.some((fact) => !allowed.has(fact))) return null;
+  }
 
   // The model may suggest only one question; reject an output that embeds multiple
   // separate question marks in the explicit question field.
@@ -223,7 +256,7 @@ export function validateSalesDraft(value: unknown): SalesDraft | null {
 
   return {
     replyDraft,
-    factsUsed: uniqueClean(raw.factsUsed, 20),
+    factsUsed,
     unknowns: uniqueClean(raw.unknowns, 20),
     nextBestAction: String(raw.nextBestAction) as SalesDraft["nextBestAction"],
     askOneQuestion,
