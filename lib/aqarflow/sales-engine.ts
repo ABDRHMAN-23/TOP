@@ -320,6 +320,47 @@ export function buildPersonalizedSalesPrompt(input: {
   });
 }
 
+/**
+ * Conservative guard for numeric literals in customer-facing copy.
+ * It only proves that each written number matches a structured property value;
+ * it does not prove every natural-language claim (for example, "near the beach").
+ */
+function normalizeNumericLiteral(value: string): string {
+  const western = value
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+    .replace(/[\\s,，،٬]/g, "")
+    .replace(/٫/g, ".");
+  if (!western) return "";
+  const parsed = Number(western);
+  return Number.isFinite(parsed) ? String(parsed) : western;
+}
+
+/** Return numeric literals in the reply that are not present in verified numeric property fields. */
+export function findUnsupportedNumericClaims(reply: string, verifiedProperties: unknown): string[] {
+  const properties = sanitizeVerifiedProperties(verifiedProperties);
+  const allowed = new Set<string>();
+  for (const property of properties) {
+    for (const value of [property.price, property.area, property.bedrooms, property.bathrooms]) {
+      if (typeof value === "number" && Number.isFinite(value)) {
+        allowed.add(normalizeNumericLiteral(String(value)));
+      }
+    }
+  }
+
+  const candidates = reply.match(/[0-9٠-٩۰-۹]+(?:[.,，،٬٫][0-9٠-٩۰-۹]+)*/g) || [];
+  const unsupported: string[] = [];
+  const seen = new Set<string>();
+  for (const candidate of candidates) {
+    const normalized = normalizeNumericLiteral(candidate);
+    if (normalized && !allowed.has(normalized) && !seen.has(normalized)) {
+      seen.add(normalized);
+      unsupported.push(candidate);
+    }
+  }
+  return unsupported;
+}
+
 /** Validate the response shape before it can be shown to a user or sent to a channel. */
 export function validateSalesDraft(value: unknown, verifiedProperties: unknown): SalesDraft | null {
   if (!value || typeof value !== "object") return null;
@@ -344,10 +385,14 @@ export function validateSalesDraft(value: unknown, verifiedProperties: unknown):
   const factsUsed = uniqueClean(raw.factsUsed, 20, 400);
   if (factsUsed.length !== raw.factsUsed.length) return null;
 
-  // Ground citations against the caller-supplied, workspace-verified inventory on every call.
-  // This checks citations, not every natural-language claim in replyDraft; a separate claim verifier is needed.
+  // Ground citations and written numeric literals against the caller-supplied,
+  // workspace-verified inventory on every call. This still is not a full semantic claim verifier.
   const allowed = new Set(buildVerifiedFactTokens(verifiedProperties));
   if (factsUsed.some((fact) => !allowed.has(fact))) return null;
+  if (findUnsupportedNumericClaims(replyDraft, verifiedProperties).length > 0) return null;
+
+  if (raw.nextBestAction === "ask_one_question" && !askOneQuestion) return null;
+  if (raw.nextBestAction === "handoff_to_agent" && !handoffRequired) return null;
 
   // The model may suggest only one question; reject an output that embeds multiple
   // separate question marks in the explicit question field.
