@@ -150,6 +150,96 @@ export function sanitizeVerifiedProperties(properties: unknown): VerifiedPropert
   return result;
 }
 
+export type PropertyMatch = {
+  property: VerifiedProperty;
+  eligible: boolean;
+  score: number;
+  matchedSignals: string[];
+  conflicts: string[];
+  unknowns: string[];
+};
+
+/**
+ * Deterministic pre-ranking: exclude only known violations of explicit hard limits.
+ * Missing fields remain unknown (never treated as a match); this is not an appraisal.
+ */
+export function matchVerifiedProperties(
+  buyer: BuyerProfile | null | undefined,
+  rawProperties: unknown,
+): PropertyMatch[] {
+  const profile = buyer || {};
+  const properties = sanitizeVerifiedProperties(rawProperties);
+  const currency = cleanText(profile.currency, 8).toUpperCase();
+  return properties.map((property) => {
+    const matchedSignals: string[] = [];
+    const conflicts: string[] = [];
+    const unknowns: string[] = [];
+    let score = 0;
+
+    const hasBudget = profile.budgetMin != null || profile.budgetMax != null;
+    const comparableCurrency = Boolean(
+      property.currency && currency && property.currency.toUpperCase() === currency
+    );
+    if (hasBudget && property.price != null && comparableCurrency) {
+      if (profile.budgetMin != null && property.price < profile.budgetMin) {
+        conflicts.push("below_budget_minimum");
+      } else if (profile.budgetMax != null && property.price > profile.budgetMax) {
+        conflicts.push("above_budget_maximum");
+      } else {
+        matchedSignals.push("within_budget");
+        score += 40;
+      }
+    } else if (hasBudget) {
+      unknowns.push("budget_comparison_unavailable");
+    }
+
+    if (profile.bedroomsMin != null) {
+      if (property.bedrooms == null) unknowns.push("bedrooms_unknown");
+      else if (property.bedrooms < profile.bedroomsMin) conflicts.push("too_few_bedrooms");
+      else {
+        matchedSignals.push("bedrooms_satisfied");
+        score += 30;
+      }
+    }
+
+    if (profile.preferredAreas?.length) {
+      if (!property.locationLabel) unknowns.push("location_unknown");
+      else if (profile.preferredAreas.some((area) =>
+        property.locationLabel!.toLocaleLowerCase().includes(area.toLocaleLowerCase())
+      )) {
+        matchedSignals.push("preferred_area");
+        score += 20;
+      }
+    }
+
+    if (profile.intent === "buy" || profile.intent === "rent") {
+      if (!property.purpose) unknowns.push("purpose_unknown");
+      else {
+        const purpose = property.purpose.toLocaleLowerCase();
+        const isRent = /rent|lease|إيجار|للايجار|للإيجار/.test(purpose);
+        const isSale = /sale|buy|شراء|للبيع|بيع/.test(purpose);
+        if ((profile.intent === "rent" && isSale) || (profile.intent === "buy" && isRent)) {
+          conflicts.push("purpose_mismatch");
+        } else if ((profile.intent === "rent" && isRent) || (profile.intent === "buy" && isSale)) {
+          matchedSignals.push("purpose_satisfied");
+          score += 10;
+        } else {
+          unknowns.push("purpose_unrecognized");
+        }
+      }
+    }
+
+    return {
+      property,
+      eligible: conflicts.length === 0,
+      score,
+      matchedSignals,
+      conflicts,
+      unknowns,
+    };
+  }).sort((a, b) => Number(b.eligible) - Number(a.eligible) || b.score - a.score);
+}
+
 /** Build exact, allowlisted claim tokens from explicitly supplied structured facts. */
 export function buildVerifiedFactTokens(properties: unknown): string[] {
   const listings = sanitizeVerifiedProperties(properties);
