@@ -329,7 +329,7 @@ function normalizeNumericLiteral(value: string): string {
   const western = value
     .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
     .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
-    .replace(/[\\s,，،٬]/g, "")
+    .replace(/[\s,，،٬]/g, "")
     .replace(/٫/g, ".");
   if (!western) return "";
   const parsed = Number(western);
