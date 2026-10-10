@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {
   decryptMetaAccessToken, encryptMetaAccessToken, normalizeWhatsAppPhone,
   listMetaApprovedTextTemplates, parseMetaWhatsAppWebhook, sendMetaWhatsAppText, sendMetaWhatsAppTemplate,
-  verifyMetaWebhookChallenge, verifyMetaWebhookSignature, WhatsAppCloudApiError,
+  registerMetaWhatsAppPhone, verifyMetaWebhookChallenge, verifyMetaWebhookSignature, WhatsAppCloudApiError,
 } from '../lib/aqarflow/whatsapp-cloud.ts';
 
 const webcrypto = (await import('node:crypto')).webcrypto;
@@ -156,6 +156,62 @@ await assert.rejects(
     fetcher: templateSendFetch,
   }),
   /Invalid WhatsApp template name/,
+);
+
+
+// Phone registration must verify the existing number and must never resend an already connected registration.
+let registrationCallCount = 0;
+const alreadyRegistered = await registerMetaWhatsAppPhone({
+  graphApiVersion: 'v26.0', phoneNumberId: '1234567890', accessToken: 'private-server-token', pin: '123456',
+  fetcher: (async () => {
+    registrationCallCount += 1;
+    return new Response(JSON.stringify({ status: 'CONNECTED', code_verification_status: 'VERIFIED' }), {
+      status: 200, headers: { 'Content-Type': 'application/json' },
+    });
+  }) as typeof fetch,
+});
+assert.equal(alreadyRegistered.alreadyRegistered, true);
+assert.equal(registrationCallCount, 1, 'already-connected phone should not be registered twice');
+
+let registrationRequests = 0;
+let registrationPayload: Record<string, unknown> | null = null;
+const registered = await registerMetaWhatsAppPhone({
+  graphApiVersion: 'v26.0', phoneNumberId: '1234567891', accessToken: 'private-server-token', pin: '654321',
+  fetcher: (async (_input, init) => {
+    registrationRequests += 1;
+    if (registrationRequests === 1) {
+      return new Response(JSON.stringify({ status: 'PENDING', code_verification_status: 'VERIFIED' }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    registrationPayload = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    assert.equal(String(_input), 'https://graph.facebook.com/v26.0/1234567891/register');
+    assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer private-server-token');
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200, headers: { 'Content-Type': 'application/json' },
+    });
+  }) as typeof fetch,
+});
+assert.equal(registered.registered, true);
+assert.equal(registered.alreadyRegistered, false);
+assert.equal(registrationRequests, 2);
+assert.deepEqual(registrationPayload, { messaging_product: 'whatsapp', pin: '654321' });
+
+await assert.rejects(
+  () => registerMetaWhatsAppPhone({
+    graphApiVersion: 'v26.0', phoneNumberId: '1234567891', accessToken: 'token', pin: '123456',
+    fetcher: (async () => new Response(JSON.stringify({ status: 'PENDING', code_verification_status: 'NOT_VERIFIED' }), {
+      status: 200, headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch,
+  }),
+  (error: unknown) => error instanceof WhatsAppCloudApiError && error.code === 'phone_number_not_verified',
+);
+await assert.rejects(
+  () => registerMetaWhatsAppPhone({
+    graphApiVersion: 'v26.0', phoneNumberId: '1234567891', accessToken: 'token', pin: '12',
+    fetcher: templateSendFetch,
+  }),
+  /exactly six digits/,
 );
 
 console.log('AqarFlow WhatsApp Cloud tests passed.');
