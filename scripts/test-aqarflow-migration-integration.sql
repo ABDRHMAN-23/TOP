@@ -15,7 +15,8 @@ DECLARE
     'aqarflow_crm_messages',
     'aqarflow_crm_contact_notes',
     'aqarflow_crm_tasks',
-    'aqarflow_crm_viewings'
+    'aqarflow_crm_viewings',
+    'aqarflow_crm_notifications'
   ];
   forced_tables text[] := ARRAY[
     'aqarflow_workspace_memberships',
@@ -29,7 +30,8 @@ DECLARE
     'aqarflow_crm_messages',
     'aqarflow_crm_contact_notes',
     'aqarflow_crm_tasks',
-    'aqarflow_crm_viewings'
+    'aqarflow_crm_viewings',
+    'aqarflow_crm_notifications'
   ];
 BEGIN
   FOREACH table_name IN ARRAY expected_tables LOOP
@@ -57,8 +59,15 @@ BEGIN
      OR has_table_privilege('authenticated','public.aqarflow_crm_contact_notes','SELECT')
      OR has_table_privilege('authenticated','public.aqarflow_crm_tasks','SELECT')
      OR has_table_privilege('authenticated','public.aqarflow_crm_viewings','SELECT')
+     OR has_table_privilege('authenticated','public.aqarflow_crm_notifications','SELECT')
      OR has_table_privilege('authenticated','public.aqarflow_workspace_memberships','INSERT') THEN
     RAISE EXCEPTION 'Authenticated role can directly read a protected AqarFlow table';
+  END IF;
+
+  IF NOT has_table_privilege('service_role','public.aqarflow_crm_notifications','SELECT')
+     OR NOT has_function_privilege('service_role','public.aqarflow_dispatch_due_notifications(timestamp with time zone)','EXECUTE')
+     OR has_function_privilege('authenticated','public.aqarflow_dispatch_due_notifications(timestamp with time zone)','EXECUTE') THEN
+    RAISE EXCEPTION 'Level 3 notification privileges are incorrect';
   END IF;
 
   IF NOT has_table_privilege('service_role','public.aqarflow_whatsapp_integrations','SELECT')
@@ -218,5 +227,43 @@ BEGIN
   END IF;
 END $$;
 RESET ROLE;
+
+-- Level 3: due task/viewing notifications are recipient-scoped and idempotent.
+INSERT INTO public.aqarflow_crm_tasks(owner_user_id,contact_id,title,due_at,created_by)
+VALUES ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001',
+  'Level 3 due reminder','2030-01-01T09:55:00Z','00000000-0000-4000-8000-000000000001');
+
+DO $automation_check$
+DECLARE
+  task_count integer;
+  viewing_count integer;
+  second_task_count integer;
+  second_viewing_count integer;
+  total_count integer;
+BEGIN
+  SELECT task_notifications, viewing_notifications
+    INTO task_count, viewing_count
+    FROM public.aqarflow_dispatch_due_notifications('2030-01-01T09:45:00Z');
+  IF task_count <> 1 OR viewing_count <> 1 THEN
+    RAISE EXCEPTION 'Expected one task and one viewing notification; got % and %', task_count, viewing_count;
+  END IF;
+
+  SELECT task_notifications, viewing_notifications
+    INTO second_task_count, second_viewing_count
+    FROM public.aqarflow_dispatch_due_notifications('2030-01-01T09:45:00Z');
+  IF second_task_count <> 0 OR second_viewing_count <> 0 THEN
+    RAISE EXCEPTION 'Repeated dispatcher run created duplicate notifications';
+  END IF;
+
+  SELECT count(*) INTO total_count FROM public.aqarflow_crm_notifications
+    WHERE owner_user_id='00000000-0000-4000-8000-000000000001';
+  IF total_count <> 2 THEN
+    RAISE EXCEPTION 'Expected exactly two idempotent Level 3 notifications; got %', total_count;
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.aqarflow_crm_notifications
+    WHERE owner_user_id='00000000-0000-4000-8000-000000000002') THEN
+    RAISE EXCEPTION 'Notifications leaked into another workspace';
+  END IF;
+END $automation_check$;
 
 SELECT 'AqarFlow migration/RLS integration assertions passed.' AS result;
