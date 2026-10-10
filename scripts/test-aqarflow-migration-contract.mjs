@@ -9,6 +9,7 @@ const crmContacts=readFileSync(new URL('../app/api/aqarflow/crm/contacts/route.t
 const whatsappWebhook=readFileSync(new URL('../app/api/integrations/whatsapp/webhook/route.ts',import.meta.url),'utf8');
 const whatsappCloud=readFileSync(new URL('../lib/aqarflow/whatsapp-cloud.ts',import.meta.url),'utf8');
 const whatsappSend=readFileSync(new URL('../app/api/integrations/whatsapp/send/route.ts',import.meta.url),'utf8');
+const whatsappManager=readFileSync(new URL('../components/aqarflow/WhatsAppConnectionManager.tsx',import.meta.url),'utf8');
 const leadMigration=readFileSync(new URL('../supabase/migrations/20261010000500_aqarflow_crm_lead_pipeline.sql',import.meta.url),'utf8');
 const wrangler=readFileSync(new URL('../wrangler.jsonc',import.meta.url),'utf8');
 const props=readFileSync(new URL('../app/api/aqarflow/properties/route.ts',import.meta.url),'utf8');
@@ -61,6 +62,8 @@ assert.match(whatsappWebhook,/Date\.parse\(eventAt\)>=Date\.parse\(existingConve
 assert.match(whatsappWebhook,/existingContact\?\.display_name\|\|event\.senderDisplayName/);
 assert.match(whatsappCloud,/contactNames\.get\(sender\)/);
 assert.match(whatsappSend,/if\(conversationUpdateError\)return false/);
+assert.match(whatsappManager,/نمط الربط الحالي: \\{signupMode===/);
+assert.doesNotMatch(whatsappManager,/نمط الربط الحالي: \\$\\{/);
 assert.match(ranked,/MATCH_BATCH_SIZE|MATCH_BATCH_SIZE/);
 assert.match(ranked,/MAX_PROPERTY_CANDIDATES\s*=\s*50/);
 console.log('AqarFlow migration and runtime security contract checks passed.');
