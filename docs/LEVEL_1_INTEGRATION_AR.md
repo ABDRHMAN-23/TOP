@@ -20,7 +20,7 @@
 
 - `META_APP_ID`
 - `META_APP_SECRET`
-- `META_GRAPH_API_VERSION` — اختر إصدارًا مدعومًا من وثائق Meta في وقت التفعيل، وثبّته بصيغة `vXX.0`.
+- `META_GRAPH_API_VERSION` — القيمة الافتراضية في فرع التكامل `v26.0`؛ تأكد من الإصدار المدعوم داخل لوحة Meta عند تفعيل التطبيق، لأن صلاحية الإصدار والأذونات تتبع حساب Meta الفعلي.
 - `META_WEBHOOK_VERIFY_TOKEN` — قيمة عشوائية قوية للتحقق من Webhook.
 - `META_TOKEN_ENCRYPTION_KEY` — مفتاح عشوائي Base64 يفك إلى 32 بايت.
 - `SUPABASE_SECRET_KEY` أو `SUPABASE_SERVICE_ROLE_KEY` — وصول خادمي للجداول الجديدة.

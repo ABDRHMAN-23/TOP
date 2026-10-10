@@ -6,6 +6,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
     "GEMINI_API_URL": "https://generativelanguage.googleapis.com",
+    "META_GRAPH_API_VERSION": "v26.0",
     "GEMINI_TRANSCRIBE_MODEL": "gemini-3.5-transcribe",
     "GEMINI_MODEL": "gemini-3.8-flash"
   },
