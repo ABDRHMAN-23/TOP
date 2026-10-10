@@ -49,6 +49,14 @@ BEGIN
     END IF;
   END LOOP;
 
+  IF NOT EXISTS (
+      SELECT 1 FROM pg_catalog.pg_indexes
+      WHERE schemaname='public' AND tablename='aqarflow_crm_notifications'
+        AND indexname='aqarflow_notifications_recipient_fk_idx'
+    ) THEN
+    RAISE EXCEPTION 'Notification recipient foreign-key index is missing';
+  END IF;
+
   IF has_table_privilege('authenticated','public.aqarflow_whatsapp_integrations','SELECT')
      OR has_table_privilege('authenticated','public.aqarflow_whatsapp_events','SELECT')
      OR has_table_privilege('authenticated','public.aqarflow_whatsapp_outbound_requests','SELECT')
