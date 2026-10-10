@@ -13,6 +13,7 @@ psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261010000300_aqarflow_whatsapp_
 psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261010000400_aqarflow_crm_inbox.sql
 psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261010000500_aqarflow_crm_lead_pipeline.sql
 psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261010000600_aqarflow_sales_operations.sql
+psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261010000700_aqarflow_database_hardening.sql
 psql -v ON_ERROR_STOP=1 -f scripts/test-aqarflow-migration-integration.sql
 
 tmpfile="$(mktemp)"
