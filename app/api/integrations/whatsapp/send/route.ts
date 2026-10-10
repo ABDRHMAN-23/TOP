@@ -22,8 +22,10 @@ async function persistCrmOutbound(admin:ReturnType<typeof createAdminClient>,own
     message_text:message,provider_message_id:messageId,provider_status:'sent',created_at:now,sent_at:now,
   },{onConflict:'owner_user_id,provider_message_id',ignoreDuplicates:true});
   if(messageError)return false;
-  await admin.from('aqarflow_crm_conversations').update({last_message_at:now,last_message_preview:message.slice(0,500),updated_at:now})
+  const {error:conversationUpdateError}=await admin.from('aqarflow_crm_conversations')
+    .update({last_message_at:now,last_message_preview:message.slice(0,500),updated_at:now})
     .eq('owner_user_id',ownerId).eq('id',conversationId);
+  if(conversationUpdateError)return false;
   return true;
 }
 
