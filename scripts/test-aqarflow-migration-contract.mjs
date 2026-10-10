@@ -72,6 +72,7 @@ assert.match(whatsappTemplatesRoute,/listMetaApprovedTextTemplates/);
 assert.match(whatsappTemplatesRoute,/\.eq\('owner_user_id', owner\.ownerUserId\)/);
 assert.match(whatsappSendTemplateRoute,/listMetaApprovedTextTemplates/);
 assert.match(whatsappSendTemplateRoute,/parameters\.length !== template\.parameterCount/);
+assert.match(whatsappSendTemplateRoute,/preview\.length > 4096/);
 assert.match(whatsappSendTemplateRoute,/aqarflow_whatsapp_outbound_requests/);
 assert.match(whatsappSendTemplateRoute,/sendMetaWhatsAppTemplate\(/);
 assert.match(whatsappSend,/Date\.parse\(sentAt\)>=Date\.parse\(conversation\.last_message_at\)/);
