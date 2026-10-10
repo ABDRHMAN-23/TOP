@@ -59,6 +59,8 @@ assert.match(crmContacts,/source:'manual'/);
 assert.match(crmContacts,/raw\.id/);
 assert.match(crmContacts,/budgetMin>budgetMax/);
 assert.match(whatsappWebhook,/pendingEventKeys/);
+assert.match(whatsappWebhook,/const acceptedKeys=new Set<string>\(\)/);
+assert.match(whatsappWebhook,/acceptedKeys\.has\(uniqueKey\)/);
 assert.match(whatsappWebhook,/neq\('processing_status','processed'\)/);
 assert.match(whatsappWebhook,/processing_status:'received'/);
 assert.match(whatsappWebhook,/for\(const event of acceptedEvents\)/);
