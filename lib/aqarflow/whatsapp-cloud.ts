@@ -208,3 +208,171 @@ export async function sendMetaWhatsAppText(options: {
   if (!messageId) throw new WhatsAppCloudApiError(response.status, 'invalid_provider_response');
   return { messageId };
 }
+
+
+export type MetaApprovedTextTemplate = {
+  name: string;
+  language: string;
+  category: string | null;
+  bodyText: string;
+  parameterCount: number;
+};
+
+function templateParameterCount(value: string): number | null {
+  const indices = [...value.matchAll(/\\{\\{\\s*(\\d+)\\s*\\}\\}/g)].map(match => Number(match[1]));
+  if (indices.some(index => !Number.isInteger(index) || index < 1 || index > 10)) return null;
+  const max = indices.length ? Math.max(...indices) : 0;
+  for (let index = 1; index <= max; index += 1) {
+    if (!indices.includes(index)) return null;
+  }
+  return max;
+}
+
+function parseApprovedTextTemplate(value: unknown): MetaApprovedTextTemplate | null {
+  if (!isRecord(value) || cleanString(value.status, 40).toUpperCase() !== 'APPROVED') return null;
+  const name = cleanString(value.name, 512);
+  const language = cleanString(value.language, 40);
+  if (!/^[a-z0-9_]{1,512}$/.test(name) || !/^[a-z]{2,3}(?:_[A-Z]{2})?$/.test(language)) return null;
+  if (!Array.isArray(value.components) || value.components.length > 10) return null;
+  let bodyText = '';
+  let hasBody = false;
+  let supported = true;
+  for (const raw of value.components) {
+    if (!isRecord(raw)) { supported = false; break; }
+    const type = cleanString(raw.type, 32).toUpperCase();
+    if (type === 'BODY') {
+      bodyText = cleanString(raw.text, 4096);
+      hasBody = Boolean(bodyText);
+    } else if (type === 'HEADER') {
+      const format = cleanString(raw.format, 20).toUpperCase();
+      const headerText = cleanString(raw.text, 1024);
+      if (format !== 'TEXT' || !headerText || /\\{\\{\\s*\\d+\\s*\\}\\}/.test(headerText)) supported = false;
+    } else if (type === 'FOOTER') {
+      const footerText = cleanString(raw.text, 1024);
+      if (!footerText || /\\{\\{\\s*\\d+\\s*\\}\\}/.test(footerText)) supported = false;
+    } else {
+      // Dynamic buttons, media headers, and unknown component types need a richer composer.
+      supported = false;
+    }
+  }
+  if (!supported || !hasBody) return null;
+  const parameterCount = templateParameterCount(bodyText);
+  if (parameterCount === null) return null;
+  return {
+    name,
+    language,
+    category: cleanString(value.category, 40) || null,
+    bodyText,
+    parameterCount,
+  };
+}
+
+export async function listMetaApprovedTextTemplates(options: {
+  graphApiVersion: string;
+  wabaId: string;
+  accessToken: string;
+  fetcher?: typeof fetch;
+}): Promise<MetaApprovedTextTemplate[]> {
+  const graphVersion = options.graphApiVersion.trim();
+  if (!/^v\\d+\\.\\d+$/.test(graphVersion)) throw new Error('META_GRAPH_API_VERSION must be pinned explicitly.');
+  if (!/^\\d{5,40}$/.test(options.wabaId)) throw new Error('Invalid WhatsApp Business Account ID.');
+  if (!options.accessToken || options.accessToken.length > 8192) throw new Error('Invalid WhatsApp access token.');
+  const requestFetch = options.fetcher || fetch;
+  const expectedPath = '/' + graphVersion + '/' + options.wabaId + '/message_templates';
+  const firstUrl = new URL('https://graph.facebook.com' + expectedPath);
+  firstUrl.searchParams.set('fields', 'name,status,language,category,components');
+  firstUrl.searchParams.set('limit', '100');
+  let pageUrl: URL | null = firstUrl;
+  let pageCount = 0;
+  const approved = new Map<string, MetaApprovedTextTemplate>();
+  while (pageUrl && pageCount < 10) {
+    let response: Response;
+    try {
+      response = await requestFetch(pageUrl, {
+        method: 'GET',
+        headers: { Authorization: 'Bearer ' + options.accessToken, Accept: 'application/json' },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(12_000),
+      });
+    } catch {
+      throw new WhatsAppCloudApiError(0, 'template_list_network_or_timeout');
+    }
+    const result: unknown = await response.json().catch(() => null);
+    if (!response.ok || !isRecord(result) || !Array.isArray(result.data)) {
+      throw new WhatsAppCloudApiError(response.status, 'template_list_provider_rejected');
+    }
+    for (const raw of result.data.slice(0, 100)) {
+      const template = parseApprovedTextTemplate(raw);
+      if (template) approved.set(template.name + ':' + template.language, template);
+    }
+    const paging = isRecord(result.paging) ? result.paging : {};
+    const next = typeof paging.next === 'string' ? paging.next : '';
+    if (!next) {
+      pageUrl = null;
+    } else {
+      try {
+        const parsed = new URL(next);
+        if (parsed.protocol !== 'https:' || parsed.hostname !== 'graph.facebook.com' || parsed.pathname !== expectedPath) {
+          throw new Error('Invalid Graph API pagination path.');
+        }
+        parsed.searchParams.delete('access_token');
+        pageUrl = parsed;
+      } catch {
+        throw new WhatsAppCloudApiError(502, 'template_list_invalid_pagination');
+      }
+    }
+    pageCount += 1;
+  }
+  if (pageUrl) throw new WhatsAppCloudApiError(413, 'template_list_page_limit');
+  return [...approved.values()].slice(0, 100);
+}
+
+export async function sendMetaWhatsAppTemplate(options: {
+  graphApiVersion: string;
+  phoneNumberId: string;
+  accessToken: string;
+  to: string;
+  templateName: string;
+  language: string;
+  parameters: string[];
+  fetcher?: typeof fetch;
+}): Promise<{ messageId: string }> {
+  const graphVersion = options.graphApiVersion.trim();
+  if (!/^v\\d+\\.\\d+$/.test(graphVersion)) throw new Error('META_GRAPH_API_VERSION must be pinned explicitly.');
+  if (!/^\\d{5,40}$/.test(options.phoneNumberId)) throw new Error('Invalid WhatsApp phone number ID.');
+  if (!options.accessToken || options.accessToken.length > 8192) throw new Error('Invalid WhatsApp access token.');
+  const to = normalizeWhatsAppPhone(options.to);
+  const name = options.templateName.trim();
+  const language = options.language.trim();
+  if (!to || !/^[a-z0-9_]{1,512}$/.test(name) || !/^[a-z]{2,3}(?:_[A-Z]{2})?$/.test(language)) {
+    throw new Error('Invalid WhatsApp template name, language, or recipient.');
+  }
+  if (!Array.isArray(options.parameters) || options.parameters.length > 10) throw new Error('Invalid WhatsApp template parameters.');
+  const parameters = options.parameters.map(value => cleanString(value, 1024));
+  if (parameters.some(value => !value)) throw new Error('Template parameters must be non-empty text values.');
+  const template: Record<string, unknown> = { name, language: { code: language } };
+  if (parameters.length) template.components = [{
+    type: 'body',
+    parameters: parameters.map(text => ({ type: 'text', text })),
+  }];
+  let response: Response;
+  try {
+    response = await (options.fetcher || fetch)('https://graph.facebook.com/' + graphVersion + '/' + options.phoneNumberId + '/messages', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + options.accessToken, 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to, type: 'template', template }),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch {
+    throw new WhatsAppCloudApiError(0, 'template_send_network_or_timeout');
+  }
+  const result: unknown = await response.json().catch(() => null);
+  if (!response.ok || !isRecord(result) || !Array.isArray(result.messages)) {
+    throw new WhatsAppCloudApiError(response.status, 'template_send_provider_rejected');
+  }
+  const first = result.messages[0];
+  const messageId = isRecord(first) ? cleanString(first.id, 256) : '';
+  if (!messageId) throw new WhatsAppCloudApiError(response.status, 'template_send_invalid_provider_response');
+  return { messageId };
+}
