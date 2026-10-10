@@ -26,13 +26,18 @@ export async function POST(request:Request) {
   let admin:ReturnType<typeof createAdminClient>;try{admin=createAdminClient();}catch{return NextResponse.json({error:'Webhook storage is unavailable.'},{status:503});}
   const phoneIds=Array.from(new Set(events.map(e=>e.phoneNumberId)));
   const integrations=new Map<string,{id:string;owner_user_id:string}>();
+  const disconnectedPhoneIds=new Set<string>();
   for(const phoneId of phoneIds){
-    const {data,error}=await admin.from('aqarflow_whatsapp_integrations').select('id,owner_user_id').eq('phone_number_id',phoneId).eq('status','active').maybeSingle();
+    const {data,error}=await admin.from('aqarflow_whatsapp_integrations').select('id,owner_user_id,status').eq('phone_number_id',phoneId).maybeSingle();
     if(error||!data)return NextResponse.json({error:'Webhook tenant mapping is not ready.'},{status:503});
-    integrations.set(phoneId,data);
+    if(data.status==='disconnected'){disconnectedPhoneIds.add(phoneId);continue;}
+    if(data.status!=='active'&&data.status!=='needs_reauth')return NextResponse.json({error:'Webhook tenant mapping is not ready.'},{status:503});
+    integrations.set(phoneId,{id:data.id,owner_user_id:data.owner_user_id});
   }
+  const processableEvents=events.filter(e=>!disconnectedPhoneIds.has(e.phoneNumberId));
+  if(processableEvents.length===0)return NextResponse.json({received:true,ignoredDisconnected:events.length},{status:200,headers:{'Cache-Control':'no-store'}});
   const grouped=new Map<string,Record<string,unknown>[]>();
-  for(const event of events){
+  for(const event of processableEvents){
     const integration=integrations.get(event.phoneNumberId);if(!integration)return NextResponse.json({error:'Webhook tenant mapping is missing.'},{status:503});
     const rows=grouped.get(integration.owner_user_id)||[];
     rows.push({owner_user_id:integration.owner_user_id,integration_id:integration.id,phone_number_id:event.phoneNumberId,
@@ -48,7 +53,7 @@ export async function POST(request:Request) {
 
   // Materialize each signed webhook into the small CRM inbox domain. Every upsert uses
   // workspace-scoped unique keys so Meta retries do not create duplicate contacts/messages.
-  for(const event of events){
+  for(const event of processableEvents){
     const integration=integrations.get(event.phoneNumberId)!;
     if(event.kind==='delivery_status'){
       const {error}=await admin.from('aqarflow_crm_messages')
@@ -78,5 +83,14 @@ export async function POST(request:Request) {
     },{onConflict:'owner_user_id,provider_message_id',ignoreDuplicates:true});
     if(messageError)return NextResponse.json({error:'Could not persist CRM message.'},{status:503});
   }
-  return NextResponse.json({received:true,eventCount:events.length},{status:200,headers:{'Cache-Control':'no-store'}});
+  for(const event of processableEvents){
+    const integration=integrations.get(event.phoneNumberId);
+    if(!integration)continue;
+    const {error}=await admin.from('aqarflow_whatsapp_events')
+      .update({processing_status:'processed'})
+      .eq('owner_user_id',integration.owner_user_id)
+      .eq('provider_event_key',event.eventKey);
+    if(error)return NextResponse.json({error:'Could not finalize CRM event state.'},{status:503});
+  }
+  return NextResponse.json({received:true,eventCount:processableEvents.length,ignoredDisconnected:events.length-processableEvents.length},{status:200,headers:{'Cache-Control':'no-store'}});
 }
