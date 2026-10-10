@@ -30,5 +30,5 @@ assert.match(props,/supabase\.auth\.getUser\(\)/);
 assert.match(props,/owner_user_id/);
 assert.match(props,/ctx\.user!\.id!==ctx\.ownerId/);
 assert.match(ranked,/MATCH_BATCH_SIZE|MATCH_BATCH_SIZE/);
-assert.match(ranked,/MAX_PROPERTY_CANDIDATES=50/);
+assert.match(ranked,/MAX_PROPERTY_CANDIDATES\s*=\s*50/);
 console.log('AqarFlow migration and runtime security contract checks passed.');
