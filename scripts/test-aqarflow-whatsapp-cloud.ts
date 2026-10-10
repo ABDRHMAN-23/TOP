@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import {
   decryptMetaAccessToken, encryptMetaAccessToken, normalizeWhatsAppPhone,
-  parseMetaWhatsAppWebhook, sendMetaWhatsAppText, verifyMetaWebhookChallenge,
-  verifyMetaWebhookSignature, WhatsAppCloudApiError,
+  listMetaApprovedTextTemplates, parseMetaWhatsAppWebhook, sendMetaWhatsAppText, sendMetaWhatsAppTemplate,
+  verifyMetaWebhookChallenge, verifyMetaWebhookSignature, WhatsAppCloudApiError,
 } from '../lib/aqarflow/whatsapp-cloud.ts';
 
 const webcrypto = (await import('node:crypto')).webcrypto;
@@ -85,6 +85,77 @@ const failingFetch: typeof fetch = async () => new Response(JSON.stringify({ err
 await assert.rejects(
   () => sendMetaWhatsAppText({ graphApiVersion: 'v99.0', phoneNumberId: '1234567890', accessToken: 'token', to: '14155550100', text: 'hi', fetcher: failingFetch }),
   (error: unknown) => error instanceof WhatsAppCloudApiError && error.httpStatus === 400 && !error.message.includes('secret provider detail'),
+);
+
+// Approved template listing ignores unapproved and unsupported templates.
+let templateLookupUrl = '';
+let templateLookupAuthorization = '';
+const templateLookupFetch: typeof fetch = async (input, init) => {
+  templateLookupUrl = String(input);
+  templateLookupAuthorization = new Headers(init?.headers).get('authorization') || '';
+  return new Response(JSON.stringify({ data: [
+    { name: 'welcome_text', language: 'ar', status: 'APPROVED', category: 'UTILITY',
+      components: [{ type: 'BODY', text: 'مرحبًا {{1}}، عقارك: {{2}}' }] },
+    { name: 'pending_text', language: 'ar', status: 'PENDING',
+      components: [{ type: 'BODY', text: 'غير معتمد' }] },
+    { name: 'media_template', language: 'ar', status: 'APPROVED',
+      components: [{ type: 'HEADER', format: 'IMAGE' }, { type: 'BODY', text: 'مرحبًا' }] },
+    { name: 'invalid_order', language: 'ar', status: 'APPROVED',
+      components: [{ type: 'BODY', text: 'قيمة {{1}} ثم {{3}}' }] },
+  ] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+};
+const templates = await listMetaApprovedTextTemplates({
+  graphApiVersion: 'v26.0', wabaId: '1234567890', accessToken: 'private-server-token', fetcher: templateLookupFetch,
+});
+assert.equal(templates.length, 1, 'only approved supported text templates should be returned');
+assert.equal(templates[0].name, 'welcome_text');
+assert.equal(templates[0].parameterCount, 2);
+assert.equal(templates[0].bodyText, 'مرحبًا {{1}}، عقارك: {{2}}');
+assert.equal(templateLookupUrl.startsWith('https://graph.facebook.com/v26.0/1234567890/message_templates?'), true);
+assert.equal(templateLookupAuthorization, 'Bearer private-server-token');
+
+let templateSendUrl = '';
+let templateSendAuthorization = '';
+const templateSendBody: { value: Record<string, unknown> | null } = { value: null };
+const templateSendFetch: typeof fetch = async (input, init) => {
+  templateSendUrl = String(input);
+  templateSendAuthorization = new Headers(init?.headers).get('authorization') || '';
+  templateSendBody.value = JSON.parse(String(init?.body)) as Record<string, unknown>;
+  return new Response(JSON.stringify({ messages: [{ id: 'wamid.template-123' }] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+};
+const templateSent = await sendMetaWhatsAppTemplate({
+  graphApiVersion: 'v26.0', phoneNumberId: '1234567890', accessToken: 'private-server-token',
+  to: '+1 (415) 555-0100', templateName: 'welcome_text', language: 'ar',
+  parameters: ['Rania', 'Aden apartment'], fetcher: templateSendFetch,
+});
+assert.equal(templateSent.messageId, 'wamid.template-123');
+assert.equal(templateSendUrl, 'https://graph.facebook.com/v26.0/1234567890/messages');
+assert.equal(templateSendAuthorization, 'Bearer private-server-token');
+const actualTemplateSend = templateSendBody.value as unknown as Record<string, unknown>;
+assert.equal(actualTemplateSend.type, 'template');
+assert.equal(actualTemplateSend.to, '14155550100');
+const actualTemplate = actualTemplateSend.template as { name?: string; language?: { code?: string }; components?: Array<{ type?: string; parameters?: Array<{ text?: string }> }> };
+assert.equal(actualTemplate.name, 'welcome_text');
+assert.equal(actualTemplate.language?.code, 'ar');
+assert.equal(actualTemplate.components?.[0]?.parameters?.[0]?.text, 'Rania');
+assert.equal(actualTemplate.components?.[0]?.parameters?.[1]?.text, 'Aden apartment');
+
+await assert.rejects(
+  () => listMetaApprovedTextTemplates({
+    graphApiVersion: 'v26.0', wabaId: '1234567890', accessToken: 'token',
+    fetcher: (async () => new Response(JSON.stringify({
+      data: [], paging: { next: 'https://attacker.example/v26.0/1234567890/message_templates' },
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } })) as typeof fetch,
+  }),
+  (error: unknown) => error instanceof WhatsAppCloudApiError && error.code === 'template_list_invalid_pagination',
+);
+await assert.rejects(
+  () => sendMetaWhatsAppTemplate({
+    graphApiVersion: 'v26.0', phoneNumberId: '1234567890', accessToken: 'token',
+    to: '14155550100', templateName: 'bad-name', language: 'ar', parameters: [],
+    fetcher: templateSendFetch,
+  }),
+  /Invalid WhatsApp template name/,
 );
 
 console.log('AqarFlow WhatsApp Cloud tests passed.');
