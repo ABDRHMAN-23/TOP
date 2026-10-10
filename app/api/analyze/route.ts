@@ -71,6 +71,7 @@ async function geminiGenerate(
   try {
     response = await fetch(geminiModelUrl(model), {
       method: 'POST',
+      signal: AbortSignal.timeout(20_000),
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey,
@@ -157,6 +158,7 @@ async function uploadToGemini(file: File) {
   try {
     startResponse = await fetch(`${geminiBaseUrl()}/upload/v1beta/files`, {
       method: 'POST',
+      signal: AbortSignal.timeout(15_000),
       headers: {
         'x-goog-api-key': apiKey,
         'X-Goog-Upload-Protocol': 'resumable',
@@ -193,11 +195,21 @@ async function uploadToGemini(file: File) {
       'transcribe'
     );
   }
+  try {
+    const parsedUploadUrl = new URL(uploadUrl);
+    const allowedOrigin = new URL(geminiBaseUrl()).origin;
+    if (parsedUploadUrl.protocol !== 'https:' || parsedUploadUrl.origin !== allowedOrigin) {
+      throw new Error('Untrusted upload URL origin.');
+    }
+  } catch {
+    throw new GeminiError('Gemini returned an invalid upload URL.', 'transcribe');
+  }
 
   let uploadResponse: Response;
   try {
     uploadResponse = await fetch(uploadUrl, {
       method: 'POST',
+      signal: AbortSignal.timeout(20_000),
       headers: {
         'Content-Length': String(file.size),
         'X-Goog-Upload-Offset': '0',
@@ -252,6 +264,7 @@ async function transcribe(file: File) {
   try {
     response = await fetch(`${geminiBaseUrl()}/v1beta/interactions`, {
       method: 'POST',
+      signal: AbortSignal.timeout(20_000),
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey,
