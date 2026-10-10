@@ -1,15 +1,17 @@
 'use client';
-import { useCallback,useEffect,useMemo,useState } from 'react';
+import { useCallback,useEffect,useMemo,useRef,useState } from 'react';
 
 type Message={id:string;conversation_id:string;direction:'inbound'|'outbound';message_type:string;message_text:string|null;ai_draft:string|null;facts_used:string[];unknowns:string[];provider_message_id:string|null;provider_status:string|null;created_at:string;sent_at:string|null};
 type Conversation={id:string;status:string;handoff_required:boolean;last_message_at:string;last_message_preview:string|null;contact:{id:string;phone_number:string;display_name:string|null}|null;integration:{phone_number_id:string;display_phone_number:string|null;verified_name:string|null}|null;messages:Message[]};
 export default function AqarFlowInbox(){
  const [conversations,setConversations]=useState<Conversation[]>([]);const [selectedId,setSelectedId]=useState('');const [canSend,setCanSend]=useState(false);
  const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [draft,setDraft]=useState('');
+ const pendingSend=useRef<{text:string;conversationId:string;key:string}|null>(null);
  const refresh=useCallback(async(keepId?:string)=>{
   const r=await fetch('/api/aqarflow/inbox',{cache:'no-store'});const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر تحميل صندوق المحادثات.');
   const rows=(b.conversations||[]) as Conversation[];setConversations(rows);setCanSend(Boolean(b.canSend));
   const nextId=keepId&&rows.some(x=>x.id===keepId)?keepId:(rows[0]?.id||'');setSelectedId(nextId);
+  if(pendingSend.current&&pendingSend.current.conversationId!==nextId)pendingSend.current=null;
   const selected=rows.find(x=>x.id===nextId);const lastDraft=[...(selected?.messages||[])].reverse().find(m=>m.ai_draft);
   setDraft(lastDraft?.ai_draft||'');
  },[]);
@@ -24,7 +26,7 @@ export default function AqarFlowInbox(){
    const result=await sales.json();if(!sales.ok)throw new Error(result.error||'تعذر إنشاء مسودة.');
    const save=await fetch('/api/aqarflow/inbox',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_draft',conversationId:selected.id,draft:result.replyDraft,factsUsed:result.factsUsed,unknowns:result.unknowns,handoffRequired:result.handoffRequired})});
    const saved=await save.json();if(!save.ok)throw new Error(saved.error||'تعذر حفظ المسودة.');
-   setDraft(result.replyDraft);await refresh(selected.id);
+   setDraft(result.replyDraft);pendingSend.current=null;await refresh(selected.id);
   }catch(e){setError(e instanceof Error?e.message:'حدث خطأ غير متوقع.');}finally{setBusy(false);}
  }
  async function sendReply(){
@@ -32,19 +34,21 @@ export default function AqarFlowInbox(){
   if(!canSend){setError('الإرسال متاح لمالك مساحة العمل فقط في هذه النسخة.');return;}
   setBusy(true);setError('');
   try{
-   const idempotencyKey='af_'+crypto.randomUUID().replace(/-/g,'');
+   const exactText=draft.trim();
+   if(!pendingSend.current||pendingSend.current.text!==exactText||pendingSend.current.conversationId!==selected.id){pendingSend.current={text:exactText,conversationId:selected.id,key:'af_'+crypto.randomUUID().replace(/-/g,'')};}
+   const idempotencyKey=pendingSend.current.key;
    const r=await fetch('/api/integrations/whatsapp/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     phoneNumberId:selected.integration.phone_number_id,to:selected.contact.phone_number,text:draft.trim(),idempotencyKey,conversationId:selected.id,
    })});
    const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر إرسال الرسالة.');
-   setDraft('');await refresh(selected.id);
+   pendingSend.current=null;setDraft('');await refresh(selected.id);
   }catch(e){setError(e instanceof Error?e.message:'تعذر إرسال الرسالة.');}finally{setBusy(false);}
  }
  if(loading)return <div className="rounded-2xl border bg-white p-8 text-center text-slate-500">يجري تحميل المحادثات…</div>;
  return <section dir="rtl" className="grid min-h-[72vh] gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
   <aside className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
    <div className="border-b p-4"><h2 className="font-black">محادثات واتساب</h2><p className="mt-1 text-xs text-slate-500">{conversations.length} محادثة حديثة</p><button onClick={()=>refresh(selectedId).catch(e=>setError(String(e)))} className="mt-2 text-sm font-bold text-blue-700">تحديث</button></div>
-   {conversations.length===0?<p className="p-6 text-sm leading-6 text-slate-500">لا توجد رسائل بعد. بعد إعداد Webhook في Meta، ستظهر الرسائل الواردة هنا.</p>:<div className="max-h-[65vh] overflow-y-auto divide-y">{conversations.map(c=><button key={c.id} onClick={()=>{setSelectedId(c.id);const d=[...c.messages].reverse().find(m=>m.ai_draft);setDraft(d?.ai_draft||'');}} className={'block w-full p-4 text-right hover:bg-slate-50 '+(selectedId===c.id?'bg-blue-50':'')}><span className="flex items-center justify-between gap-2"><strong className="truncate text-sm">{c.contact?.display_name||c.contact?.phone_number||'عميل واتساب'}</strong>{c.handoff_required&&<span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900">مراجعة</span>}</span><span className="mt-1 block truncate text-xs text-slate-500">{c.last_message_preview||'رسالة جديدة'}</span><time className="mt-2 block text-[10px] text-slate-400">{new Date(c.last_message_at).toLocaleString('ar')}</time></button>)}</div>}
+   {conversations.length===0?<p className="p-6 text-sm leading-6 text-slate-500">لا توجد رسائل بعد. بعد إعداد Webhook في Meta، ستظهر الرسائل الواردة هنا.</p>:<div className="max-h-[65vh] overflow-y-auto divide-y">{conversations.map(c=><button key={c.id} onClick={()=>{pendingSend.current=null;setSelectedId(c.id);const d=[...c.messages].reverse().find(m=>m.ai_draft);setDraft(d?.ai_draft||'');}} className={'block w-full p-4 text-right hover:bg-slate-50 '+(selectedId===c.id?'bg-blue-50':'')}><span className="flex items-center justify-between gap-2"><strong className="truncate text-sm">{c.contact?.display_name||c.contact?.phone_number||'عميل واتساب'}</strong>{c.handoff_required&&<span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900">مراجعة</span>}</span><span className="mt-1 block truncate text-xs text-slate-500">{c.last_message_preview||'رسالة جديدة'}</span><time className="mt-2 block text-[10px] text-slate-400">{new Date(c.last_message_at).toLocaleString('ar')}</time></button>)}</div>}
   </aside>
   <div className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
    {!selected?<div className="m-auto p-8 text-center text-slate-500">اختر محادثة لعرض الرسائل.</div>:<>
