@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { buildNoMatchSalesDraft, inferBasicBuyerProfileHints, normalizeBuyerProfile, parseAqarFlowSalesRequest } from '../lib/aqarflow/runtime-contract.ts';
+import { rankPropertyCandidates } from '../lib/aqarflow/ranked-inventory.ts';
+import { encryptMetaAccessToken, decryptMetaAccessToken } from '../lib/aqarflow/whatsapp-cloud.ts';
+const parsed=parseAqarFlowSalesRequest({customerMessage:'أبحث عن شقة للبيع في عدن بها ٣ غرف نوم',conversationSummary:'x'.repeat(3000),buyerProfile:{budgetMax:90000,admin:true}});
+assert.equal(parsed.ok,true);
+if(parsed.ok){assert.equal(parsed.value.conversationSummary.length,1000);assert.equal((parsed.value.buyerProfile as any).admin,undefined);}
+assert.equal(parseAqarFlowSalesRequest({customerMessage:'x'.repeat(1601)}).ok,false);
+assert.deepEqual(inferBasicBuyerProfileHints('أبحث عن شقة للبيع فيها ٣ غرف نوم').bedroomsMin,3);
+assert.equal(normalizeBuyerProfile({preferredAreas:'Aden',mustHaves:['parking']}).preferredAreas,undefined);
+assert.equal(buildNoMatchSalesDraft(0).unknowns[0],'active_inventory_empty');
+const sample = Array.from({length:9},(_,i)=>({id:'p'+i,title:'Property '+i,purpose:'sale',price:200000,currency:'USD',bedrooms:1,locationLabel:'Sanaa',factsLastVerifiedAt:new Date().toISOString()}));
+sample[8]={id:'p8',title:'Target Aden 3-bedroom',purpose:'sale',price:80000,currency:'USD',bedrooms:3,locationLabel:'Aden',factsLastVerifiedAt:new Date().toISOString()};
+const ranked=rankPropertyCandidates({intent:'buy',budgetMax:90000,currency:'USD',preferredAreas:['Aden'],bedroomsMin:3},sample);
+assert.equal(ranked[0].property.id,'p8','best fit after first five must still be found');
+assert.equal(ranked.filter(x=>x.eligible)[0].property.id,'p8');
+const key=btoa(String.fromCharCode(...new Uint8Array(32).fill(9)));
+const sealed=await encryptMetaAccessToken('unit-test-token',key);
+assert.equal(await decryptMetaAccessToken(sealed.ciphertext,sealed.iv,key),'unit-test-token');
+console.log('AqarFlow runtime tests passed.');

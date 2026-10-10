@@ -1,4 +1,4 @@
-description: AqarFlow AI sales API regression and grounding suite
+description: AqarFlow AI sales API grounded-response and safety regression suite
 prompts:
   - '{{customerMessage}}'
 providers:
