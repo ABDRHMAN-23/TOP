@@ -48,7 +48,7 @@ export default function WhatsAppConnectionManager({appId,configId,graphVersion,s
  },[appId,configId,graphVersion]);
  async function beginSignup(){
   setError('');setNotice('');
-  if(!appId||!configId||!graphVersion){setError('إعدادات Meta العامة غير مكتملة. اضبط META_APP_ID وMETA_GRAPH_API_VERSION وNEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID على بيئة التطوير أولًا.');return;}
+  if(!appId||!configId||!graphVersion){setError('إعدادات Meta العامة غير مكتملة. اضبط NEXT_PUBLIC_META_APP_ID وMETA_GRAPH_API_VERSION وNEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID أولًا.');return;}
   if(!window.FB){setError('لم يتم تحميل Meta SDK. تحقق من حظر السكربت ثم أعد المحاولة.');return;}
   signup.current=null;code.current=null;finishing.current=false;setBusy(true);
   window.FB.login((response)=>{
@@ -68,7 +68,7 @@ export default function WhatsAppConnectionManager({appId,configId,graphVersion,s
  return <div dir="rtl" className="space-y-5">
   <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
    <p className="text-sm font-bold text-blue-700">WHATSAPP CLOUD API</p><h2 className="mt-2 text-xl font-black">ربط رقم واتساب للأعمال</h2>
-   <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">سيُفتح تدفق Meta Embedded Signup. بعد التفويض، يتحقق الخادم من انتماء رقم الهاتف إلى حساب الأعمال، ثم يخزن رمز الوصول مشفرًا. لن تُرسل رسائل تلقائيًا؛ سيبقى الرد تحت مراجعة المالك من صندوق المحادثات. نمط الربط الحالي: ${signupMode==='coexistence'?'ربط واتساب للأعمال الموجود مع Cloud API (Coexistence)':'تسجيل WhatsApp Cloud API القياسي'}.</p>
+   <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">سيُفتح تدفق Meta Embedded Signup. بعد التفويض، يتحقق الخادم من انتماء رقم الهاتف إلى حساب الأعمال، ثم يخزن رمز الوصول مشفرًا. لن تُرسل رسائل تلقائيًا؛ سيبقى الرد تحت مراجعة المالك من صندوق المحادثات. نمط الربط الحالي: {signupMode==='coexistence'?'ربط واتساب للأعمال الموجود مع Cloud API (Coexistence)':'تسجيل WhatsApp Cloud API القياسي'}.</p>
    {!appId||!configId||!graphVersion?<p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">يلزم إعداد App ID وConfig ID وإصدار Graph API قبل تفعيل الربط الحي.</p>:null}
    {error&&<p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
    {notice&&<p role="status" className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
