@@ -29,7 +29,7 @@ function leadFormFrom(contact:Contact|null):LeadForm{
   nextFollowUpAt:toLocalDateTime(contact.next_follow_up_at),
  };
 }
-export default function AqarFlowInbox(){
+export default function AqarFlowInbox({initialConversationId=''}:{initialConversationId?:string}){
  const [conversations,setConversations]=useState<Conversation[]>([]);const [selectedId,setSelectedId]=useState('');const [canSend,setCanSend]=useState(false);const [canManageCrm,setCanManageCrm]=useState(false);
  const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [notice,setNotice]=useState('');const [draft,setDraft]=useState('');const [leadForm,setLeadForm]=useState<LeadForm>({...emptyLead});const [noteDraft,setNoteDraft]=useState('');
  const pendingSend=useRef<{text:string;conversationId:string;key:string}|null>(null);
@@ -41,7 +41,7 @@ export default function AqarFlowInbox(){
   const selected=rows.find(x=>x.id===nextId);const lastDraft=[...(selected?.messages||[])].reverse().find(m=>m.ai_draft);
   setDraft(lastDraft?.ai_draft||'');
  },[]);
- useEffect(()=>{refresh().catch(e=>setError(e instanceof Error?e.message:'تعذر التحميل.')).finally(()=>setLoading(false));},[refresh]);
+ useEffect(()=>{refresh(initialConversationId||undefined).catch(e=>setError(e instanceof Error?e.message:'تعذر التحميل.')).finally(()=>setLoading(false));},[refresh,initialConversationId]);
  const selected=useMemo(()=>conversations.find(x=>x.id===selectedId)||null,[conversations,selectedId]);
  useEffect(()=>{setLeadForm(leadFormFrom(selected?.contact||null));setNoteDraft('');},[selected?.contact,selected?.id]);
  const latestInbound=useMemo(()=>selected?[...selected.messages].reverse().find(m=>m.direction==='inbound'&&m.message_text)?.message_text||'':'',[selected]);

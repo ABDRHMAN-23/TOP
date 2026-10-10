@@ -40,7 +40,7 @@ export async function GET(){
     contactIds.length?ctx.admin!.from('aqarflow_crm_contacts').select('id,phone_number,display_name,lead_stage,intent,budget_min,budget_max,budget_currency,preferred_area,preferred_property_type,lead_score,next_follow_up_at').eq('owner_user_id',ctx.ownerId!).in('id',contactIds):Promise.resolve({data:[],error:null}),
     contactIds.length?ctx.admin!.from('aqarflow_crm_contact_notes').select('id,contact_id,author_user_id,note,created_at').eq('owner_user_id',ctx.ownerId!).in('contact_id',contactIds).order('created_at',{ascending:false}).limit(300):Promise.resolve({data:[],error:null}),
     integrationIds.length?ctx.admin!.from('aqarflow_whatsapp_integrations').select('id,phone_number_id,display_phone_number,verified_name').eq('owner_user_id',ctx.ownerId!).in('id',integrationIds):Promise.resolve({data:[],error:null}),
-    convIds.length?ctx.admin!.from('aqarflow_crm_messages').select('id,conversation_id,direction,message_type,message_text,ai_draft,facts_used,unknowns,provider_message_id,provider_status,created_at,sent_at').eq('owner_user_id',ctx.ownerId!).in('conversation_id',convIds).order('created_at',{ascending:true}).limit(500):Promise.resolve({data:[],error:null}),
+    convIds.length?ctx.admin!.from('aqarflow_crm_messages').select('id,conversation_id,direction,message_type,message_text,ai_draft,facts_used,unknowns,provider_message_id,provider_status,created_at,sent_at').eq('owner_user_id',ctx.ownerId!).in('conversation_id',convIds).order('created_at',{ascending:false}).limit(500):Promise.resolve({data:[],error:null}),
   ]);
   if(contactsResult.error||notesResult.error||integrationsResult.error||messagesResult.error)return response({error:'تعذر تحميل تفاصيل صندوق CRM.'},503);
   const contacts=new Map((contactsResult.data||[]).map(c=>[c.id,c]));
@@ -49,7 +49,7 @@ export async function GET(){
   for(const note of notesResult.data||[]){const list=notesByContact.get(note.contact_id)||[];if(list.length<20)list.push(note);notesByContact.set(note.contact_id,list);}
   const messagesByConversation=new Map<string,unknown[]>();
   for(const m of messagesResult.data||[]){const list=messagesByConversation.get(m.conversation_id)||[];list.push(m);messagesByConversation.set(m.conversation_id,list);}
-  return response({canSend:ctx.user!.id===ctx.ownerId,canManageCrm:true,conversations:convs.map(c=>{const contact=contacts.get(c.contact_id)||null;return {...c,contact:contact?{...contact,notes:notesByContact.get(c.contact_id)||[]}:null,integration:integrations.get(c.integration_id)||null,messages:(messagesByConversation.get(c.id)||[]).slice(-30)};})});
+  return response({canSend:ctx.user!.id===ctx.ownerId,canManageCrm:true,conversations:convs.map(c=>{const contact=contacts.get(c.contact_id)||null;return {...c,contact:contact?{...contact,notes:notesByContact.get(c.contact_id)||[]}:null,integration:integrations.get(c.integration_id)||null,messages:(messagesByConversation.get(c.id)||[]).slice(0,30).reverse()};})});
 }
 
 export async function POST(request:Request){
