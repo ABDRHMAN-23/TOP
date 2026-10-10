@@ -59,11 +59,11 @@ await assert.rejects(() => decryptMetaAccessToken(encrypted.ciphertext, encrypte
 
 let capturedUrl = '';
 let capturedAuthorization = '';
-let capturedBody: Record<string, unknown> | null = null;
+const capturedBody: { value: Record<string, unknown> | null } = { value: null };
 const mockFetch: typeof fetch = async (input, init) => {
   capturedUrl = String(input);
   capturedAuthorization = new Headers(init?.headers).get('authorization') || '';
-  capturedBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+  capturedBody.value = JSON.parse(String(init?.body)) as Record<string, unknown>;
   return new Response(JSON.stringify({ messages: [{ id: 'wamid.sent-123' }] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 };
 const sent = await sendMetaWhatsAppText({
@@ -73,8 +73,9 @@ const sent = await sendMetaWhatsAppText({
 assert.equal(sent.messageId, 'wamid.sent-123');
 assert.equal(capturedUrl, 'https://graph.facebook.com/v99.0/1234567890/messages');
 assert.equal(capturedAuthorization, 'Bearer private-server-token');
-assert.equal((capturedBody?.text as { body?: string })?.body, 'AqarFlow reply');
-assert.equal(capturedBody?.to, '14155550100');
+const actualBody = capturedBody.value as unknown as Record<string, unknown>;
+assert.equal((actualBody.text as { body?: string })?.body, 'AqarFlow reply');
+assert.equal(actualBody.to, '14155550100');
 
 const failingFetch: typeof fetch = async () => new Response(JSON.stringify({ error: { message: 'secret provider detail' } }), { status: 400 });
 await assert.rejects(

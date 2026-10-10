@@ -49,6 +49,13 @@ function decodeBase64(value: string): Uint8Array {
   return bytes;
 }
 
+
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buffer).set(bytes);
+  return buffer;
+}
+
 function constantTimeEqual(left: string, right: string): boolean {
   const length = Math.max(left.length, right.length);
   let difference = left.length ^ right.length;
@@ -135,9 +142,9 @@ export async function encryptMetaAccessToken(token: string, base64Key: string): 
   if (!token || !globalThis.crypto?.subtle) throw new Error('Web Crypto or token is unavailable.');
   const rawKey = decodeBase64(base64Key);
   if (rawKey.byteLength !== 32) throw new Error('META_TOKEN_ENCRYPTION_KEY must decode to exactly 32 bytes.');
-  const key = await crypto.subtle.importKey('raw', rawKey, 'AES-GCM', false, ['encrypt']);
+  const key = await crypto.subtle.importKey('raw', toArrayBuffer(rawKey), 'AES-GCM', false, ['encrypt']);
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(token)));
+  const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: toArrayBuffer(iv) }, key, toArrayBuffer(new TextEncoder().encode(token))));
   return { ciphertext: encodeBase64(ciphertext), iv: encodeBase64(iv), keyVersion: 1 };
 }
 
@@ -145,8 +152,8 @@ export async function decryptMetaAccessToken(ciphertext: string, ivValue: string
   if (!globalThis.crypto?.subtle) throw new Error('Web Crypto is unavailable.');
   const rawKey = decodeBase64(base64Key);
   if (rawKey.byteLength !== 32) throw new Error('META_TOKEN_ENCRYPTION_KEY must decode to exactly 32 bytes.');
-  const key = await crypto.subtle.importKey('raw', rawKey, 'AES-GCM', false, ['decrypt']);
-  const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: decodeBase64(ivValue) }, key, decodeBase64(ciphertext));
+  const key = await crypto.subtle.importKey('raw', toArrayBuffer(rawKey), 'AES-GCM', false, ['decrypt']);
+  const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: toArrayBuffer(decodeBase64(ivValue)) }, key, toArrayBuffer(decodeBase64(ciphertext)));
   return new TextDecoder('utf-8', { fatal: true }).decode(plaintext);
 }
 
