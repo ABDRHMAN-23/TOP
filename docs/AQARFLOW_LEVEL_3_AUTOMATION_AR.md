@@ -13,6 +13,7 @@
 
 ## الملفات والهجرات
 - `supabase/migrations/20261010000800_aqarflow_automation_notifications.sql`
+- `supabase/migrations/20261010000900_aqarflow_notification_recipient_index.sql` — فهرس إضافي لعلاقة المستلم بعد فحص أداء Supabase.
 - `app/api/aqarflow/automation/dispatch/route.ts`
 - `app/api/aqarflow/notifications/route.ts`
 - `app/aqarflow-automation/page.tsx`
