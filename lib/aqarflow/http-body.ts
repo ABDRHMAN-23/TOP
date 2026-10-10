@@ -36,7 +36,10 @@ export type BoundedUtf8BodyResult =
 
 export async function readBoundedUtf8Body(req: Request, maxBytes: number): Promise<BoundedUtf8BodyResult> {
   const result = await readBoundedBytes(req, maxBytes);
-  if (!result.ok) return result.code === 'too_large' ? result : { ok: false, code: 'invalid_text' };
+  if (!result.ok) {
+    if (result.code === 'too_large') return { ok: false, code: 'too_large' };
+    return { ok: false, code: 'invalid_text' };
+  }
   try { return { ok: true, text: new TextDecoder('utf-8', { fatal: true }).decode(result.bytes) }; }
   catch { return { ok: false, code: 'invalid_text' }; }
 }
