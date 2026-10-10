@@ -2,23 +2,62 @@ name: CI
 
 on:
   push:
-    branches: [main, migration/aqarflow-ai]
+    branches: [main, migration/aqarflow-ai, 'integration/**']
   pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: aqarflow_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d aqarflow_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
+      - run: npm ci
+      - name: Apply and test AqarFlow migrations on disposable PostgreSQL
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: aqarflow_ci
+        run: bash scripts/test-aqarflow-migrations.sh
+      - name: Audit locked dependencies
+        run: |
+          npm audit --json > npm-audit.json || true
+          node -e "const a=require('./npm-audit.json'); if(!a.metadata?.vulnerabilities || !a.vulnerabilities) { console.error('npm audit returned incomplete results'); process.exit(2); } const v=a.metadata.vulnerabilities; const packages=Object.entries(a.vulnerabilities).map(([name,x])=>({name,severity:x.severity,isDirect:x.isDirect,range:x.range,fixAvailable:x.fixAvailable,advisories:(x.via||[]).filter(y=>typeof y==='object').map(y=>({title:y.title,url:y.url,range:y.range}))})); console.log(JSON.stringify({metadata:v,packages},null,2)); if((v.high||0)+(v.critical||0)>0) process.exit(1);"
       - run: npm run test:price
       - run: npm run test:advisor:requirement
       - run: npm run test:aqarflow:sales
+      - run: npm run test:aqarflow:runtime
+      - run: npm run test:aqarflow:migration
+      - run: npm run test:aqarflow:operations
+      - run: npm run test:aqarflow:analyze-contract
+      - run: npm run validate:aqarflow:promptfoo
+      - run: npm run test:aqarflow:whatsapp-cloud
+      - run: npm run test:aqarflow:whatsapp-signup
       - run: npm run test:safe-redirect
+      - run: npm run test:legal-consent
       - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_placeholder
+          SUPABASE_SECRET_KEY: sb_secret_placeholder
+      - run: npm run build:cloudflare
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_placeholder

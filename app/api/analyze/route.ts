@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { runtimeEnv } from '@/lib/runtime-env';
+import { createClient } from '@/lib/supabase/server';
+import { readBoundedBytes } from '@/lib/aqarflow/http-body';
 
 type ExtractedItem = {
   description?: string;
@@ -8,21 +10,62 @@ type ExtractedItem = {
   price?: number | null;
 };
 
-function normalizeExtraction(value: any, transcript: string) {
-  const source = value?.result && typeof value.result === 'object' ? value.result : value;
+function cleanExtractedText(value: unknown, maxLength: number): string {
+  if (typeof value !== 'string') return '';
+  return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, maxLength);
+}
+
+function boundedNonNegativeNumber(value: unknown, maxValue: number, fieldName: string): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > maxValue) {
+    throw new Error('Invalid numeric extraction field: ' + fieldName);
+  }
+  return value;
+}
+
+function normalizeExtraction(value: unknown, transcript: string) {
+  const source = value && typeof value === 'object' && !Array.isArray(value)
+    ? ((value as Record<string, unknown>).result && typeof (value as Record<string, unknown>).result === 'object'
+      ? (value as Record<string, unknown>).result as Record<string, unknown>
+      : value as Record<string, unknown>)
+    : null;
+  if (!source) throw new Error('Extraction response must be an object.');
+  const rawClient = source.client && typeof source.client === 'object' && !Array.isArray(source.client)
+    ? source.client as Record<string, unknown>
+    : {};
+  const rawItems = Array.isArray(source.items) ? source.items : [];
+  if (rawItems.length > 100) throw new Error('Too many extracted items.');
+  const items = rawItems.map((rawItem: unknown, index: number) => {
+    if (!rawItem || typeof rawItem !== 'object' || Array.isArray(rawItem)) {
+      throw new Error('Invalid extracted item.');
+    }
+    const item = rawItem as Record<string, unknown>;
+    return {
+      description: cleanExtractedText(item.description, 500),
+      quantity: boundedNonNegativeNumber(item.quantity, 100_000_000, 'quantity-' + index),
+      unit: cleanExtractedText(item.unit || 'item', 60) || 'item',
+      price: boundedNonNegativeNumber(item.price, 1_000_000_000_000, 'price-' + index),
+    };
+  });
+  const rawNotes = Array.isArray(source.notes) ? source.notes : [];
+  if (rawNotes.length > 20) throw new Error('Too many extracted notes.');
+  const notes = rawNotes.map((note: unknown) => {
+    if (typeof note !== 'string') throw new Error('Invalid extracted note.');
+    return cleanExtractedText(note, 500);
+  });
+  const currency = cleanExtractedText(source.currency || 'GBP', 3).toUpperCase() || 'GBP';
+  if (!/^[A-Z]{3}$/.test(currency)) throw new Error('Invalid extracted currency.');
   return {
-    transcript,
-    client: source?.client && typeof source.client === 'object' ? source.client : {},
-    items: Array.isArray(source?.items)
-      ? source.items.map((item: ExtractedItem) => ({
-          description: String(item.description || ''),
-          quantity: item.quantity == null ? null : Number(item.quantity),
-          unit: String(item.unit || 'item'),
-          price: item.price == null ? null : Number(item.price),
-        }))
-      : [],
-    notes: Array.isArray(source?.notes) ? source.notes.map(String) : [],
-    currency: String(source?.currency || 'GBP'),
+    transcript: cleanExtractedText(transcript, MAX_TRANSCRIPT_CHARS),
+    client: {
+      name: cleanExtractedText(rawClient.name, 200),
+      email: cleanExtractedText(rawClient.email, 320),
+      phone: cleanExtractedText(rawClient.phone, 80),
+      address: cleanExtractedText(rawClient.address, 500),
+    },
+    items,
+    notes,
+    currency,
   };
 }
 
@@ -69,6 +112,7 @@ async function geminiGenerate(
   try {
     response = await fetch(geminiModelUrl(model), {
       method: 'POST',
+      signal: AbortSignal.timeout(20_000),
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey,
@@ -155,6 +199,7 @@ async function uploadToGemini(file: File) {
   try {
     startResponse = await fetch(`${geminiBaseUrl()}/upload/v1beta/files`, {
       method: 'POST',
+      signal: AbortSignal.timeout(15_000),
       headers: {
         'x-goog-api-key': apiKey,
         'X-Goog-Upload-Protocol': 'resumable',
@@ -191,11 +236,21 @@ async function uploadToGemini(file: File) {
       'transcribe'
     );
   }
+  try {
+    const parsedUploadUrl = new URL(uploadUrl);
+    const allowedOrigin = new URL(geminiBaseUrl()).origin;
+    if (parsedUploadUrl.protocol !== 'https:' || parsedUploadUrl.origin !== allowedOrigin) {
+      throw new Error('Untrusted upload URL origin.');
+    }
+  } catch {
+    throw new GeminiError('Gemini returned an invalid upload URL.', 'transcribe');
+  }
 
   let uploadResponse: Response;
   try {
     uploadResponse = await fetch(uploadUrl, {
       method: 'POST',
+      signal: AbortSignal.timeout(20_000),
       headers: {
         'Content-Length': String(file.size),
         'X-Goog-Upload-Offset': '0',
@@ -250,6 +305,7 @@ async function transcribe(file: File) {
   try {
     response = await fetch(`${geminiBaseUrl()}/v1beta/interactions`, {
       method: 'POST',
+      signal: AbortSignal.timeout(20_000),
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey,
@@ -372,6 +428,7 @@ async function extractWithGemini(transcript: string) {
   try {
     response = await fetch(`${geminiBaseUrl()}/v1beta/interactions`, {
       method: 'POST',
+      signal: AbortSignal.timeout(20_000),
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey,
@@ -444,68 +501,209 @@ async function extractWithGemini(transcript: string) {
   }
 }
 
-export async function POST(req: Request) {
+const MAX_ANALYZE_BODY_BYTES = 21 * 1024 * 1024;
+const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
+const MAX_NOTES_CHARS = 8_000;
+const MAX_TRANSCRIPT_CHARS = 16_000;
+const ALLOWED_AUDIO_MIME_TYPES = new Set([
+  'audio/webm', 'audio/mp4', 'audio/mpeg', 'audio/wav', 'audio/x-wav',
+  'audio/ogg', 'audio/aac', 'audio/3gpp', 'audio/flac',
+]);
+
+function publicAnalysisError(error: unknown) {
+  if (!(error instanceof GeminiError)) {
+    return NextResponse.json({ error: 'تعذر إكمال التحليل. تحقق من البيانات ثم أعد المحاولة.' }, {
+      status: 500, headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+  if (error.stage === 'config') {
+    return NextResponse.json({ error: 'خدمة التحليل غير مهيأة على الخادم.' }, {
+      status: 503, headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+  if (error.status === 429) {
+    return NextResponse.json({ error: 'خدمة الذكاء الاصطناعي مشغولة حاليًا. حاول لاحقًا.' }, {
+      status: 429, headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+  return NextResponse.json({
+    error: error.stage === 'transcribe'
+      ? 'تعذر تحويل التسجيل إلى نص. جرّب ملفًا صوتيًا مدعومًا ثم أعد المحاولة.'
+      : 'تعذر استخراج بيانات العرض من النص. راجع التسجيل أو الملاحظات ثم أعد المحاولة.',
+  }, { status: 502, headers: { 'Cache-Control': 'no-store' } });
+}
+
+async function recordAnalysisUsage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  requestId: string,
+  model: string,
+  startedAt: number,
+  outcome: 'success' | 'invalid_output' | 'provider_error',
+) {
   try {
-    const form = await req.formData();
-    const notes = String(form.get('notes') || '').trim();
-    const audio = form.get('audio');
+    await supabase.rpc('aqarflow_record_ai_usage', {
+      p_request_id: requestId,
+      p_model: model.slice(0, 100),
+      p_latency_ms: Math.min(Math.max(Date.now() - startedAt, 0), 120_000),
+      p_input_tokens: null,
+      p_output_tokens: null,
+      p_result_validated: outcome === 'success',
+      p_outcome: outcome,
+    });
+  } catch {
+    // Do not store prompts, notes, transcripts, or provider error payloads in usage records.
+  }
+}
 
-    if (!notes && !(audio instanceof File)) {
-      return NextResponse.json(
-        { error: 'Add a recording or notes.' },
-        { status: 400 }
-      );
+export async function POST(req: Request) {
+  const contentLength = Number(req.headers.get('content-length') || 0);
+  if (Number.isFinite(contentLength) && contentLength > MAX_ANALYZE_BODY_BYTES) {
+    return NextResponse.json({ error: 'حجم الطلب أكبر من الحد المسموح.' }, {
+      status: 413, headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  try { supabase = await createClient(); }
+  catch {
+    return NextResponse.json({ error: 'خدمة تسجيل الدخول غير متاحة حاليًا.' }, {
+      status: 503, headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+  let user;
+  try {
+    const auth = await supabase.auth.getUser();
+    user = auth.data.user;
+    if (auth.error && !user) {
+      return NextResponse.json({ error: 'يلزم تسجيل الدخول قبل تحليل التسجيلات.' }, {
+        status: 401, headers: { 'Cache-Control': 'no-store' },
+      });
     }
+  } catch {
+    return NextResponse.json({ error: 'تعذر التحقق من جلسة المستخدم.' }, {
+      status: 401, headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+  if (!user) {
+    return NextResponse.json({ error: 'يلزم تسجيل الدخول قبل تحليل التسجيلات.' }, {
+      status: 401, headers: { 'Cache-Control': 'no-store' },
+    });
+  }
 
-    if (
-      audio instanceof File &&
-      audio.size > 20 * 1024 * 1024
-    ) {
-      return NextResponse.json(
-        { error: 'Recording is too large. Keep it under 20 MB.' },
-        { status: 400 }
-      );
-    }
+  const body = await readBoundedBytes(req, MAX_ANALYZE_BODY_BYTES);
+  if (!body.ok) {
+    return NextResponse.json({ error: body.code === 'too_large'
+      ? 'حجم الطلب أكبر من الحد المسموح.'
+      : 'تعذر قراءة الطلب.' }, {
+      status: body.code === 'too_large' ? 413 : 400,
+      headers: { 'Cache-Control': 'no-store' },
+    });
+  }
 
+  let form: FormData;
+  try {
+    const headers = new Headers(req.headers);
+    headers.delete('content-length');
+    headers.delete('transfer-encoding');
+    const replayBuffer = new ArrayBuffer(body.bytes.byteLength);
+    new Uint8Array(replayBuffer).set(body.bytes);
+    const replay = new Request(req.url, { method: 'POST', headers, body: replayBuffer });
+    form = await replay.formData();
+  } catch {
+    return NextResponse.json({ error: 'صيغة الطلب غير صحيحة؛ أعد إرسال التسجيل أو الملاحظات.' }, {
+      status: 400, headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+
+  const notesValue = form.get('notes');
+  if (notesValue !== null && typeof notesValue !== 'string') {
+    return NextResponse.json({ error: 'حقل الملاحظات يجب أن يكون نصًا.' }, { status: 400 });
+  }
+  const notes = typeof notesValue === 'string'
+    ? notesValue.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim()
+    : '';
+  if (notes.length > MAX_NOTES_CHARS) {
+    return NextResponse.json({ error: 'الملاحظات طويلة جدًا؛ الحد الأقصى 8000 حرف.' }, {
+      status: 413, headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+
+  const rawAudio = form.get('audio');
+  if (rawAudio !== null && !(rawAudio instanceof File)) {
+    return NextResponse.json({ error: 'ملف التسجيل غير صالح.' }, { status: 400 });
+  }
+  const audio = rawAudio instanceof File && rawAudio.size > 0 ? rawAudio : null;
+  if (!notes && !audio) {
+    return NextResponse.json({ error: 'أضف تسجيلًا صوتيًا أو ملاحظات نصية.' }, { status: 400 });
+  }
+  if (audio && audio.size > MAX_AUDIO_BYTES) {
+    return NextResponse.json({ error: 'التسجيل كبير جدًا؛ الحد الأقصى 20 ميجابايت.' }, {
+      status: 413, headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+  const audioMimeType = audio ? (audio.type || '').split(';', 1)[0].trim().toLowerCase() : '';
+  if (audio && !ALLOWED_AUDIO_MIME_TYPES.has(audioMimeType)) {
+    return NextResponse.json({ error: 'نوع التسجيل غير مدعوم. استخدم WebM أو MP4 أو WAV أو MP3 أو OGG.' }, {
+      status: 415, headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+
+  const { data: memberships, error: membershipError } = await supabase
+    .from('team_memberships').select('owner_id')
+    .eq('member_id', user.id).neq('owner_id', user.id).limit(2);
+  if (membershipError) {
+    return NextResponse.json({ error: 'تعذر التحقق من مساحة العمل.' }, {
+      status: 503, headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+  if ((memberships || []).length > 1) {
+    return NextResponse.json({ error: 'حسابك مرتبط بأكثر من مساحة عمل؛ يلزم تحديد مساحة العمل.' }, {
+      status: 409, headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+  const workspaceOwnerId = memberships?.[0]?.owner_id || user.id;
+  const { data: reservationId, error: reservationError } = await supabase.rpc(
+    'aqarflow_reserve_ai_request', { p_owner_user_id: workspaceOwnerId },
+  );
+  if (reservationError) {
+    return NextResponse.json({ error: 'حدود استخدام التحليل غير مهيأة. راجع هجرات AqarFlow في قاعدة التطوير.' }, {
+      status: 503, headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+  if (typeof reservationId !== 'string' || !reservationId) {
+    return NextResponse.json({ error: 'وصلت مساحة العمل إلى حد الاستخدام المؤقت للذكاء الاصطناعي. حاول لاحقًا.' }, {
+      status: 429, headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+
+  const startedAt = Date.now();
+  const extractionModel = runtimeEnv('GEMINI_MODEL') || 'gemini-3.8-flash';
+  const transcriptionModel = runtimeEnv('GEMINI_TRANSCRIBE_MODEL') || 'gemini-3.5-transcribe';
+  const modelLabel = audio ? transcriptionModel + '+' + extractionModel : extractionModel;
+  try {
     let transcript = notes;
-
-    if (audio instanceof File && audio.size > 0) {
+    if (audio) {
       const audioTranscript = await transcribe(audio);
-      transcript = notes
-        ? notes + '\n' + audioTranscript
-        : audioTranscript;
+      transcript = notes ? notes + '\n' + audioTranscript : audioTranscript;
     }
-
-    const extracted = transcript
-      ? await extractWithGemini(transcript)
-      : null;
-
-    if (extracted) {
-      return NextResponse.json(extracted);
+    if (!transcript.trim()) {
+      await recordAnalysisUsage(supabase, reservationId, modelLabel, startedAt, 'invalid_output');
+      return NextResponse.json({ error: 'لم يتوفر نص كافٍ للتحليل.' }, {
+        status: 422, headers: { 'Cache-Control': 'no-store' },
+      });
     }
-
-    return NextResponse.json(
-      { error: 'No text was available to analyze.' },
-      { status: 400 }
-    );
+    if (transcript.length > MAX_TRANSCRIPT_CHARS) {
+      await recordAnalysisUsage(supabase, reservationId, modelLabel, startedAt, 'invalid_output');
+      return NextResponse.json({ error: 'النص المستخرج طويل جدًا للتحليل الآمن؛ قسّم التسجيل إلى مقاطع أقصر.' }, {
+        status: 413, headers: { 'Cache-Control': 'no-store' },
+      });
+    }
+    const extracted = await extractWithGemini(transcript);
+    await recordAnalysisUsage(supabase, reservationId, modelLabel, startedAt, 'success');
+    return NextResponse.json(extracted, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
-    if (error instanceof GeminiError) {
-      return NextResponse.json(
-        {
-          error: error.message,
-          stage: error.stage,
-          hint: 'Server-to-Gemini analysis failed.',
-        },
-        { status: error.status }
-      );
-    }
-
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'Analysis failed.',
-        stage: 'request',
-      },
-      { status: 500 }
-    );
+    await recordAnalysisUsage(supabase, reservationId, modelLabel, startedAt,
+      error instanceof GeminiError ? 'provider_error' : 'invalid_output');
+    return publicAnalysisError(error);
   }
 }

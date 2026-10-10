@@ -107,6 +107,30 @@ assert.equal(matches[0].property.id, "fit", "eligible, matching properties shoul
 assert.equal(matches.find((match) => match.property.id === "over-budget")?.eligible, false, "known budget violations must be excluded");
 assert.ok(matches.find((match) => match.property.id === "unknown-currency")?.unknowns.includes("budget_comparison_unavailable"), "unknown currency must not be treated as a budget match");
 
+const availabilityMatches = matchVerifiedProperties(
+  { intent: "buy" },
+  [
+    { id: "fresh-available", title: "Available home", purpose: "sale", availability: "available", factsLastVerifiedAt: new Date().toISOString() },
+    { id: "fresh-unavailable", title: "Unavailable home", purpose: "sale", availability: "unavailable", factsLastVerifiedAt: new Date().toISOString() },
+    { id: "unknown-status", title: "Unknown status home", purpose: "sale" },
+  ],
+);
+assert.equal(availabilityMatches.find((m) => m.property.id === "fresh-unavailable")?.eligible, false, "verified unavailable properties must never be eligible");
+assert.equal(availabilityMatches.find((m) => m.property.id === "fresh-available")?.eligible, true, "freshly verified available property may be eligible");
+assert.ok(availabilityMatches.find((m) => m.property.id === "unknown-status")?.unknowns.includes("availability_unknown"), "unknown availability must be explicit");
+
+const typeMatches = matchVerifiedProperties(
+  { propertyType: "villa", dealBreakers: ["pool"] },
+  [
+    { id: "villa-safe", title: "Villa", propertyType: "Villa", verifiedFeatures: [] },
+    { id: "flat-mismatch", title: "Apartment", propertyType: "Apartment", verifiedFeatures: [] },
+    { id: "villa-pool", title: "Pool villa", propertyType: "Villa", verifiedFeatures: ["Swimming pool"] },
+  ],
+);
+assert.equal(typeMatches.find((m) => m.property.id === "villa-safe")?.eligible, true, "requested property type should match");
+assert.equal(typeMatches.find((m) => m.property.id === "flat-mismatch")?.eligible, false, "known property type mismatch must be excluded");
+assert.equal(typeMatches.find((m) => m.property.id === "villa-pool")?.eligible, false, "verified deal breakers must exclude a listing");
+
 assert.doesNotThrow(() => matchVerifiedProperties(
   { preferredAreas: "Aden" as unknown as string[] },
   [{ id: "malformed-profile", title: "Property", locationLabel: "Aden" }],
@@ -129,13 +153,31 @@ assert.match(prompt, /Apartment A/);
 assert.doesNotMatch(prompt, /A real listing/, "free-form property descriptions must not enter model context");
 
 assert.equal(validateSalesDraft({
-  replyDraft: "توجد شقة بثلاث غرف ضمن الخيارات المتاحة.",
+  replyDraft: "توجد شقة بثلاث غرف ضمن الخيارات المسجلة.",
   factsUsed: ["property-1: bedrooms=3"],
   unknowns: [],
   nextBestAction: "send_photos",
   askOneQuestion: null,
   handoffRequired: false,
 }, properties)?.nextBestAction, "send_photos");
+
+assert.equal(validateSalesDraft({
+  replyDraft: "توجد شقة بثلاث غرف ضمن الخيارات المتاحة.",
+  factsUsed: ["property-1: bedrooms=3"],
+  unknowns: [],
+  nextBestAction: "send_photos",
+  askOneQuestion: null,
+  handoffRequired: false,
+}, properties), null, "an unverified availability assertion must be rejected");
+
+assert.equal(validateSalesDraft({
+  replyDraft: "العقار متاح الآن.",
+  factsUsed: ["availability-fresh: title=Fresh listing"],
+  unknowns: [],
+  nextBestAction: "answer_question",
+  askOneQuestion: null,
+  handoffRequired: false,
+}, [freshAvailability])?.nextBestAction, "answer_question", "fresh verified availability claims may pass");
 
 assert.deepEqual(
   findUnsupportedNumericClaims("شقة من 3 غرف بسعر 98,000 ومساحتها 120 مترًا.", properties),
