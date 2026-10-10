@@ -34,13 +34,28 @@ create index if not exists aqarflow_crm_contacts_followup_idx
   on public.aqarflow_crm_contacts(owner_user_id, next_follow_up_at)
   where next_follow_up_at is not null;
 
+do $
+begin
+  if not exists (
+    select 1 from pg_catalog.pg_constraint
+    where conname = 'aqarflow_crm_contacts_owner_id_unique'
+      and conrelid = 'public.aqarflow_crm_contacts'::regclass
+  ) then
+    alter table public.aqarflow_crm_contacts
+      add constraint aqarflow_crm_contacts_owner_id_unique unique (owner_user_id, id);
+  end if;
+end $;
+
 create table if not exists public.aqarflow_crm_contact_notes (
   id uuid primary key default gen_random_uuid(),
   owner_user_id uuid not null references auth.users(id) on delete cascade,
-  contact_id uuid not null references public.aqarflow_crm_contacts(id) on delete cascade,
+  contact_id uuid not null,
   author_user_id uuid not null references auth.users(id) on delete cascade,
   note text not null check (length(btrim(note)) between 1 and 2000),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint aqarflow_crm_contact_notes_same_owner_fk
+    foreign key (owner_user_id, contact_id)
+    references public.aqarflow_crm_contacts(owner_user_id, id) on delete cascade
 );
 create index if not exists aqarflow_crm_contact_notes_recent_idx
   on public.aqarflow_crm_contact_notes(owner_user_id, contact_id, created_at desc);

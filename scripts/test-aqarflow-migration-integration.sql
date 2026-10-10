@@ -57,6 +57,22 @@ BEGIN
   END IF;
 END $$;
 
+INSERT INTO public.aqarflow_crm_contacts(id,owner_user_id,phone_number,display_name)
+VALUES
+ ('10000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000001','15550000001','CRM owner A'),
+ ('10000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000002','15550000002','CRM owner B');
+
+DO $
+BEGIN
+  BEGIN
+    INSERT INTO public.aqarflow_crm_contact_notes(owner_user_id,contact_id,author_user_id,note)
+    VALUES ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000001','cross-tenant note must be rejected');
+  EXCEPTION WHEN foreign_key_violation THEN
+    RETURN;
+  END;
+  RAISE EXCEPTION 'Cross-tenant contact note relationship was not blocked by the composite foreign key';
+END $;
+
 INSERT INTO public.aqarflow_properties(owner_user_id,title,purpose,availability)
 VALUES
  ('00000000-0000-4000-8000-000000000001','Owner A listing','sale','available'),

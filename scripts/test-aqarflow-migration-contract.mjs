@@ -34,6 +34,8 @@ assert.match(props,/ctx\.user!\.id!==ctx\.ownerId/);
 assert.match(leadMigration,/create table if not exists public\.aqarflow_crm_contact_notes/i);
 assert.match(leadMigration,/enable row level security/i);
 assert.match(leadMigration,/force row level security/i);
+assert.match(leadMigration,/foreign key \(owner_user_id, contact_id\)/i);
+assert.match(leadMigration,/unique \(owner_user_id, id\)/i);
 assert.match(inbox,/action==='update_contact'/);
 assert.match(inbox,/action==='add_note'/);
 assert.match(inbox,/\.eq\('owner_user_id',ctx\.ownerId!\)/);
