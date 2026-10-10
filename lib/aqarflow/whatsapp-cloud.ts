@@ -219,7 +219,7 @@ export type MetaApprovedTextTemplate = {
 };
 
 function templateParameterCount(value: string): number | null {
-  const indices = [...value.matchAll(/\\{\\{\\s*(\\d+)\\s*\\}\\}/g)].map(match => Number(match[1]));
+  const indices = [...value.matchAll(/\{\{\s*(\d+)\s*\}\}/g)].map(match => Number(match[1]));
   if (indices.some(index => !Number.isInteger(index) || index < 1 || index > 10)) return null;
   const max = indices.length ? Math.max(...indices) : 0;
   for (let index = 1; index <= max; index += 1) {
@@ -246,10 +246,10 @@ function parseApprovedTextTemplate(value: unknown): MetaApprovedTextTemplate | n
     } else if (type === 'HEADER') {
       const format = cleanString(raw.format, 20).toUpperCase();
       const headerText = cleanString(raw.text, 1024);
-      if (format !== 'TEXT' || !headerText || /\\{\\{\\s*\\d+\\s*\\}\\}/.test(headerText)) supported = false;
+      if (format !== 'TEXT' || !headerText || /\{\{\s*\d+\s*\}\}/.test(headerText)) supported = false;
     } else if (type === 'FOOTER') {
       const footerText = cleanString(raw.text, 1024);
-      if (!footerText || /\\{\\{\\s*\\d+\\s*\\}\\}/.test(footerText)) supported = false;
+      if (!footerText || /\{\{\s*\d+\s*\}\}/.test(footerText)) supported = false;
     } else {
       // Dynamic buttons, media headers, and unknown component types need a richer composer.
       supported = false;
@@ -274,8 +274,8 @@ export async function listMetaApprovedTextTemplates(options: {
   fetcher?: typeof fetch;
 }): Promise<MetaApprovedTextTemplate[]> {
   const graphVersion = options.graphApiVersion.trim();
-  if (!/^v\\d+\\.\\d+$/.test(graphVersion)) throw new Error('META_GRAPH_API_VERSION must be pinned explicitly.');
-  if (!/^\\d{5,40}$/.test(options.wabaId)) throw new Error('Invalid WhatsApp Business Account ID.');
+  if (!/^v\d+\.\d+$/.test(graphVersion)) throw new Error('META_GRAPH_API_VERSION must be pinned explicitly.');
+  if (!/^\d{5,40}$/.test(options.wabaId)) throw new Error('Invalid WhatsApp Business Account ID.');
   if (!options.accessToken || options.accessToken.length > 8192) throw new Error('Invalid WhatsApp access token.');
   const requestFetch = options.fetcher || fetch;
   const expectedPath = '/' + graphVersion + '/' + options.wabaId + '/message_templates';
@@ -338,8 +338,8 @@ export async function sendMetaWhatsAppTemplate(options: {
   fetcher?: typeof fetch;
 }): Promise<{ messageId: string }> {
   const graphVersion = options.graphApiVersion.trim();
-  if (!/^v\\d+\\.\\d+$/.test(graphVersion)) throw new Error('META_GRAPH_API_VERSION must be pinned explicitly.');
-  if (!/^\\d{5,40}$/.test(options.phoneNumberId)) throw new Error('Invalid WhatsApp phone number ID.');
+  if (!/^v\d+\.\d+$/.test(graphVersion)) throw new Error('META_GRAPH_API_VERSION must be pinned explicitly.');
+  if (!/^\d{5,40}$/.test(options.phoneNumberId)) throw new Error('Invalid WhatsApp phone number ID.');
   if (!options.accessToken || options.accessToken.length > 8192) throw new Error('Invalid WhatsApp access token.');
   const to = normalizeWhatsAppPhone(options.to);
   const name = options.templateName.trim();
