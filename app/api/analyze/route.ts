@@ -10,21 +10,62 @@ type ExtractedItem = {
   price?: number | null;
 };
 
-function normalizeExtraction(value: any, transcript: string) {
-  const source = value?.result && typeof value.result === 'object' ? value.result : value;
+function cleanExtractedText(value: unknown, maxLength: number): string {
+  if (typeof value !== 'string') return '';
+  return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, maxLength);
+}
+
+function boundedNonNegativeNumber(value: unknown, maxValue: number, fieldName: string): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > maxValue) {
+    throw new Error('Invalid numeric extraction field: ' + fieldName);
+  }
+  return value;
+}
+
+function normalizeExtraction(value: unknown, transcript: string) {
+  const source = value && typeof value === 'object' && !Array.isArray(value)
+    ? ((value as Record<string, unknown>).result && typeof (value as Record<string, unknown>).result === 'object'
+      ? (value as Record<string, unknown>).result as Record<string, unknown>
+      : value as Record<string, unknown>)
+    : null;
+  if (!source) throw new Error('Extraction response must be an object.');
+  const rawClient = source.client && typeof source.client === 'object' && !Array.isArray(source.client)
+    ? source.client as Record<string, unknown>
+    : {};
+  const rawItems = Array.isArray(source.items) ? source.items : [];
+  if (rawItems.length > 100) throw new Error('Too many extracted items.');
+  const items = rawItems.map((rawItem: unknown, index: number) => {
+    if (!rawItem || typeof rawItem !== 'object' || Array.isArray(rawItem)) {
+      throw new Error('Invalid extracted item.');
+    }
+    const item = rawItem as Record<string, unknown>;
+    return {
+      description: cleanExtractedText(item.description, 500),
+      quantity: boundedNonNegativeNumber(item.quantity, 100_000_000, 'quantity-' + index),
+      unit: cleanExtractedText(item.unit || 'item', 60) || 'item',
+      price: boundedNonNegativeNumber(item.price, 1_000_000_000_000, 'price-' + index),
+    };
+  });
+  const rawNotes = Array.isArray(source.notes) ? source.notes : [];
+  if (rawNotes.length > 20) throw new Error('Too many extracted notes.');
+  const notes = rawNotes.map((note: unknown) => {
+    if (typeof note !== 'string') throw new Error('Invalid extracted note.');
+    return cleanExtractedText(note, 500);
+  });
+  const currency = cleanExtractedText(source.currency || 'GBP', 3).toUpperCase() || 'GBP';
+  if (!/^[A-Z]{3}$/.test(currency)) throw new Error('Invalid extracted currency.');
   return {
-    transcript,
-    client: source?.client && typeof source.client === 'object' ? source.client : {},
-    items: Array.isArray(source?.items)
-      ? source.items.map((item: ExtractedItem) => ({
-          description: String(item.description || ''),
-          quantity: item.quantity == null ? null : Number(item.quantity),
-          unit: String(item.unit || 'item'),
-          price: item.price == null ? null : Number(item.price),
-        }))
-      : [],
-    notes: Array.isArray(source?.notes) ? source.notes.map(String) : [],
-    currency: String(source?.currency || 'GBP'),
+    transcript: cleanExtractedText(transcript, MAX_TRANSCRIPT_CHARS),
+    client: {
+      name: cleanExtractedText(rawClient.name, 200),
+      email: cleanExtractedText(rawClient.email, 320),
+      phone: cleanExtractedText(rawClient.phone, 80),
+      address: cleanExtractedText(rawClient.address, 500),
+    },
+    items,
+    notes,
+    currency,
   };
 }
 
