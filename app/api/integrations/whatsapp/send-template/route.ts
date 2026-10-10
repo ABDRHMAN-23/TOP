@@ -71,6 +71,23 @@ async function persistCrmOutbound(
   }, { onConflict: 'owner_user_id,provider_message_id', ignoreDuplicates: true });
   if (messageError) return false;
 
+  // Reconcile after materializing the CRM row: a delivery callback may have landed
+  // between the first status read and this insert. The durable event ledger wins.
+  const { data: finalStatuses, error: finalStatusError } = await admin.from('aqarflow_whatsapp_events')
+    .select('provider_status,provider_timestamp,received_at').eq('owner_user_id', ownerId)
+    .eq('provider_message_id', messageId).eq('event_kind', 'delivery_status')
+    .order('provider_timestamp', { ascending: false, nullsFirst: false }).order('received_at', { ascending: false }).limit(1);
+  if (finalStatusError) return false;
+  const finalStatus = finalStatuses?.[0]?.provider_status;
+  if (finalStatus) {
+    const { error: requestStatusError } = await admin.from('aqarflow_whatsapp_outbound_requests').update({ provider_status: finalStatus })
+      .eq('owner_user_id', ownerId).eq('provider_message_id', messageId);
+    if (requestStatusError) return false;
+    const { error: messageStatusError } = await admin.from('aqarflow_crm_messages').update({ provider_status: finalStatus })
+      .eq('owner_user_id', ownerId).eq('provider_message_id', messageId);
+    if (messageStatusError) return false;
+  }
+
   // An idempotent replay can repair a failed CRM write without replacing a newer preview.
   if (Date.parse(sentAt) >= Date.parse(conversation.last_message_at)) {
     const { error: updateError } = await admin.from('aqarflow_crm_conversations')
