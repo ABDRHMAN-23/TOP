@@ -45,6 +45,7 @@ jobs:
       - run: npm run test:aqarflow:sales
       - run: npm run test:aqarflow:runtime
       - run: npm run test:aqarflow:migration
+      - run: npm run test:aqarflow:operations
       - run: npm run test:aqarflow:analyze-contract
       - run: npm run validate:aqarflow:promptfoo
       - run: npm run test:aqarflow:whatsapp-cloud
