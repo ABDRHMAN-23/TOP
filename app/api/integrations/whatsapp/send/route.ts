@@ -89,7 +89,7 @@ export async function POST(request:Request){
     if(existing.request_hash!==requestHash)return response({error:'This idempotency key was already used for a different message.'},409);
     if(existing.status==='sent'&&existing.provider_message_id){
       const persisted=await persistCrmOutbound(admin,owner.ownerUserId,conversationId,message,existing.provider_message_id);
-      return response({sent:true,persisted,messageId:existing.provider_message_id,replayed:true});
+      return response({sent:true,persisted,retryAllowed:!persisted,messageId:existing.provider_message_id,replayed:true});
     }
     return response({error:'This message key was already claimed and will not be resent automatically. Check delivery status before using a new key.',idempotencyKey},409);
   }
@@ -108,9 +108,9 @@ export async function POST(request:Request){
     const sent=await sendMetaWhatsAppText({graphApiVersion:integration.graph_api_version,phoneNumberId,accessToken,to,text:message});
     const {error:updateError}=await admin.from('aqarflow_whatsapp_outbound_requests').update({status:'sent',provider_message_id:sent.messageId,sent_at:new Date().toISOString()})
       .eq('owner_user_id',owner.ownerUserId).eq('idempotency_key',idempotencyKey);
-    if(updateError)return response({sent:true,persisted:false,messageId:sent.messageId,idempotencyKey},202);
+    if(updateError)return response({sent:true,persisted:false,retryAllowed:false,messageId:sent.messageId,idempotencyKey},202);
     const persisted=await persistCrmOutbound(admin,owner.ownerUserId,conversationId,message,sent.messageId);
-    return response({sent:true,persisted,messageId:sent.messageId,replayed:false},persisted?200:202);
+    return response({sent:true,persisted,retryAllowed:!persisted,messageId:sent.messageId,replayed:false},persisted?200:202);
   }catch(error){
     const knownRejection=error instanceof WhatsAppCloudApiError&&error.httpStatus>=400&&error.httpStatus<500;
     await admin.from('aqarflow_whatsapp_outbound_requests').update({status:knownRejection?'failed':'unknown',failure_code:error instanceof WhatsAppCloudApiError?error.code:'provider_error'})
