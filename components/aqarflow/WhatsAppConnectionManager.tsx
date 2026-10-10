@@ -1,6 +1,6 @@
 'use client';
 import { useCallback,useEffect,useRef,useState } from 'react';
-import { parseMetaEmbeddedSignupMessage, type MetaEmbeddedSignupMetadata } from '@/lib/aqarflow/whatsapp-signup';
+import { buildMetaSignupExtras, parseMetaEmbeddedSignupMessage, type MetaEmbeddedSignupMetadata, type MetaSignupMode } from '@/lib/aqarflow/whatsapp-signup';
 
 type Connection={id:string;waba_id:string;phone_number_id:string;display_phone_number:string|null;verified_name:string|null;graph_api_version:string;status:string;last_verified_at:string;token_expires_at:string|null};
 type SignupMetadata=MetaEmbeddedSignupMetadata;
@@ -9,7 +9,7 @@ type MetaSdk={init:(options:{appId:string;cookie:boolean;xfbml:boolean;version:s
 declare global{interface Window{FB?:MetaSdk;fbAsyncInit?:()=>void;}}
 
 const TRUSTED_META_ORIGINS=new Set(['https://www.facebook.com','https://web.facebook.com']);
-export default function WhatsAppConnectionManager({appId,configId,graphVersion}:{appId:string;configId:string;graphVersion:string}){
+export default function WhatsAppConnectionManager({appId,configId,graphVersion,signupMode}:{appId:string;configId:string;graphVersion:string;signupMode:MetaSignupMode}){
  const [connections,setConnections]=useState<Connection[]>([]);const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [notice,setNotice]=useState('');
  const signup=useRef<SignupMetadata|null>(null);const code=useRef<string|null>(null);const finishing=useRef(false);
  const finishRef=useRef<(c:string,m:SignupMetadata)=>Promise<void>>(async()=>{});
@@ -57,7 +57,7 @@ export default function WhatsAppConnectionManager({appId,configId,graphVersion}:
    code.current=returnedCode;
    if(signup.current)void finishRef.current(returnedCode,signup.current);
    else {setBusy(false);setNotice('تم استلام رمز Meta؛ بانتظار بيانات WABA ورقم الهاتف من نافذة التسجيل. أكمل خطوات Meta إذا كانت النافذة لا تزال مفتوحة.');}
-  },{config_id:configId,response_type:'code',override_default_response_type:true,extras:{setup:{},featureType:'whatsapp_business_app_onboarding',sessionInfoVersion:3}});
+  },{config_id:configId,response_type:'code',override_default_response_type:true,extras:buildMetaSignupExtras(signupMode)});
  }
  async function disconnect(phoneNumberId:string){
   if(!confirm('سيتم فصل الاتصال ومسح رمز الوصول المشفر من قاعدة البيانات. هل تريد المتابعة؟'))return;
@@ -68,7 +68,7 @@ export default function WhatsAppConnectionManager({appId,configId,graphVersion}:
  return <div dir="rtl" className="space-y-5">
   <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
    <p className="text-sm font-bold text-blue-700">WHATSAPP CLOUD API</p><h2 className="mt-2 text-xl font-black">ربط رقم واتساب للأعمال</h2>
-   <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">سيُفتح تدفق Meta Embedded Signup. بعد التفويض، يتحقق الخادم من انتماء رقم الهاتف إلى حساب الأعمال، ثم يخزن رمز الوصول مشفرًا. لن تُرسل رسائل تلقائيًا؛ سيبقى الرد تحت مراجعة المالك من صندوق المحادثات.</p>
+   <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">سيُفتح تدفق Meta Embedded Signup. بعد التفويض، يتحقق الخادم من انتماء رقم الهاتف إلى حساب الأعمال، ثم يخزن رمز الوصول مشفرًا. لن تُرسل رسائل تلقائيًا؛ سيبقى الرد تحت مراجعة المالك من صندوق المحادثات. نمط الربط الحالي: ${signupMode==='coexistence'?'ربط واتساب للأعمال الموجود مع Cloud API (Coexistence)':'تسجيل WhatsApp Cloud API القياسي'}.</p>
    {!appId||!configId||!graphVersion?<p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">يلزم إعداد App ID وConfig ID وإصدار Graph API قبل تفعيل الربط الحي.</p>:null}
    {error&&<p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
    {notice&&<p role="status" className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}

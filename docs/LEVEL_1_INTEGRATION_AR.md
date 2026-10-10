@@ -72,3 +72,10 @@
 ## إدارة العملاء المحتملين اليدويين
 
 أُضيفت صفحة `/aqarflow-crm` لإضافة العميل قبل وصول رسالته الأولى، والبحث بالاسم أو الهاتف أو المنطقة، وتصفية السجلات حسب مرحلة البيع، وتعديل بيانات التأهيل والمتابعة. يُخزّن العميل اليدوي بالمصدر `manual`، ويبقى رقم الهاتف فريدًا داخل مساحة العمل. عند وجود محادثة مرتبطة، يمكن فتح صندوق المحادثات مباشرة. يعتمد API على جلسة موثقة ويربط كل قراءة/كتابة بـ`owner_user_id`؛ لا يتيح حذف سجل العميل، ويمكن نقله إلى مرحلة «غير مستمر» بدل حذف أثر المتابعة.
+
+
+## Meta Embedded Signup: اختيار النمط الصحيح
+
+يُحدد `META_WHATSAPP_SIGNUP_MODE` مسار التسجيل، وقيمته الافتراضية `cloud_api`. لا تُفعّل `coexistence` إلا إذا أنشأت في Meta تكوين Embedded Signup يدعم ربط رقم WhatsApp Business App الموجود مع Cloud API؛ هذا النمط يحتاج الخاصية `whatsapp_business_app_onboarding` ورسالة اكتمال مختلفة. اختبارات الوحدة تتحقق من أن التسجيل القياسي لا يمرّر خاصية Coexistence وأن الرسائل غير النهائية مثل `CANCEL` لا تُعتبر اكتمالًا ناجحًا.
+
+مرجع Meta المنشور لبرنامج Embedded Signup يذكر مراجعة التطبيق والوصول المتقدم إلى `business_management` و`whatsapp_business_management`، كما يعتمد إرسال الرسائل على `whatsapp_business_messaging`. راجع [Embedded Signup documentation](https://www.postman.com/meta/whatsapp-business-platform/documentation/du6gzjv/embedded-signup) و[WhatsApp Cloud API documentation](https://www.postman.com/meta/whatsapp-business-platform/documentation/wlk6lh4/whatsapp-cloud-api) قبل الإطلاق. هذا الفرع لا يدّعي إكمال متطلبات Tech Provider التجارية مثل مشاركة حد الائتمان/إضافة system user أو اجتياز مراجعة التطبيق.

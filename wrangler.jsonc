@@ -9,6 +9,7 @@
     "GEMINI_API_URL": "https://generativelanguage.googleapis.com",
     "AQARFLOW_GEMINI_MODEL": "gemini-3.5-flash-lite",
     "META_GRAPH_API_VERSION": "v26.0",
+    "META_WHATSAPP_SIGNUP_MODE": "cloud_api",
     "GEMINI_TRANSCRIBE_MODEL": "gemini-3.5-transcribe",
     "GEMINI_MODEL": "gemini-3.8-flash"
   },
