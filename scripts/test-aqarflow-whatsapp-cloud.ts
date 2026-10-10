@@ -34,6 +34,7 @@ const payload = {
   object: 'whatsapp_business_account',
   entry: [{ changes: [{ field: 'messages', value: {
     metadata: { phone_number_id: '1234567890' },
+    contacts: [{ wa_id: '14155550100', profile: { name: 'Rania Test' } }],
     messages: [
       { id: 'wamid.inbound-1', from: '14155550100', timestamp: '1780000000', type: 'text', text: { body: 'Hello AqarFlow' } },
       { id: 'wamid.image-2', from: '14155550101', timestamp: '1780000001', type: 'image', image: { id: 'media-id' } },
@@ -45,9 +46,12 @@ const events = parseMetaWhatsAppWebhook(payload);
 assert.equal(events.length, 3);
 assert.equal(events[0].kind, 'inbound_message');
 assert.equal(events[0].senderPhoneNumber, '14155550100');
+assert.equal(events[0].senderDisplayName, 'Rania Test', 'Meta contact profile names should be mapped to the matching sender');
 assert.equal(events[0].messageText, 'Hello AqarFlow');
+assert.equal(events[1].senderDisplayName, null, 'profile names must not be assigned to a different sender');
 assert.equal(events[1].messageText, null, 'non-text inbound types must not be coerced into text');
 assert.equal(events[2].kind, 'delivery_status');
+assert.equal(events[2].senderDisplayName, null);
 assert.equal(events[2].status, 'delivered');
 assert.equal(parseMetaWhatsAppWebhook({ object: 'wrong', entry: [] }).length, 0);
 
