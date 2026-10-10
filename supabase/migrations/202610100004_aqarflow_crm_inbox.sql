@@ -4,6 +4,9 @@ begin;
 
 alter table public.aqarflow_whatsapp_integrations
   add column if not exists auto_reply_enabled boolean not null default false;
+alter table public.aqarflow_whatsapp_integrations
+  alter column access_token_ciphertext drop not null,
+  alter column access_token_iv drop not null;
 
 create table if not exists public.aqarflow_crm_contacts (
   id uuid primary key default gen_random_uuid(),
