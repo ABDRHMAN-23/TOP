@@ -274,4 +274,52 @@ BEGIN
   END IF;
 END $automation_check$;
 
+-- Level 4: analytics outputs are workspace scoped and RPCs are service-role only.
+DO $analytics_check$
+DECLARE
+  owner_a_report jsonb;
+  owner_b_report jsonb;
+  owner_a_export jsonb;
+BEGIN
+  IF has_function_privilege('authenticated','public.aqarflow_sales_analytics(uuid,timestamptz,timestamptz)','EXECUTE')
+     OR has_function_privilege('anon','public.aqarflow_sales_analytics(uuid,timestamptz,timestamptz)','EXECUTE')
+     OR NOT has_function_privilege('service_role','public.aqarflow_sales_analytics(uuid,timestamptz,timestamptz)','EXECUTE') THEN
+    RAISE EXCEPTION 'Analytics RPC grants are not service-role only';
+  END IF;
+  IF has_function_privilege('authenticated','public.aqarflow_export_sales_analytics(uuid,timestamptz,timestamptz)','EXECUTE')
+     OR has_function_privilege('anon','public.aqarflow_export_sales_analytics(uuid,timestamptz,timestamptz)','EXECUTE')
+     OR NOT has_function_privilege('service_role','public.aqarflow_export_sales_analytics(uuid,timestamptz,timestamptz)','EXECUTE') THEN
+    RAISE EXCEPTION 'Analytics export RPC grants are not service-role only';
+  END IF;
+
+  SELECT public.aqarflow_sales_analytics(
+    '00000000-0000-4000-8000-000000000001',
+    '2020-01-01T00:00:00Z','2040-01-01T00:00:00Z'
+  ) INTO owner_a_report;
+  SELECT public.aqarflow_sales_analytics(
+    '00000000-0000-4000-8000-000000000002',
+    '2020-01-01T00:00:00Z','2040-01-01T00:00:00Z'
+  ) INTO owner_b_report;
+  SELECT public.aqarflow_export_sales_analytics(
+    '00000000-0000-4000-8000-000000000001',
+    '2020-01-01T00:00:00Z','2040-01-01T00:00:00Z'
+  ) INTO owner_a_export;
+
+  IF (owner_a_report #>> '{summary,leadsCreated}')::bigint <> 1
+     OR (owner_b_report #>> '{summary,leadsCreated}')::bigint <> 1 THEN
+    RAISE EXCEPTION 'Lead totals do not match the synthetic workspace fixtures';
+  END IF;
+  IF (owner_a_report #>> '{inventory,total}')::bigint <> 1
+     OR (owner_b_report #>> '{inventory,total}')::bigint <> 1 THEN
+    RAISE EXCEPTION 'Inventory totals do not remain workspace scoped';
+  END IF;
+  IF (owner_a_report #>> '{operations,viewingsScheduledInPeriod}')::bigint <> 1 THEN
+    RAISE EXCEPTION 'Expected one scheduled viewing in workspace A reporting period';
+  END IF;
+  IF jsonb_array_length(owner_a_export->'rows') <> 1
+     OR (owner_a_export->>'truncated')::boolean THEN
+    RAISE EXCEPTION 'Lead CSV export did not return the expected workspace A row';
+  END IF;
+END $analytics_check$;
+
 SELECT 'AqarFlow migration/RLS integration assertions passed.' AS result;
