@@ -605,7 +605,9 @@ export async function POST(req: Request) {
     const headers = new Headers(req.headers);
     headers.delete('content-length');
     headers.delete('transfer-encoding');
-    const replay = new Request(req.url, { method: 'POST', headers, body: body.bytes });
+    const replayBuffer = new ArrayBuffer(body.bytes.byteLength);
+    new Uint8Array(replayBuffer).set(body.bytes);
+    const replay = new Request(req.url, { method: 'POST', headers, body: replayBuffer });
     form = await replay.formData();
   } catch {
     return NextResponse.json({ error: 'صيغة الطلب غير صحيحة؛ أعد إرسال التسجيل أو الملاحظات.' }, {
