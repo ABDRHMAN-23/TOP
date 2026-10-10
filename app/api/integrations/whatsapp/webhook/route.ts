@@ -43,24 +43,32 @@ export async function POST(request:Request) {
     rows.push({owner_user_id:integration.owner_user_id,integration_id:integration.id,phone_number_id:event.phoneNumberId,
       provider_event_key:event.eventKey,event_kind:event.kind,provider_message_id:event.messageId,sender_phone_number:event.senderPhoneNumber,
       message_type:event.messageType,message_text:event.messageText,provider_status:event.status,provider_timestamp:event.providerTimestamp,
-      processing_status:event.kind==='inbound_message'?'received':'processed'});
+      processing_status:'received'});
     grouped.set(integration.owner_user_id,rows);
   }
   // Process only events inserted for the first time. Meta retries and duplicate
   // webhook entries must not reopen conversations or move their previews backwards.
-  const newlyInsertedKeys=new Set<string>();
-  for(const [ownerUserId,rows] of grouped.entries()){
-    const {data:inserted,error}=await admin.from('aqarflow_whatsapp_events')
-      .upsert(rows,{onConflict:'owner_user_id,provider_event_key',ignoreDuplicates:true})
-      .select('provider_event_key');
+  for(const rows of grouped.values()){
+    const {error}=await admin.from('aqarflow_whatsapp_events')
+      .upsert(rows,{onConflict:'owner_user_id,provider_event_key',ignoreDuplicates:true});
     if(error)return NextResponse.json({error:'Webhook event persistence failed.'},{status:503});
-    for(const row of inserted||[]){
-      if(typeof row.provider_event_key==='string')newlyInsertedKeys.add(ownerUserId+':'+row.provider_event_key);
+  }
+  // Include both brand-new events and previous attempts that failed before finalization.
+  // This allows a Meta retry to recover a partial DB failure while processed events remain idempotent.
+  const pendingEventKeys=new Set<string>();
+  for(const [ownerUserId,rows] of grouped.entries()){
+    const keys=rows.map(row=>row.provider_event_key).filter((key):key is string=>typeof key==='string');
+    if(keys.length===0)continue;
+    const {data:pending,error}=await admin.from('aqarflow_whatsapp_events').select('provider_event_key')
+      .eq('owner_user_id',ownerUserId).in('provider_event_key',keys).neq('processing_status','processed');
+    if(error)return NextResponse.json({error:'Could not load pending webhook events.'},{status:503});
+    for(const row of pending||[]){
+      if(typeof row.provider_event_key==='string')pendingEventKeys.add(ownerUserId+':'+row.provider_event_key);
     }
   }
   const acceptedEvents=processableEvents.filter(event=>{
     const integration=integrations.get(event.phoneNumberId);
-    return Boolean(integration&&newlyInsertedKeys.has(integration.owner_user_id+':'+event.eventKey));
+    return Boolean(integration&&pendingEventKeys.has(integration.owner_user_id+':'+event.eventKey));
   });
   if(acceptedEvents.length===0)return NextResponse.json({
     received:true,eventCount:0,duplicateEvents:processableEvents.length,
