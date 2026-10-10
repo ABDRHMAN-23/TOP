@@ -59,6 +59,7 @@ create table if not exists public.aqarflow_whatsapp_outbound_requests (
   recipient_phone_number text not null check (recipient_phone_number ~ '^[0-9]{8,15}$'),
   status text not null default 'pending' check (status in ('pending','sent','failed','unknown')),
   provider_message_id text,
+  provider_status text check (provider_status is null or length(provider_status) <= 40),
   failure_code text check (failure_code is null or length(failure_code) <= 80),
   created_at timestamptz not null default now(),
   sent_at timestamptz,
@@ -67,6 +68,13 @@ create table if not exists public.aqarflow_whatsapp_outbound_requests (
 
 create index if not exists aqarflow_whatsapp_outbound_status_idx
   on public.aqarflow_whatsapp_outbound_requests(owner_user_id, status, created_at desc);
+
+-- Delivery webhooks can arrive before the CRM message row is persisted.
+alter table public.aqarflow_whatsapp_outbound_requests
+  add column if not exists provider_status text check (provider_status is null or length(provider_status) <= 40);
+create index if not exists aqarflow_whatsapp_outbound_provider_message_idx
+  on public.aqarflow_whatsapp_outbound_requests(owner_user_id, provider_message_id)
+  where provider_message_id is not null;
 
 alter table public.aqarflow_whatsapp_integrations enable row level security;
 alter table public.aqarflow_whatsapp_integrations force row level security;
