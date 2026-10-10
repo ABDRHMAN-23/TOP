@@ -100,8 +100,19 @@ language plpgsql
 set search_path = ''
 as $$
 begin
-  if tg_op='DELETE' or (tg_op='UPDATE' and
-    (old.owner_user_id is distinct from new.owner_user_id or old.contact_id is distinct from new.contact_id)) then
+  if tg_op='DELETE' then
+    update public.aqarflow_crm_contacts c
+    set next_follow_up_at=(
+      select min(t.due_at) from public.aqarflow_crm_tasks t
+      where t.owner_user_id=old.owner_user_id and t.contact_id=old.contact_id
+        and t.status in ('pending','in_progress')
+    ), updated_at=now()
+    where c.owner_user_id=old.owner_user_id and c.id=old.contact_id;
+    return old;
+  end if;
+
+  if tg_op='UPDATE' and
+    (old.owner_user_id is distinct from new.owner_user_id or old.contact_id is distinct from new.contact_id) then
     update public.aqarflow_crm_contacts c
     set next_follow_up_at=(
       select min(t.due_at) from public.aqarflow_crm_tasks t
@@ -111,17 +122,14 @@ begin
     where c.owner_user_id=old.owner_user_id and c.id=old.contact_id;
   end if;
 
-  if tg_op<>'DELETE' then
-    update public.aqarflow_crm_contacts c
-    set next_follow_up_at=(
-      select min(t.due_at) from public.aqarflow_crm_tasks t
-      where t.owner_user_id=new.owner_user_id and t.contact_id=new.contact_id
-        and t.status in ('pending','in_progress')
-    ), updated_at=now()
-    where c.owner_user_id=new.owner_user_id and c.id=new.contact_id;
-    return new;
-  end if;
-  return old;
+  update public.aqarflow_crm_contacts c
+  set next_follow_up_at=(
+    select min(t.due_at) from public.aqarflow_crm_tasks t
+    where t.owner_user_id=new.owner_user_id and t.contact_id=new.contact_id
+      and t.status in ('pending','in_progress')
+  ), updated_at=now()
+  where c.owner_user_id=new.owner_user_id and c.id=new.contact_id;
+  return new;
 end;
 $$;
 revoke all on function private.sync_aqarflow_contact_follow_up() from public,anon,authenticated;
@@ -130,5 +138,40 @@ drop trigger if exists aqarflow_crm_tasks_sync_follow_up on public.aqarflow_crm_
 create trigger aqarflow_crm_tasks_sync_follow_up
 after insert or update or delete on public.aqarflow_crm_tasks
 for each row execute function private.sync_aqarflow_contact_follow_up();
+
+-- Prevent concurrent users from booking overlapping viewings for the same listing.
+create or replace function private.prevent_aqarflow_viewing_overlap()
+returns trigger
+language plpgsql
+set search_path = ''
+as $
+begin
+  if new.property_id is null or new.status not in ('scheduled','confirmed') then
+    return new;
+  end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(new.owner_user_id::text || ':' || new.property_id::text,0)
+  );
+
+  if exists (
+    select 1 from public.aqarflow_crm_viewings v
+    where v.owner_user_id=new.owner_user_id and v.property_id=new.property_id
+      and v.status in ('scheduled','confirmed')
+      and v.starts_at < new.ends_at and v.ends_at > new.starts_at
+      and v.id <> new.id
+  ) then
+    raise exception 'aqarflow_viewing_overlap'
+      using errcode='23P01', detail='The property already has an active viewing in the requested time range.';
+  end if;
+  return new;
+end;
+$;
+revoke all on function private.prevent_aqarflow_viewing_overlap() from public,anon,authenticated;
+
+drop trigger if exists aqarflow_viewings_prevent_overlap on public.aqarflow_crm_viewings;
+create trigger aqarflow_viewings_prevent_overlap
+before insert or update of owner_user_id,property_id,starts_at,ends_at,status on public.aqarflow_crm_viewings
+for each row execute function private.prevent_aqarflow_viewing_overlap();
 
 commit;
