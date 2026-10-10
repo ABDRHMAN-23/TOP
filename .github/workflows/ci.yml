@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
+      - run: npm ci
       - name: Commit generated lockfile once on the integration branch
         if: github.event_name == 'push' && github.ref == 'refs/heads/integration/level-1-crm-whatsapp-promptfoo'
         run: |
