@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireSuperAdmin } from '@/lib/super-admin';
+import { safeInternalRedirectPath } from '@/lib/security/safe-redirect';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
   const requestedNext = url.searchParams.get('next');
-  const next = requestedNext || '/dashboard';
 
   if (code) {
     const supabase = await createClient();
@@ -41,7 +41,8 @@ export async function GET(request: Request) {
       const configuredId = process.env.QUVOTO_SUPER_ADMIN_USER_ID;
       const configuredEmail = process.env.QUVOTO_SUPER_ADMIN_EMAIL?.trim().toLowerCase();
       const isSuperAdmin = Boolean((configuredId && data.user.id === configuredId) || (configuredEmail && data.user.email?.toLowerCase() === configuredEmail));
-      const destination = requestedNext ? next : (isSuperAdmin ? '/super-admin' : '/dashboard');
+      const defaultDestination = isSuperAdmin ? '/super-admin' : '/dashboard';
+      const destination = requestedNext ? safeInternalRedirectPath(requestedNext, defaultDestination) : defaultDestination;
       const response=NextResponse.redirect(new URL(destination, url.origin));
       response.cookies.set('quvoto_ref','',{maxAge:0,path:'/'});
       response.cookies.set('quvoto_legal_consent','',{maxAge:0,path:'/'});
