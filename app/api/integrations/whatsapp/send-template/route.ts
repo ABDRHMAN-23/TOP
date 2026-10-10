@@ -35,9 +35,13 @@ async function persistCrmOutbound(
   if (!conversationId) return true;
   const now = new Date().toISOString();
   const { data: conversation, error: conversationError } = await admin.from('aqarflow_crm_conversations')
-    .select('id,contact_id,integration_id')
+    .select('id,contact_id,integration_id,last_message_at,last_message_preview,updated_at')
     .eq('owner_user_id', ownerId).eq('id', conversationId).maybeSingle();
   if (conversationError || !conversation) return false;
+  const { data: existingMessage, error: existingMessageError } = await admin.from('aqarflow_crm_messages')
+    .select('created_at').eq('owner_user_id', ownerId).eq('provider_message_id', messageId).maybeSingle();
+  if (existingMessageError) return false;
+  const sentAt = existingMessage?.created_at || now;
 
   const { error: messageError } = await admin.from('aqarflow_crm_messages').upsert({
     owner_user_id: ownerId,
@@ -48,15 +52,20 @@ async function persistCrmOutbound(
     message_text: preview.slice(0, 4096),
     provider_message_id: messageId,
     provider_status: 'sent',
-    created_at: now,
-    sent_at: now,
+    created_at: sentAt,
+    sent_at: sentAt,
   }, { onConflict: 'owner_user_id,provider_message_id', ignoreDuplicates: true });
   if (messageError) return false;
 
-  const { error: updateError } = await admin.from('aqarflow_crm_conversations')
-    .update({ last_message_at: now, last_message_preview: preview.slice(0, 500), updated_at: now })
-    .eq('owner_user_id', ownerId).eq('id', conversationId);
-  return !updateError;
+  // An idempotent replay can repair a failed CRM write without replacing a newer preview.
+  if (Date.parse(sentAt) >= Date.parse(conversation.last_message_at)) {
+    const { error: updateError } = await admin.from('aqarflow_crm_conversations')
+      .update({ last_message_at: sentAt, last_message_preview: preview.slice(0, 500), updated_at: now })
+      .eq('owner_user_id', ownerId).eq('id', conversationId);
+    if (updateError) return false;
+  }
+  return true;
+}
 }
 
 export async function POST(request: Request) {
