@@ -26,7 +26,7 @@
 - `SUPABASE_SECRET_KEY` أو `SUPABASE_SERVICE_ROLE_KEY` — وصول خادمي للجداول الجديدة.
 - `AQARFLOW_WHATSAPP_WORKER_SECRET` (مطلوب لمسار المعالجة الآلي إذا فُعّل لاحقًا).
 
-لا يوجد ربط حي قبل إعداد Meta Business/App، وتفعيل Embedded Signup، وتعيين Webhook URL، والصلاحيات والتحقق المطلوبين من Meta. لا توجد أسرار حقيقية في هذا PR.
+لا يوجد ربط حي قبل إعداد Meta Business/App، وتفعيل Embedded Signup، وتعيين Webhook URL، والصلاحيات والتحقق المطلوبين من Meta. الإعدادات العامة التي يقرأها Worker وقت التشغيل هي `META_GRAPH_API_VERSION` و`NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID` (ويمكن توفير `NEXT_PUBLIC_META_APP_ID` كاحتياط؛ الواجهة تستخدم `META_APP_ID` إن كان معرفًا). ضع `META_APP_ID` و`NEXT_PUBLIC_META_APP_ID` بالقيمة نفسها إن ضبطتهما، لأن رمز التفويض يُستبدل باستخدام معرف التطبيق السري في الخادم. لا توجد أسرار حقيقية في هذا PR.
 
 ## إعداد Gemini وPromptfoo
 
@@ -54,3 +54,11 @@
 ### ملاحظة Embedded Signup
 
 رسالة الإكمال قد تتضمن `waba_id` دون `phone_number_id`. لذلك تقبل الواجهة WABA ID فقط عند التحقق من مصدر رسالة Meta، ثم يستعلم الخادم عن أرقام الهاتف المرتبطة بحساب الأعمال ويُثبت ملكيتها قبل التخزين. عند عدم تحديد رقم، تُربط الأرقام المكتشفة في WABA؛ وإذا أُرسل رقم محدد، فلا يُربط إلا بعد التأكد أنه تابع لنفس WABA. لا يُقبل عنوان pagination إلا إذا بقي على HTTPS و`graph.facebook.com` وعلى مسار الحساب نفسه.
+
+
+## الحالة بعد تشغيل PostgreSQL داخل CI — 2026-10-10
+
+- اجتاز الرأس `0cddc3fbce98ec4d335fb3fb81a7c04733da1542` جميع خطوات CI، بما فيها حاوية PostgreSQL مؤقتة، وتطبيق الهجرات الثلاث واختبارات RLS/العزل السلبية، و`npm audit`، واختبارات المبيعات/WhatsApp/Embedded Signup/الموافقة/إعادة التوجيه، وبناء Next.js وبناء Cloudflare.
+- أُضيف بعد ذلك تغيير إعداد افتراضي فقط لتثبيت إصدار Graph API على `v26.0`، ثم تحديث قراءة إعدادات واجهة Meta لتأتي من متغيرات Worker وقت التشغيل بدل الاعتماد على متغيرات `process.env` المبنية مسبقًا. يجب أن يمر CI من جديد على الرأس الذي يتضمن هذه التغييرات قبل الإغلاق النهائي.
+- PostgreSQL في CI محاكاة تكامل مؤقتة وليست مشروع Supabase الحي. ما زالت هجرات AqarFlow غير مطبقة على Supabase؛ لا تغيّر مشروع TOP في هذه الجولة.
+- التكامل الحي مع Meta غير مختبر: ما زالت موافقة التطبيق، وAdvanced Access لـ`business_management` و`whatsapp_business_management`، وWebhook URL، وبيانات App/Signup Config، وأسرار Cloudflare مطلوبة. التكوين في CI لا يثبت نجاح التفويض عند عميل Meta فعلي.
