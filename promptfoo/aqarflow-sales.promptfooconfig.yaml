@@ -16,4 +16,4 @@ providers:
         buyerProfile: {}
       maxRetries: 0
 tests:
-  - file://promptfoo/tests/aqarflow-sales.yaml
+  - file://tests/aqarflow-sales.yaml
