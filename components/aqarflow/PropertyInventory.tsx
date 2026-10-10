@@ -6,7 +6,7 @@ type Property = {
   area:number|null;bedrooms:number|null;bathrooms:number|null;location_label:string|null;
   verified_features:string[];availability:'available'|'unavailable'|'unknown';is_active:boolean;
 };
-const initial={title:'',propertyType:'',purpose:'sale',price:'',currency:'USD',area:'',bedrooms:'',bathrooms:'',locationLabel:'',features:'',availability:'unknown',isActive:true};
+const initial={title:'',propertyType:'',purpose:'sale',price:'',currency:'USD',area:'',bedrooms:'',bathrooms:'',locationLabel:'',features:'',availability:'unknown',availabilityVerified:false,isActive:true};
 export default function PropertyInventory({canManageInitial}:{canManageInitial:boolean}) {
   const [properties,setProperties]=useState<Property[]>([]);
   const [canManage,setCanManage]=useState(canManageInitial);
@@ -24,7 +24,7 @@ export default function PropertyInventory({canManageInitial}:{canManageInitial:b
     e.preventDefault();setBusy(true);setError('');
     const payload={title:form.title,propertyType:form.propertyType,purpose:form.purpose,price:form.price===''?null:Number(form.price),currency:form.currency,
       area:form.area===''?null:Number(form.area),bedrooms:form.bedrooms===''?null:Number(form.bedrooms),bathrooms:form.bathrooms===''?null:Number(form.bathrooms),
-      locationLabel:form.locationLabel,verifiedFeatures:form.features.split(',').map(x=>x.trim()).filter(Boolean),availability:form.availability,isActive:form.isActive};
+      locationLabel:form.locationLabel,verifiedFeatures:form.features.split(',').map(x=>x.trim()).filter(Boolean),availability:form.availability,availabilityVerified:form.availabilityVerified,isActive:form.isActive};
     try{const r=await fetch('/api/aqarflow/properties',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر الحفظ.');setForm(initial);await refresh();}
     catch(e){setError(e instanceof Error?e.message:'تعذر حفظ العقار.');}finally{setBusy(false);}
   }
@@ -46,6 +46,7 @@ export default function PropertyInventory({canManageInitial}:{canManageInitial:b
         <label className="text-sm font-bold">الموقع<input maxLength={180} value={form.locationLabel} onChange={e=>set('locationLabel',e.target.value)} className="mt-1 w-full rounded-xl border p-3 font-normal" placeholder="المدينة أو الحي"/></label>
         <label className="text-sm font-bold sm:col-span-2">المزايا المؤكدة، مفصولة بفواصل<input maxLength={1000} value={form.features} onChange={e=>set('features',e.target.value)} className="mt-1 w-full rounded-xl border p-3 font-normal" placeholder="موقف سيارة، شرفة، مصعد…"/></label>
         <label className="text-sm font-bold">التوفر<select value={form.availability} onChange={e=>set('availability',e.target.value)} className="mt-1 w-full rounded-xl border bg-white p-3 font-normal"><option value="unknown">غير مؤكد</option><option value="available">متاح</option><option value="unavailable">غير متاح</option></select></label>
+        <label className="flex items-center gap-2 self-end py-3 text-sm font-bold"><input type="checkbox" checked={form.availabilityVerified} onChange={e=>set('availabilityVerified',e.target.checked)}/> أؤكد أن حالة التوفر أعلاه تم التحقق منها الآن</label>
         <label className="flex items-center gap-2 self-end py-3 text-sm font-bold"><input type="checkbox" checked={form.isActive} onChange={e=>set('isActive',e.target.checked)}/> عقار نشط في نتائج البحث</label>
       </div>
       <button disabled={busy} className="mt-4 min-h-11 rounded-xl bg-blue-700 px-5 py-3 font-bold text-white disabled:opacity-50">{busy?'جارٍ الحفظ…':'حفظ العقار'}</button>
