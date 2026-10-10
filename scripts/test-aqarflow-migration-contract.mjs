@@ -72,6 +72,9 @@ assert.match(whatsappSend,/select\('provider_status'\)\.eq\('owner_user_id',owne
 assert.match(whatsappSend,/provider_status:providerStatus/);
 assert.match(whatsappSendTemplateRoute,/select\('provider_status'\)\.eq\('owner_user_id', ownerId\)\.eq\('provider_message_id', messageId\)/);
 assert.match(whatsappSendTemplateRoute,/provider_status: providerStatus/);
+assert.match(whatsappWebhook,/eq\('event_kind','delivery_status'\)[\s\S]{0,220}order\('provider_timestamp',\{ascending:false,nullsFirst:false\}\)/);
+assert.match(whatsappSend,/from\('aqarflow_whatsapp_events'\)[\s\S]{0,260}eq\('event_kind','delivery_status'\)/);
+assert.match(whatsappSendTemplateRoute,/from\('aqarflow_whatsapp_events'\)[\s\S]{0,260}eq\('event_kind', 'delivery_status'\)/);
 assert.match(whatsappWebhook,/Date\.parse\(eventAt\)>=Date\.parse\(existingConversation\.last_message_at\)/);
 assert.match(whatsappWebhook,/existingContact\?\.display_name\|\|event\.senderDisplayName/);
 assert.match(whatsappCloud,/contactNames\.get\(sender\)/);
