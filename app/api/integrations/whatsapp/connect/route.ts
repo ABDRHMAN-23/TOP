@@ -107,3 +107,33 @@ export async function POST(request: Request) {
     tokenExpiresAt: integrationRow.token_expires_at,
   } }, { headers: { 'Cache-Control': 'no-store' } });
 }
+
+
+export async function GET() {
+  const owner = await requireOwnerAccount();
+  if (!owner.ok) return NextResponse.json({ error: owner.message }, { status: owner.status, headers: { 'Cache-Control': 'no-store' } });
+  let admin: ReturnType<typeof createAdminClient>;
+  try { admin = createAdminClient(); } catch { return NextResponse.json({ error: 'Secure integration storage is unavailable.' }, { status: 503 }); }
+  const { data, error } = await admin.from('aqarflow_whatsapp_integrations')
+    .select('id,waba_id,phone_number_id,display_phone_number,verified_name,graph_api_version,status,last_verified_at,token_expires_at')
+    .eq('owner_user_id', owner.ownerUserId).neq('status', 'disconnected').order('created_at', { ascending: false });
+  if (error) return NextResponse.json({ error: 'Could not load WhatsApp connections. Apply the migrations in development first.' }, { status: 503 });
+  return NextResponse.json({ integrations: data || [] }, { headers: { 'Cache-Control': 'no-store' } });
+}
+
+export async function DELETE(request: Request) {
+  const owner = await requireOwnerAccount();
+  if (!owner.ok) return NextResponse.json({ error: owner.message }, { status: owner.status, headers: { 'Cache-Control': 'no-store' } });
+  const body = await readBoundedJson(request, 4096);
+  if (!body.ok || !isRecord(body.value) || !isId(body.value.phoneNumberId)) {
+    return NextResponse.json({ error: 'A valid phoneNumberId is required.' }, { status: 400 });
+  }
+  let admin: ReturnType<typeof createAdminClient>;
+  try { admin = createAdminClient(); } catch { return NextResponse.json({ error: 'Secure integration storage is unavailable.' }, { status: 503 }); }
+  const { data, error } = await admin.from('aqarflow_whatsapp_integrations')
+    .update({ status: 'disconnected', access_token_ciphertext: null, access_token_iv: null, updated_at: new Date().toISOString() })
+    .eq('owner_user_id', owner.ownerUserId).eq('phone_number_id', body.value.phoneNumberId).select('phone_number_id').maybeSingle();
+  if (error) return NextResponse.json({ error: 'Could not disconnect WhatsApp. Check the migration state.' }, { status: 503 });
+  if (!data) return NextResponse.json({ error: 'WhatsApp number is not connected to this workspace.' }, { status: 404 });
+  return NextResponse.json({ disconnected: true, phoneNumberId: data.phone_number_id }, { headers: { 'Cache-Control': 'no-store' } });
+}
