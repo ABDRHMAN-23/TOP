@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     description: 'واجهة موحّدة لإدارة العقارات والعملاء ومتابعات المبيعات.',
   },
   robots: { index: true, follow: true },
-  other: { 'mobile-web-app-capable': 'yes', 'theme-color': '#214d3b' },
+  other: { 'mobile-web-app-capable': 'yes', 'theme-color': '#344f3c' },
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
