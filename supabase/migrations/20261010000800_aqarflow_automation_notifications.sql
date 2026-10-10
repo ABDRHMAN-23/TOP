@@ -34,7 +34,7 @@ grant select, insert, update, delete on public.aqarflow_crm_notifications to ser
 create or replace function public.aqarflow_dispatch_due_notifications(p_now timestamptz default now())
 returns table(task_notifications integer, viewing_notifications integer)
 language plpgsql
-security definer
+security invoker
 set search_path = ''
 as $dispatch$
 declare
