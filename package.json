@@ -22,7 +22,9 @@
     "test:aqarflow:analyze-contract": "node scripts/test-aqarflow-analyze-contract.mjs",
     "test:legal-consent": "node --experimental-strip-types scripts/test-legal-consent.ts",
     "test:aqarflow:whatsapp-signup": "node --experimental-strip-types scripts/test-aqarflow-whatsapp-signup.ts",
-    "test:aqarflow:operations": "node --experimental-strip-types scripts/test-aqarflow-operations.ts"
+    "test:aqarflow:operations": "node --experimental-strip-types scripts/test-aqarflow-operations.ts",
+    "test:aqarflow:analytics-contract": "node scripts/test-aqarflow-analytics-contract.mjs",
+    "test:aqarflow:analytics-period": "node --experimental-strip-types scripts/test-aqarflow-analytics-period.ts"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "1.20.7",
