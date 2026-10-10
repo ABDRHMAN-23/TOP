@@ -7,7 +7,7 @@ export const dynamic='force-dynamic';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const LEAD_STAGES=new Set(['new','contacted','qualified','viewing_scheduled','negotiation','won','lost']);
 const INTENTS=new Set(['buy','rent','invest','unknown']);
-function cleanText(value:unknown,max:number){return typeof value==='string'?value.replace(/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F]/g,'').trim().slice(0,max):'';}
+function cleanText(value:unknown,max:number){return typeof value==='string'?value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g,'').trim().slice(0,max):'';}
 function nullableMoney(value:unknown):number|null|'invalid'{
  if(value===null||value===undefined||value==='')return null;
  if(typeof value!=='number'||!Number.isFinite(value)||value<0||value>1e12)return 'invalid';
