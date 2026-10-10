@@ -89,7 +89,7 @@ export async function POST(request:Request) {
     const {data:contact,error:contactError}=await admin.from('aqarflow_crm_contacts').upsert({
       owner_user_id:integration.owner_user_id,phone_number:event.senderPhoneNumber,
       // Keep user-edited names and lead source; provider events should not overwrite CRM curation.
-      display_name:existingContact?.display_name||null,source:existingContact?.source||'whatsapp',
+      display_name:existingContact?.display_name||event.senderDisplayName||null,source:existingContact?.source||'whatsapp',
       last_seen_at:lastSeenAt,updated_at:now,
     },{onConflict:'owner_user_id,phone_number'}).select('id').single();
     if(contactError||!contact)return NextResponse.json({error:'Could not persist WhatsApp contact.'},{status:503});
