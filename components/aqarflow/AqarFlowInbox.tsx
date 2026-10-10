@@ -126,7 +126,11 @@ export default function AqarFlowInbox({initialConversationId=''}:{initialConvers
     templateName:selectedTemplate.name,language:selectedTemplate.language,parameters:templateParams,
     idempotencyKey,conversationId:selected.id,
    })});
-   const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر إرسال القالب المعتمد.');
+   const b=await r.json();
+   if(!r.ok){
+    if(b.retryAllowed===true){pendingTemplateSend.current=null;setTemplateError((b.error||'رفضت Meta القالب.')+' يمكنك إعادة المحاولة يدويًا الآن؛ سيستخدم الطلب مفتاحًا جديدًا لأن Meta رفضت الطلب السابق.');return;}
+    setTemplateNeedsReview(true);setTemplateError((b.error||'تعذر التأكد من نتيجة الإرسال.')+' أوقفت إعادة المحاولة تلقائيًا؛ راجع حالة الرسالة لدى Meta قبل محاولة جديدة.');return;
+   }
    if(b.persisted===false){
     if(b.retryAllowed){
      setTemplateNotice('أُرسل القالب، لكن سجل CRM غير مكتمل. يمكنك الضغط مرة أخرى بالقالب نفسه لإصلاح السجل؛ سيستخدم النظام المفتاح نفسه ولن يرسل نسخة مكررة.');
@@ -152,7 +156,11 @@ export default function AqarFlowInbox({initialConversationId=''}:{initialConvers
    const r=await fetch('/api/integrations/whatsapp/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     phoneNumberId:selected.integration.phone_number_id,to:selected.contact.phone_number,text:draft.trim(),idempotencyKey,conversationId:selected.id,
    })});
-   const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر إرسال الرسالة.');
+   const b=await r.json();
+   if(!r.ok){
+    if(b.retryAllowed===true){pendingSend.current=null;setError((b.error||'رفضت Meta الرسالة.')+' يمكنك إعادة المحاولة يدويًا الآن؛ سيستخدم الطلب مفتاحًا جديدًا لأن Meta رفضت الطلب السابق.');return;}
+    setSendNeedsReview(true);setError((b.error||'تعذر التأكد من نتيجة الإرسال.')+' أوقفت إعادة المحاولة تلقائيًا؛ راجع حالة الرسالة لدى Meta قبل محاولة جديدة.');return;
+   }
    if(b.persisted===false){
     if(b.retryAllowed){
      setNotice('أُرسلت الرسالة، لكن سجل CRM غير مكتمل. يمكنك الضغط مرة أخرى بالنص نفسه لإصلاح السجل؛ سيستخدم النظام المفتاح نفسه ولن يرسل نسخة مكررة.');
