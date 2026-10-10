@@ -62,8 +62,8 @@ assert.match(whatsappWebhook,/Date\.parse\(eventAt\)>=Date\.parse\(existingConve
 assert.match(whatsappWebhook,/existingContact\?\.display_name\|\|event\.senderDisplayName/);
 assert.match(whatsappCloud,/contactNames\.get\(sender\)/);
 assert.match(whatsappSend,/if\(conversationUpdateError\)return false/);
-assert.match(whatsappManager,/نمط الربط الحالي: \\{signupMode===/);
-assert.doesNotMatch(whatsappManager,/نمط الربط الحالي: \\$\\{/);
+assert.match(whatsappManager,/نمط الربط الحالي: \{signupMode===/);
+assert.doesNotMatch(whatsappManager,/نمط الربط الحالي: \$\{/);
 assert.match(ranked,/MATCH_BATCH_SIZE|MATCH_BATCH_SIZE/);
 assert.match(ranked,/MAX_PROPERTY_CANDIDATES\s*=\s*50/);
 console.log('AqarFlow migration and runtime security contract checks passed.');
