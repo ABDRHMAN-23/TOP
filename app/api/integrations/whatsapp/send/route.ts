@@ -115,6 +115,6 @@ export async function POST(request:Request){
     const knownRejection=error instanceof WhatsAppCloudApiError&&error.httpStatus>=400&&error.httpStatus<500;
     await admin.from('aqarflow_whatsapp_outbound_requests').update({status:knownRejection?'failed':'unknown',failure_code:error instanceof WhatsAppCloudApiError?error.code:'provider_error'})
       .eq('owner_user_id',owner.ownerUserId).eq('idempotency_key',idempotencyKey);
-    return response({error:'Meta did not confirm the message. The key will not be retried automatically to avoid duplicate sends.',idempotencyKey},502);
+    return response({error:'Meta did not confirm the message. The key will not be retried automatically to avoid duplicate sends.',idempotencyKey,retryAllowed:knownRejection},502);
   }
 }
