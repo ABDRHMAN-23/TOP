@@ -104,6 +104,27 @@ export async function POST(request:Request) {
         .update({provider_status:latestStatus})
         .eq('owner_user_id',integration.owner_user_id).eq('provider_message_id',event.messageId);
       if(messageStatusError)return NextResponse.json({error:'Could not persist WhatsApp CRM delivery status.'},{status:503});
+      // A concurrent callback may have inserted a newer event while this request was
+      // updating rows. Re-read after the write and repair if our view was stale.
+      const {data:confirmedStatuses,error:confirmStatusError}=await admin.from('aqarflow_whatsapp_events')
+        .select('provider_status,provider_timestamp,received_at')
+        .eq('owner_user_id',integration.owner_user_id).eq('provider_message_id',event.messageId)
+        .eq('event_kind','delivery_status')
+        .order('provider_timestamp',{ascending:false,nullsFirst:false})
+        .order('received_at',{ascending:false}).limit(1);
+      if(confirmStatusError)return NextResponse.json({error:'Could not confirm latest WhatsApp delivery status.'},{status:503});
+      const confirmedStatus=confirmedStatuses?.[0]?.provider_status;
+      if(confirmedStatus&&confirmedStatus!==latestStatus){
+        const {error:repairOutboundError}=await admin.from('aqarflow_whatsapp_outbound_requests')
+          .update({provider_status:confirmedStatus})
+          .eq('owner_user_id',integration.owner_user_id).eq('integration_id',integration.id)
+          .eq('provider_message_id',event.messageId);
+        if(repairOutboundError)return NextResponse.json({error:'Could not reconcile latest outbound delivery status.'},{status:503});
+        const {error:repairMessageError}=await admin.from('aqarflow_crm_messages')
+          .update({provider_status:confirmedStatus})
+          .eq('owner_user_id',integration.owner_user_id).eq('provider_message_id',event.messageId);
+        if(repairMessageError)return NextResponse.json({error:'Could not reconcile latest CRM delivery status.'},{status:503});
+      }
       continue;
     }
     if(!event.senderPhoneNumber)continue;
