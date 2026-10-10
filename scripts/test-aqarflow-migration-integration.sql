@@ -63,14 +63,17 @@ VALUES
  ('10000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000002','15550000002','CRM owner B');
 
 DO $
+DECLARE rejected boolean := false;
 BEGIN
   BEGIN
     INSERT INTO public.aqarflow_crm_contact_notes(owner_user_id,contact_id,author_user_id,note)
     VALUES ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000001','cross-tenant note must be rejected');
   EXCEPTION WHEN foreign_key_violation THEN
-    RETURN;
+    rejected := true;
   END;
-  RAISE EXCEPTION 'Cross-tenant contact note relationship was not blocked by the composite foreign key';
+  IF NOT rejected THEN
+    RAISE EXCEPTION 'Cross-tenant contact note relationship was not blocked by the composite foreign key';
+  END IF;
 END $;
 
 INSERT INTO public.aqarflow_properties(owner_user_id,title,purpose,availability)
