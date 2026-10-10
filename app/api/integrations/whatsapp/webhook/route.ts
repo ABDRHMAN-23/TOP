@@ -66,10 +66,16 @@ export async function POST(request:Request) {
       if(typeof row.provider_event_key==='string')pendingEventKeys.add(ownerUserId+':'+row.provider_event_key);
     }
   }
-  const acceptedEvents=processableEvents.filter(event=>{
+  const acceptedEvents: typeof processableEvents = [];
+  const acceptedKeys=new Set<string>();
+  for(const event of processableEvents){
     const integration=integrations.get(event.phoneNumberId);
-    return Boolean(integration&&pendingEventKeys.has(integration.owner_user_id+':'+event.eventKey));
-  });
+    if(!integration)continue;
+    const uniqueKey=integration.owner_user_id+':'+event.eventKey;
+    if(!pendingEventKeys.has(uniqueKey)||acceptedKeys.has(uniqueKey))continue;
+    acceptedKeys.add(uniqueKey);
+    acceptedEvents.push(event);
+  }
   if(acceptedEvents.length===0)return NextResponse.json({
     received:true,eventCount:0,duplicateEvents:processableEvents.length,
     ignoredDisconnected:events.length-processableEvents.length,
