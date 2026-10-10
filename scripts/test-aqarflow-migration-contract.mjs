@@ -166,7 +166,7 @@ assert.doesNotMatch(automationDispatch,/sendMetaWhatsApp|sendWhatsApp/);
 assert.match(notificationsRoute,/supabase\.auth\.getUser\(\)/);
 assert.match(notificationsRoute,/\.eq\('owner_user_id', ctx\.ownerId\)/);
 assert.match(notificationsRoute,/\.eq\('recipient_user_id', ctx\.user\.id\)/);
-assert.match(automationComponent,/\/api\/aqarflow\/notifications/);
+assert.ok(automationComponent.includes('/api/aqarflow/notifications'));
 assert.match(automationComponent,/لا تُرسل رسائل للعميل تلقائيًا/);
 
 console.log('AqarFlow migration and runtime security contract checks passed.');
