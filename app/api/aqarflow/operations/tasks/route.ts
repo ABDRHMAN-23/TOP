@@ -12,7 +12,7 @@ async function context(){
   try{supabase=await createClient();}catch{return {error:response({error:'خدمة تسجيل الدخول غير متاحة.'},503)};}
   const {data,error}=await supabase.auth.getUser();
   if(error||!data.user)return {error:response({error:'يلزم تسجيل الدخول لإدارة المهام.'},401)};
-  const {data:members,error:memberError}=await supabase.from('team_memberships').select('owner_id').eq('member_id',data.user.id).neq('owner_id',data.user.id).limit(2);
+  const {data:members,error:memberError}=await supabase.from('aqarflow_workspace_memberships').select('owner_id').eq('member_id',data.user.id).neq('owner_id',data.user.id).limit(2);
   if(memberError)return {error:response({error:'تعذر التحقق من مساحة العمل.'},503)};
   if((members||[]).length>1)return {error:response({error:'حسابك مرتبط بأكثر من مساحة عمل؛ حدد مساحة واحدة أولًا.'},409)};
   try{return {supabase,user:data.user,ownerId:members?.[0]?.owner_id||data.user.id,admin:createAdminClient()};}
@@ -20,7 +20,7 @@ async function context(){
 }
 async function canAssign(ctx:{supabase:Awaited<ReturnType<typeof createClient>>;user:{id:string};ownerId:string},assignedTo:string|null){
   if(!assignedTo||assignedTo===ctx.ownerId)return true;
-  const {data,error}=await ctx.supabase.from('team_memberships').select('member_id')
+  const {data,error}=await ctx.supabase.from('aqarflow_workspace_memberships').select('member_id')
     .eq('owner_id',ctx.ownerId).eq('member_id',assignedTo).maybeSingle();
   return !error&&Boolean(data);
 }
