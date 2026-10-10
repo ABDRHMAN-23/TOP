@@ -82,6 +82,12 @@ assert.match(whatsappSendTemplateRoute,/existingMessage\?\.created_at \|\| now/)
 assert.doesNotMatch(whatsappSendTemplateRoute,/CUSTOMER_SERVICE_WINDOW_MS/);
 assert.match(inboxComponent,/قوالب واتساب المعتمدة/);
 assert.match(inboxComponent,/إرسال القالب المعتمد يدويًا/);
+assert.match(whatsappSend,/retryAllowed:false/);
+assert.match(whatsappSendTemplateRoute,/retryAllowed: false/);
+assert.match(inboxComponent,/setSendNeedsReview\(true\)/);
+assert.match(inboxComponent,/setTemplateNeedsReview\(true\)/);
+assert.match(inboxComponent,/disabled=\{busy\|\|sendNeedsReview/);
+assert.match(inboxComponent,/disabled=\{busy\|\|templateNeedsReview/);
 assert.match(inboxComponent,/\/api\/integrations\/whatsapp\/send-template/);
 assert.match(ranked,/MATCH_BATCH_SIZE|MATCH_BATCH_SIZE/);
 assert.match(ranked,/MAX_PROPERTY_CANDIDATES\s*=\s*50/);
