@@ -85,16 +85,23 @@ export async function POST(request:Request) {
   for(const event of acceptedEvents){
     const integration=integrations.get(event.phoneNumberId)!;
     if(event.kind==='delivery_status'){
-      // A delivery status can race ahead of CRM message persistence. Store it on the
-      // outbound request first, then update the message row if it already exists.
-      // The send handler reads this value when it materializes the CRM message.
+      // Recompute from the durable event ledger: callbacks may arrive before the CRM
+      // row is created, and older delivery events may be retried after newer ones.
+      const {data:latestStatuses,error:latestStatusError}=await admin.from('aqarflow_whatsapp_events')
+        .select('provider_status,provider_timestamp,received_at')
+        .eq('owner_user_id',integration.owner_user_id).eq('provider_message_id',event.messageId)
+        .eq('event_kind','delivery_status')
+        .order('provider_timestamp',{ascending:false,nullsFirst:false})
+        .order('received_at',{ascending:false}).limit(1);
+      if(latestStatusError)return NextResponse.json({error:'Could not load latest WhatsApp delivery status.'},{status:503});
+      const latestStatus=latestStatuses?.[0]?.provider_status||event.status;
       const {error:outboundStatusError}=await admin.from('aqarflow_whatsapp_outbound_requests')
-        .update({provider_status:event.status})
+        .update({provider_status:latestStatus})
         .eq('owner_user_id',integration.owner_user_id).eq('integration_id',integration.id)
         .eq('provider_message_id',event.messageId);
       if(outboundStatusError)return NextResponse.json({error:'Could not persist WhatsApp outbound delivery status.'},{status:503});
       const {error:messageStatusError}=await admin.from('aqarflow_crm_messages')
-        .update({provider_status:event.status})
+        .update({provider_status:latestStatus})
         .eq('owner_user_id',integration.owner_user_id).eq('provider_message_id',event.messageId);
       if(messageStatusError)return NextResponse.json({error:'Could not persist WhatsApp CRM delivery status.'},{status:503});
       continue;
