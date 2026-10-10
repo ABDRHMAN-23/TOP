@@ -4,7 +4,7 @@
 
 - محول WhatsApp Cloud API مستقل عن الواجهة، يتحقق من توقيع Webhook باستعمال HMAC-SHA-256.
 - مسار ربط Meta يعيد تبادل كود Embedded Signup على الخادم فقط، ويتحقق من أن رقم الهاتف تابع إلى WABA المصرّح به، ثم يشترك في Webhooks قبل حفظ الاتصال.
-- تُشفّر رموز Meta باستخدام AES-256-GCM بمفتاح خادم مستقل؛ لا تعاد الرموز في استجابات API ولا تحفظ كنص صريح.
+- تُشفّر رموز Meta باستخدام AES-256-GCM with the correct Web Crypto algorithm/IV parameters بمفتاح خادم مستقل؛ لا تعاد الرموز في استجابات API ولا تحفظ كنص صريح.
 - مسار Webhook يقرأ جسمًا محدود الحجم، ويتحقق من التوقيع قبل تحليل JSON، ويخزن الرسائل والحالات بمفاتيح تمنع تكرار الحدث.
 - مسار الإرسال مقصور على مالك مساحة العمل، ويعمل فقط خلال نافذة خدمة العميل البالغة 24 ساعة من آخر رسالة واردة. إرسال القوالب المعتمدة خارج النافذة ليس منفذًا.
 - لكل إرسال مفتاح idempotency؛ لا يعاد الإرسال تلقائيًا عندما تكون نتيجة الموفر غير مؤكدة، لتقليل خطر تكرار الرسالة.
@@ -21,7 +21,7 @@
 - META_WEBHOOK_VERIFY_TOKEN — قيمة عشوائية قوية للتحقق من تحدي Webhook.
 - META_TOKEN_ENCRYPTION_KEY — قيمة Base64 تفك إلى 32 بايت بالضبط؛ مثال التوليد: openssl rand -base64 32.
 - SUPABASE_SECRET_KEY أو SUPABASE_SERVICE_ROLE_KEY — سر خادمي للجداول الجديدة.
-- NEXT_PUBLIC_META_APP_ID و META_EMBEDDED_SIGNUP_CONFIG_ID ستحتاج إليهما واجهة Embedded Signup لاحقًا؛ هذا الفرع يجهز API الخادم لكنه لا يضيف شاشة الربط أو Facebook SDK.
+- NEXT_PUBLIC_META_APP_ID و NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID ستحتاج إليهما واجهة Embedded Signup لاحقًا؛ هذا الفرع يجهز API الخادم لكنه لا يضيف شاشة الربط أو Facebook SDK.
 
 ## تطبيق قاعدة البيانات
 
