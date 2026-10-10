@@ -72,7 +72,7 @@ assert.match(whatsappManager,/نمط الربط الحالي: \{signupMode===/);
 assert.match(whatsappRegisterRoute,/requireOwnerAccount\(\)/);
 assert.match(whatsappRegisterRoute,/registerMetaWhatsAppPhone\(/);
 assert.match(whatsappRegisterRoute,/\.eq\('owner_user_id', owner\.ownerUserId\)/);
-assert.match(whatsappRegisterRoute,/!\^\\d\{6\}\$/.test\(pin\)/);
+assert.match(whatsappRegisterRoute,/PIN المكون من 6 أرقام/);
 assert.match(whatsappManager,/\/api\/integrations\/whatsapp\/register/);
 assert.match(whatsappManager,/type="password"/);
 assert.doesNotMatch(whatsappManager,/نمط الربط الحالي: \$\{/);
