@@ -91,6 +91,10 @@ assert.match(whatsappSendTemplateRoute,/existingMessage\?\.created_at \|\| now/)
 assert.doesNotMatch(whatsappSendTemplateRoute,/CUSTOMER_SERVICE_WINDOW_MS/);
 assert.match(inboxComponent,/قوالب واتساب المعتمدة/);
 assert.match(inboxComponent,/إرسال القالب المعتمد يدويًا/);
+assert.match(inboxComponent,/if\(b\.retryAllowed===true\)\{pendingSend\.current=null/);
+assert.match(inboxComponent,/setSendNeedsReview\(true\);setError/);
+assert.match(inboxComponent,/if\(b\.retryAllowed===true\)\{pendingTemplateSend\.current=null/);
+assert.match(inboxComponent,/setTemplateNeedsReview\(true\);setTemplateError/);
 assert.match(whatsappSend,/retryAllowed:false/);
 assert.match(whatsappSendTemplateRoute,/retryAllowed: false/);
 assert.match(inboxComponent,/setSendNeedsReview\(true\)/);
