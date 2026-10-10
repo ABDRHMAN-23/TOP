@@ -1,79 +1,93 @@
-import Link from 'next/link';
-import QuvotoLogo from '@/components/QuvotoLogo';
-import { ArrowRight, Check, Mic, FileText, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowUpLeft, Building2, Bot, ChartNoAxesCombined, CheckCircle2, ChevronLeft, CircleDollarSign, Clock3, Home, MessageCircle, Search, ShieldCheck, Sparkles, Users, Workflow } from 'lucide-react';
 
-function Brand({ tagline = false }: { tagline?: boolean }) { return <QuvotoLogo className="h-11 w-auto" />; }
-
-const steps = [
-  ['01','Talk','Record a natural field note in seconds.'],
-  ['02','Review','Turn the note into editable quote details.'],
-  ['03','Send','Download a polished A4 quote and share it.']
+const metrics = [
+  { label: 'عقارات معروضة', value: '١٢٨', note: 'معاينة توضيحية', icon: Building2 },
+  { label: 'عملاء محتملون', value: '٣٤٦', note: 'بيانات تجريبية', icon: Users },
+  { label: 'متابعات اليوم', value: '٢٤', note: 'بيانات تجريبية', icon: Clock3 },
+  { label: 'فرص بيع نشطة', value: '٥٨', note: 'بيانات تجريبية', icon: CircleDollarSign },
 ];
 
-const structuredData = {
-  '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'SoftwareApplication',
-      name: 'QUVOTO',
-      applicationCategory: 'BusinessApplication',
-      operatingSystem: 'Web',
-      description: 'AI voice quoting software for independent contractors that turns field voice notes into editable professional quotes.',
-      url: 'https://quvoto.com',
-      offers: [
-        { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD' },
-        { '@type': 'Offer', name: 'Starter', price: '9', priceCurrency: 'USD' },
-        { '@type': 'Offer', name: 'Pro', price: '19', priceCurrency: 'USD' },
-        { '@type': 'Offer', name: 'Team', price: '39', priceCurrency: 'USD' }
-      ]
-    },
-    {
-      '@type': 'WebSite',
-      name: 'QUVOTO',
-      url: 'https://quvoto.com',
-      description: 'Create professional contractor quotes from your voice.'
-    }
-  ]
-};
+const features = [
+  { icon: Users, title: 'إدارة العملاء المحتملين', text: 'رتّب الاستفسارات، قيّم جاهزية العميل، واعرف الخطوة التالية لكل فرصة.' },
+  { icon: Home, title: 'إدارة العقارات', text: 'اعرض الوحدات والأسعار والتفاصيل في مساحة منظمة وسهلة التصفح.' },
+  { icon: MessageCircle, title: 'صندوق محادثات موحّد', text: 'صمّم سير عمل لمتابعة محادثات العملاء من مكان واحد. ربط واتساب يأتي لاحقًا.' },
+  { icon: Bot, title: 'مساعد المبيعات الذكي', text: 'واجهة جاهزة لمساعدة فريقك في إعداد الردود وخطط المتابعة عند تفعيل التكامل.' },
+  { icon: ChartNoAxesCombined, title: 'تقارير المبيعات', text: 'تابع مراحل الفرص والنشاط ومؤشرات الأداء من لوحة واضحة.' },
+  { icon: Workflow, title: 'المتابعات والأتمتة', text: 'نظّم المهام والتذكيرات وسير المتابعة قبل تفعيل الخدمات الخلفية.' },
+];
 
 export default function Home() {
-  return <main className="min-h-screen bg-white text-[#0A1E3D]"><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-    <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
-      <Link href="/" aria-label="QUVOTO home"><Brand /></Link>
-      <div className="flex items-center gap-2 sm:gap-5"><Link href="/pricing" className="hidden text-sm font-semibold text-slate-600 sm:block">Pricing</Link><Link href="/rewards" className="text-sm font-semibold text-slate-600">Rewards</Link><Link href="/login" className="hidden text-sm font-semibold text-slate-600 sm:block">Sign in</Link><Link href="/app" className="rounded-full bg-[#0A1E3D] px-5 py-2.5 text-sm font-bold text-white">Start free</Link></div>
-    </nav>
-
-    <section className="relative overflow-hidden border-t border-[#1769E0]/10 bg-white">
-      <div className="mx-auto grid max-w-6xl gap-12 px-5 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#1769E0]/15 bg-[#1769E0]/5 px-3 py-1.5 text-xs font-bold text-[#1769E0]">Built for independent contractors</div>
-          <h1 className="mt-6 max-w-3xl text-5xl font-black leading-[.98] tracking-[-.04em] sm:text-7xl">Talk for 60 seconds.<br/><span className="text-[#1769E0]">Get a quote ready to send.</span></h1>
-          <p className="mt-7 max-w-xl text-lg leading-8 text-slate-600">Capture the job while you are still on site. QUVOTO turns your field notes into structured, editable quote details without the admin grind.</p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row"><Link href="/app" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1769E0] px-7 py-4 font-bold text-white shadow-lg shadow-blue-600/20">Create your first quote <ArrowRight size={18}/></Link><Link href="/pricing" className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-7 py-4 font-bold text-slate-800">See pricing</Link></div>
-          <div className="mt-7 flex flex-wrap gap-4 text-sm text-slate-500"><span className="flex items-center gap-2"><Check size={16} className="text-emerald-600"/>10 free quotes/month</span><span className="flex items-center gap-2"><Check size={16} className="text-emerald-600"/>No client login</span><span className="flex items-center gap-2"><Check size={16} className="text-emerald-600"/>A4 PDF output</span></div><p className="mt-4 text-sm font-semibold text-[#1769E0]">Rewards: 10 active Free users = 1 Starter month. Monthly paid referrals start at 1 and repeat every 3; annual paid referrals unlock larger rewards.</p>
+  return (
+    <main dir="rtl" className="min-h-screen overflow-hidden bg-[#f7f9fc] text-slate-900">
+      <header className="border-b border-slate-200/80 bg-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+          <a href="/" className="flex items-center gap-3" aria-label="AqarFlow AI">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-700 text-white shadow-lg shadow-blue-900/15"><Building2 size={23}/></span>
+            <span><span className="block text-lg font-black tracking-tight">AqarFlow <span className="text-blue-700">AI</span></span><span className="block text-xs font-medium text-slate-500">منصة المبيعات العقارية الذكية</span></span>
+          </a>
+          <nav className="hidden items-center gap-7 text-sm font-semibold text-slate-600 md:flex">
+            <a href="#overview" className="transition hover:text-blue-700">نظرة عامة</a>
+            <a href="#features" className="transition hover:text-blue-700">المميزات</a>
+            <a href="#workflow" className="transition hover:text-blue-700">طريقة العمل</a>
+          </nav>
+          <a href="#overview" className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-900/10 transition hover:bg-blue-800">استكشف الواجهة <ArrowLeft size={16}/></a>
         </div>
+      </header>
 
-        <div className="relative">
-          <div className="absolute -inset-6 rounded-[3rem] bg-blue-100/60 blur-3xl"/>
-          <div className="relative rounded-[2rem] border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-900/10 sm:p-7">
-            <div className="flex items-center justify-between border-b pb-5"><div><p className="text-xs font-bold uppercase tracking-widest text-[#1769E0]">New quote</p><p className="mt-1 font-bold">Kitchen tap replacement</p></div><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1769E0] text-white"><Mic size={22}/></div></div>
-            <div className="mt-5 rounded-2xl bg-slate-50 p-5"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-500 text-white"><Mic size={16}/></div><div><p className="text-sm font-bold">Voice note</p><p className="text-xs text-slate-500">00:28 · recording ready</p></div></div><div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full w-4/5 rounded-full bg-[#1769E0]"/></div></div>
-            <div className="mt-4 rounded-2xl border p-5"><div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400"><FileText size={15}/>Quote preview</div><div className="mt-5 space-y-3 text-sm"><div className="flex justify-between"><span>Tap replacement</span><span className="font-semibold">£85.00</span></div><div className="flex justify-between"><span>Labour · 2 hrs</span><span className="font-semibold">£90.00</span></div><div className="flex justify-between border-t pt-3 text-base font-black"><span>Total</span><span>£175.00</span></div></div></div>
-            <div className="mt-4 flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-sm font-semibold text-emerald-700"><ShieldCheck size={17}/>Review everything before it reaches the customer.</div>
+      <section className="relative border-b border-slate-200 bg-white">
+        <div className="pointer-events-none absolute -left-28 -top-24 h-80 w-80 rounded-full bg-blue-100/70 blur-3xl"/>
+        <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-14 sm:px-8 sm:py-20 lg:grid-cols-[1fr_0.92fr]">
+          <div className="relative">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3.5 py-2 text-xs font-bold text-blue-800"><Sparkles size={14}/> تجربة الواجهة — وضع العرض</div>
+            <h1 className="max-w-2xl text-4xl font-black leading-[1.25] tracking-tight sm:text-6xl">كل فرصك العقارية،<br/><span className="text-blue-700">في مسار واحد أوضح.</span></h1>
+            <p className="mt-6 max-w-xl text-base leading-8 text-slate-600 sm:text-lg">واجهة موحّدة لإدارة العقارات والعملاء والمتابعات ومحادثات المبيعات، مع مساحة جاهزة لمساعد الذكاء الاصطناعي وتقارير الأداء.</p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a href="#overview" className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-900/15 transition hover:bg-blue-800">عرض لوحة العمل <ArrowLeft size={17}/></a>
+              <a href="#features" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:text-blue-700">استعراض المميزات</a>
+            </div>
+            <div className="mt-7 flex flex-wrap gap-x-5 gap-y-3 text-sm text-slate-500">
+              <span className="inline-flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-600"/> واجهة عربية RTL</span>
+              <span className="inline-flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-600"/> مناسبة للهاتف</span>
+              <span className="inline-flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-600"/> عرض دون قاعدة بيانات</span>
+            </div>
+          </div>
+
+          <div id="overview" className="relative rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-900/[0.07] sm:p-6">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-5">
+              <div><p className="text-xs font-bold text-blue-700">AQARFLOW AI</p><h2 className="mt-1 text-xl font-black">لوحة العمل</h2><p className="mt-1 text-xs text-slate-500">معاينة ببيانات تجريبية</p></div>
+              <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800">وضع العرض</span>
+            </div>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              {metrics.map(({label,value,note,icon:Icon}) => <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4"><div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-slate-500">{label}</span><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-700"><Icon size={17}/></span></div><p className="mt-3 text-2xl font-black tracking-tight">{value}</p><p className="mt-1 text-[11px] text-slate-400">{note}</p></div>)}
+            </div>
+            <div className="mt-4 rounded-2xl border border-slate-100 p-4">
+              <div className="flex items-center justify-between gap-3"><div><h3 className="font-extrabold">مسار فرص البيع</h3><p className="mt-1 text-xs text-slate-500">مثال بصري لمراحل متابعة العميل</p></div><ChartNoAxesCombined size={20} className="text-blue-700"/></div>
+              <div className="mt-4 grid grid-cols-4 gap-2 text-center text-[11px] font-bold">
+                <div><div className="mb-2 h-2 rounded-full bg-slate-300"/><span className="text-slate-600">جديد</span><p className="mt-1 text-base">١٨</p></div>
+                <div><div className="mb-2 h-2 rounded-full bg-blue-300"/><span className="text-slate-600">تواصل</span><p className="mt-1 text-base">١٢</p></div>
+                <div><div className="mb-2 h-2 rounded-full bg-blue-500"/><span className="text-slate-600">معاينة</span><p className="mt-1 text-base">٧</p></div>
+                <div><div className="mb-2 h-2 rounded-full bg-emerald-500"/><span className="text-slate-600">تفاوض</span><p className="mt-1 text-base">٤</p></div>
+              </div>
+            </div>
+            <div className="mt-4 flex items-start gap-3 rounded-2xl bg-blue-50 p-4 text-sm"><ShieldCheck size={20} className="mt-0.5 shrink-0 text-blue-700"/><p className="leading-6 text-blue-950"><span className="font-extrabold">واجهة مستقلة عن الخدمات الخلفية.</span> الأرقام هنا للعرض فقط، ولا يتم حفظها أو إرسالها إلى قاعدة بيانات.</p></div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-      <div className="max-w-2xl"><p className="text-sm font-bold uppercase tracking-widest text-[#1769E0]">How it works</p><h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Less typing. More time on the job.</h2></div>
-      <div className="mt-10 grid gap-4 md:grid-cols-3">{steps.map(([n,t,d])=><div key={n} className="rounded-[1.7rem] border border-slate-200 p-7"><div className="text-sm font-black text-[#1769E0]">{n}</div><h3 className="mt-7 text-2xl font-black">{t}</h3><p className="mt-2 leading-7 text-slate-500">{d}</p></div>)}</div>
-    </section>
+      <section id="features" className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
+        <div className="max-w-2xl"><p className="text-sm font-extrabold text-blue-700">مساحة العمل</p><h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">الأدوات الأساسية، بتجربة واحدة</h2><p className="mt-4 leading-7 text-slate-600">هذه واجهة العرض الأولية. يمكن تفعيل كل تكامل وربط البيانات لاحقًا بعد التأكد من تجربة الموقع.</p></div>
+        <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map(({icon:Icon,title,text}) => <article key={title} className="rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg hover:shadow-slate-900/[0.04]"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700"><Icon size={21}/></span><h3 className="mt-5 text-lg font-extrabold">{title}</h3><p className="mt-2 text-sm leading-7 text-slate-600">{text}</p></article>)}
+        </div>
+      </section>
 
-    <section className="bg-[#0A1E3D] text-white"><div className="mx-auto max-w-6xl px-5 py-20 sm:px-8"><div className="grid gap-10 lg:grid-cols-2 lg:items-center"><div><p className="text-sm font-bold uppercase tracking-widest text-blue-300">Why QUVOTO</p><h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Focused on one job: getting your quote out fast.</h2></div><div className="grid gap-3">{['Voice-first workflow built for job sites','Editable client and line-item details','Professional A4 PDF output','Secure customer-facing quote links','Simple plans without enterprise complexity'].map(item=><div key={item} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4"><Check size={18} className="text-blue-300"/><span className="font-semibold">{item}</span></div>)}</div></div></div></section>
-
-    <section className="mx-auto max-w-5xl px-5 py-20 text-center sm:px-8"><p className="text-sm font-bold uppercase tracking-widest text-[#1769E0]">Ready when you are</p><h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Make your next quote before you leave the job.</h2><p className="mx-auto mt-4 max-w-2xl text-slate-500">Start with 10 free quotes each month. No complicated setup.</p><Link href="/app" className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-7 py-4 font-bold text-white">Start free <ArrowRight size={18}/></Link></section>
-
-    <footer className="border-t border-slate-200 bg-white py-10"><div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 sm:px-8 md:flex-row md:items-end md:justify-between"><div><Brand tagline /><p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">AI voice quoting for contractors. Capture the job, review the details, and send a professional quote.</p></div><div className="flex gap-5 text-sm font-semibold text-slate-600"><Link href="/pricing">Pricing</Link><Link href="/login">Sign in</Link></div></div><div className="mx-auto mt-8 max-w-6xl border-t border-slate-100 px-5 pt-6 text-xs text-slate-400 sm:px-8">© 2026 QUVOTO. Speak. Quote. Done.</div></footer>
-  </main>;
+      <section id="workflow" className="border-y border-slate-200 bg-white">
+        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-12 sm:px-8 md:grid-cols-[1fr_auto] md:items-center">
+          <div><h2 className="text-2xl font-black">نبدأ بالواجهة، ثم نكمل التكاملات لاحقًا</h2><p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">لا يتطلب هذا العرض تسجيل دخول أو إعداد قاعدة بيانات أو مفاتيح دفع. ستظل وظائف الحفظ والذكاء الاصطناعي والرسائل الحقيقية غير مفعّلة إلى أن يحين وقت ربطها.</p></div>
+          <a href="#overview" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 hover:border-blue-300 hover:text-blue-700">العودة إلى الأعلى <ArrowUpLeft size={17}/></a>
+        </div>
+      </section>
+      <footer className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-7 text-xs text-slate-500 sm:px-8 sm:flex-row sm:items-center sm:justify-between"><span className="font-black text-slate-700">AqarFlow AI</span><span>واجهة تجريبية فقط · لا توجد بيانات حقيقية أو تكاملات نشطة</span></footer>
+    </main>
+  );
 }
