@@ -48,6 +48,7 @@ jobs:
       - run: npm run test:aqarflow:analyze-contract
       - run: npm run validate:aqarflow:promptfoo
       - run: npm run test:aqarflow:whatsapp-cloud
+      - run: npm run test:aqarflow:whatsapp-signup
       - run: npm run test:safe-redirect
       - run: npm run test:legal-consent
       - run: npm run build

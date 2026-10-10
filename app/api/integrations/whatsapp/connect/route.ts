@@ -32,9 +32,13 @@ export async function POST(request: Request) {
 
   const code = typeof body.value.code === 'string' ? body.value.code.trim() : '';
   const wabaId = body.value.wabaId;
-  const phoneNumberId = body.value.phoneNumberId;
-  if (code.length < 4 || code.length > 4096 || !isId(wabaId) || !isId(phoneNumberId)) {
-    return NextResponse.json({ error: 'A valid Meta signup code, WABA ID, and phone number ID are required.' }, { status: 400 });
+  const rawPhoneNumberId = body.value.phoneNumberId;
+  const requestedPhoneNumberId = isId(rawPhoneNumberId) ? rawPhoneNumberId : null;
+  if (
+    code.length < 4 || code.length > 4096 || !isId(wabaId) ||
+    (rawPhoneNumberId !== undefined && rawPhoneNumberId !== null && requestedPhoneNumberId === null)
+  ) {
+    return NextResponse.json({ error: 'A valid Meta signup code and WABA ID are required; phone number ID is optional.' }, { status: 400 });
   }
 
   const graphVersion = (runtimeEnv('META_GRAPH_API_VERSION') || '').trim();
@@ -55,15 +59,95 @@ export async function POST(request: Request) {
   }
   const accessToken = exchanged.data.access_token;
   const expiresIn = typeof exchanged.data.expires_in === 'number' && exchanged.data.expires_in > 0 ? exchanged.data.expires_in : null;
+  const tokenExpiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
 
+  // Embedded Signup completion events can provide only a WABA ID. Resolve and verify
+  // phone IDs server-side instead of depending on a phone_number_id in postMessage.
   const phoneUrl = new URL('https://graph.facebook.com/' + graphVersion + '/' + wabaId + '/phone_numbers');
   phoneUrl.searchParams.set('fields', 'id,display_phone_number,verified_name');
-  const phoneResult = await fetchJson(phoneUrl, { headers: { Authorization: 'Bearer ' + accessToken } });
-  if (!phoneResult.ok || !isRecord(phoneResult.data) || !Array.isArray(phoneResult.data.data)) {
-    return NextResponse.json({ error: 'The authorized WhatsApp Business Account could not be verified.' }, { status: 502, headers: { 'Cache-Control': 'no-store' } });
+  phoneUrl.searchParams.set('limit', '100');
+  let pageUrl: URL | null = phoneUrl;
+  const phones = new Map<string, Record<string, unknown>>();
+  let pageCount = 0;
+  while (pageUrl && pageCount < 10) {
+    const page = await fetchJson(pageUrl, { headers: { Authorization: 'Bearer ' + accessToken } });
+    if (!page.ok || !isRecord(page.data) || !Array.isArray(page.data.data)) {
+      return NextResponse.json({ error: 'The authorized WhatsApp Business Account could not be verified.' }, { status: 502, headers: { 'Cache-Control': 'no-store' } });
+    }
+    for (const candidate of page.data.data) {
+      if (isRecord(candidate) && isId(candidate.id)) phones.set(candidate.id, candidate);
+    }
+    const paging = isRecord(page.data.paging) ? page.data.paging : null;
+    const next = paging && typeof paging.next === 'string' ? paging.next : '';
+    if (!next) {
+      pageUrl = null;
+    } else {
+      try {
+        const parsedNext = new URL(next);
+        const expectedPath = '/' + graphVersion + '/' + wabaId + '/phone_numbers';
+        if (parsedNext.protocol !== 'https:' || parsedNext.hostname !== 'graph.facebook.com' || parsedNext.pathname !== expectedPath) {
+          return NextResponse.json({ error: 'Meta returned an invalid phone-number pagination URL.' }, { status: 502, headers: { 'Cache-Control': 'no-store' } });
+        }
+        // Keep the bearer token out of URL query strings and logs.
+        parsedNext.searchParams.delete('access_token');
+        pageUrl = parsedNext;
+      } catch {
+        return NextResponse.json({ error: 'Meta returned an invalid phone-number pagination URL.' }, { status: 502, headers: { 'Cache-Control': 'no-store' } });
+      }
+    }
+    pageCount += 1;
   }
-  const phone = phoneResult.data.data.find((item: unknown) => isRecord(item) && item.id === phoneNumberId);
-  if (!isRecord(phone)) return NextResponse.json({ error: 'The selected phone number does not belong to the authorized WABA.' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
+  if (pageUrl) {
+    return NextResponse.json({ error: 'This WABA has too many phone numbers to connect automatically. Restart Embedded Signup and select one phone number.' }, { status: 413, headers: { 'Cache-Control': 'no-store' } });
+  }
+
+  const targetPhones = [...phones.values()].filter(phone =>
+    requestedPhoneNumberId ? phone.id === requestedPhoneNumberId : true
+  );
+  if (targetPhones.length === 0) {
+    return NextResponse.json({
+      error: requestedPhoneNumberId
+        ? 'The selected phone number does not belong to the authorized WABA.'
+        : 'No eligible WhatsApp phone numbers were found for this WABA.',
+    }, { status: requestedPhoneNumberId ? 403 : 422, headers: { 'Cache-Control': 'no-store' } });
+  }
+
+  let admin: ReturnType<typeof createAdminClient>;
+  try { admin = createAdminClient(); }
+  catch { return NextResponse.json({ error: 'Secure integration storage is unavailable.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } }); }
+
+  const phoneIds = targetPhones.map(phone => phone.id as string);
+  const { data: existingRows, error: lookupError } = await admin.from('aqarflow_whatsapp_integrations')
+    .select('owner_user_id,phone_number_id').in('phone_number_id', phoneIds);
+  if (lookupError) return NextResponse.json({ error: 'Integration storage is not ready. Apply the WhatsApp migration first.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+  if ((existingRows || []).some(row => row.owner_user_id !== owner.ownerUserId)) {
+    return NextResponse.json({ error: 'At least one WhatsApp number in this WABA is already linked to another workspace. Select a different number or resolve ownership first.' }, { status: 409, headers: { 'Cache-Control': 'no-store' } });
+  }
+
+  const integrationRows: Record<string, unknown>[] = [];
+  try {
+    for (const phone of targetPhones) {
+      // AES-GCM requires a fresh IV per encryption, even when several WABA numbers share a token.
+      const encrypted = await encryptMetaAccessToken(accessToken, encryptionKey);
+      integrationRows.push({
+        owner_user_id: owner.ownerUserId,
+        waba_id: wabaId,
+        phone_number_id: phone.id,
+        display_phone_number: typeof phone.display_phone_number === 'string' ? phone.display_phone_number.slice(0, 40) : null,
+        verified_name: typeof phone.verified_name === 'string' ? phone.verified_name.slice(0, 160) : null,
+        graph_api_version: graphVersion,
+        access_token_ciphertext: encrypted.ciphertext,
+        access_token_iv: encrypted.iv,
+        token_key_version: encrypted.keyVersion,
+        token_expires_at: tokenExpiresAt,
+        status: 'active',
+        last_verified_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+  } catch {
+    return NextResponse.json({ error: 'The server token-encryption key is invalid.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+  }
 
   const subscribeUrl = new URL('https://graph.facebook.com/' + graphVersion + '/' + wabaId + '/subscribed_apps');
   const subscription = await fetchJson(subscribeUrl, { method: 'POST', headers: { Authorization: 'Bearer ' + accessToken } });
@@ -71,43 +155,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Meta authorization succeeded, but webhook subscription did not. Check app permissions and retry setup.' }, { status: 502, headers: { 'Cache-Control': 'no-store' } });
   }
 
-  let encrypted: { ciphertext: string; iv: string; keyVersion: 1 };
-  try { encrypted = await encryptMetaAccessToken(accessToken, encryptionKey); }
-  catch { return NextResponse.json({ error: 'The server token-encryption key is invalid.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } }); }
+  const write = await admin.from('aqarflow_whatsapp_integrations')
+    .upsert(integrationRows, { onConflict: 'owner_user_id,phone_number_id' });
+  if (write.error) return NextResponse.json({ error: 'The verified connection could not be stored securely. Check if a phone number is linked to another workspace.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
 
-  let admin: ReturnType<typeof createAdminClient>;
-  try { admin = createAdminClient(); }
-  catch { return NextResponse.json({ error: 'Secure integration storage is unavailable.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } }); }
-
-  const { data: existing, error: lookupError } = await admin.from('aqarflow_whatsapp_integrations')
-    .select('id,owner_user_id').eq('phone_number_id', phoneNumberId).maybeSingle();
-  if (lookupError) return NextResponse.json({ error: 'Integration storage is not ready. Apply the WhatsApp migration first.' }, { status: 503 });
-  if (existing && existing.owner_user_id !== owner.ownerUserId) {
-    return NextResponse.json({ error: 'This WhatsApp number is already linked to another workspace.' }, { status: 409 });
-  }
-
-  const now = new Date().toISOString();
-  const integrationRow = {
-    owner_user_id: owner.ownerUserId, waba_id: wabaId, phone_number_id: phoneNumberId,
-    display_phone_number: typeof phone.display_phone_number === 'string' ? phone.display_phone_number.slice(0, 40) : null,
-    verified_name: typeof phone.verified_name === 'string' ? phone.verified_name.slice(0, 160) : null,
-    graph_api_version: graphVersion, access_token_ciphertext: encrypted.ciphertext,
-    access_token_iv: encrypted.iv, token_key_version: encrypted.keyVersion,
-    token_expires_at: expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null,
-    status: 'active', last_verified_at: now, updated_at: now,
-  };
-  const write = existing
-    ? await admin.from('aqarflow_whatsapp_integrations').update(integrationRow).eq('id', existing.id)
-    : await admin.from('aqarflow_whatsapp_integrations').insert(integrationRow);
-  if (write.error) return NextResponse.json({ error: 'The verified connection could not be stored securely.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
-
-  return NextResponse.json({ connected: true, integration: {
-    phoneNumberId, displayPhoneNumber: integrationRow.display_phone_number,
-    verifiedName: integrationRow.verified_name, graphApiVersion: graphVersion,
-    tokenExpiresAt: integrationRow.token_expires_at,
-  } }, { headers: { 'Cache-Control': 'no-store' } });
+  return NextResponse.json({
+    connected: true,
+    connectedCount: integrationRows.length,
+    integrations: integrationRows.map(row => ({
+      phoneNumberId: row.phone_number_id,
+      displayPhoneNumber: row.display_phone_number,
+      verifiedName: row.verified_name,
+      graphApiVersion: graphVersion,
+      tokenExpiresAt,
+    })),
+  }, { headers: { 'Cache-Control': 'no-store' } });
 }
-
 
 export async function GET() {
   const owner = await requireOwnerAccount();

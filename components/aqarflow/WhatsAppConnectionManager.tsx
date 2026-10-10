@@ -1,8 +1,9 @@
 'use client';
 import { useCallback,useEffect,useRef,useState } from 'react';
+import { parseMetaEmbeddedSignupMessage, type MetaEmbeddedSignupMetadata } from '@/lib/aqarflow/whatsapp-signup';
 
 type Connection={id:string;waba_id:string;phone_number_id:string;display_phone_number:string|null;verified_name:string|null;graph_api_version:string;status:string;last_verified_at:string;token_expires_at:string|null};
-type SignupMetadata={wabaId:string;phoneNumberId:string};
+type SignupMetadata=MetaEmbeddedSignupMetadata;
 type MetaLoginResponse={authResponse?:{code?:string};status?:string};
 type MetaSdk={init:(options:{appId:string;cookie:boolean;xfbml:boolean;version:string})=>void;login:(callback:(response:MetaLoginResponse)=>void,options:Record<string,unknown>)=>void};
 declare global{interface Window{FB?:MetaSdk;fbAsyncInit?:()=>void;}}
@@ -20,9 +21,9 @@ export default function WhatsAppConnectionManager({appId,configId,graphVersion}:
  const finish=useCallback(async(c:string,m:SignupMetadata)=>{
   if(finishing.current)return;finishing.current=true;setBusy(true);setError('');setNotice('');
   try{
-   const r=await fetch('/api/integrations/whatsapp/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:c,wabaId:m.wabaId,phoneNumberId:m.phoneNumberId})});
+   const r=await fetch('/api/integrations/whatsapp/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:c,wabaId:m.wabaId,...(m.phoneNumberId?{phoneNumberId:m.phoneNumberId}:{})})});
    const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر ربط حساب واتساب.');
-   setNotice('تم التحقق من الحساب وحفظ الاتصال بصورة مشفرة.');signup.current=null;code.current=null;await refresh();
+   const count=Number(b.connectedCount||b.integrations?.length||1);setNotice(`تم التحقق من الحساب وحفظ ${count} رقم واتساب بصورة مشفرة.`);signup.current=null;code.current=null;await refresh();
   }catch(e){setError(e instanceof Error?e.message:'تعذر إكمال الربط.');}
   finally{finishing.current=false;setBusy(false);}
  },[refresh]);
@@ -37,17 +38,10 @@ export default function WhatsAppConnectionManager({appId,configId,graphVersion}:
   else if(window.FB)initialize();
   const onMessage=(event:MessageEvent)=>{
    if(!TRUSTED_META_ORIGINS.has(event.origin))return;
-   let data:unknown=event.data;
-   if(typeof data==='string'){try{data=JSON.parse(data);}catch{return;}}
-   if(!data||typeof data!=='object')return;
-   const outer=data as Record<string,unknown>;
-   if(outer.type!=='WA_EMBEDDED_SIGNUP')return;
-   const inner=(outer.data&&typeof outer.data==='object'?outer.data:outer) as Record<string,unknown>;
-   const wabaId=typeof inner.waba_id==='string'?inner.waba_id:'';
-   const phoneNumberId=typeof inner.phone_number_id==='string'?inner.phone_number_id:'';
-   if(!/^\d{5,40}$/.test(wabaId)||!/^\d{5,40}$/.test(phoneNumberId))return;
-   signup.current={wabaId,phoneNumberId};
-   if(code.current)void finishRef.current(code.current,signup.current);
+   const metadata=parseMetaEmbeddedSignupMessage(event.data);
+   if(!metadata)return;
+   signup.current=metadata;
+   if(code.current)void finishRef.current(code.current,metadata);
   };
   window.addEventListener('message',onMessage);
   return()=>{window.removeEventListener('message',onMessage);if(window.fbAsyncInit===initialize)window.fbAsyncInit=undefined;};
