@@ -4,6 +4,7 @@ export type MetaWebhookEvent = {
   phoneNumberId: string;
   messageId: string;
   senderPhoneNumber: string | null;
+  senderDisplayName: string | null;
   messageType: string | null;
   messageText: string | null;
   status: string | null;
@@ -101,6 +102,18 @@ export function parseMetaWhatsAppWebhook(payload: unknown): MetaWebhookEvent[] {
       const metadata = isRecord(value.metadata) ? value.metadata : {};
       const phoneNumberId = cleanString(metadata.phone_number_id, 40);
       if (!/^\d{5,40}$/.test(phoneNumberId)) continue;
+      const contactNames = new Map<string, string>();
+      if (Array.isArray(value.contacts)) {
+        for (const contact of value.contacts.slice(0, 100)) {
+          if (!isRecord(contact)) continue;
+          const contactPhone = normalizeWhatsAppPhone(contact.wa_id);
+          const profile = isRecord(contact.profile) ? contact.profile : {};
+          const displayName = cleanString(profile.name, 160);
+          if (contactPhone && displayName && !contactNames.has(contactPhone)) {
+            contactNames.set(contactPhone, displayName);
+          }
+        }
+      }
       if (Array.isArray(value.messages)) {
         for (const message of value.messages.slice(0, 100)) {
           if (!isRecord(message)) continue;
@@ -112,7 +125,8 @@ export function parseMetaWhatsAppWebhook(payload: unknown): MetaWebhookEvent[] {
           const messageText = type === 'text' ? cleanString(textObject.body, 4096) : null;
           events.push({
             eventKey: 'message:' + messageId, kind: 'inbound_message', phoneNumberId, messageId,
-            senderPhoneNumber: sender, messageType: type, messageText: messageText || null,
+            senderPhoneNumber: sender, senderDisplayName: contactNames.get(sender) || null,
+            messageType: type, messageText: messageText || null,
             status: null, providerTimestamp: normalizeTimestamp(message.timestamp),
           });
         }
@@ -127,7 +141,7 @@ export function parseMetaWhatsAppWebhook(payload: unknown): MetaWebhookEvent[] {
           if (!messageId || !status || !recipient || !timestamp) continue;
           events.push({
             eventKey: 'status:' + messageId + ':' + status + ':' + timestamp + ':' + recipient,
-            kind: 'delivery_status', phoneNumberId, messageId, senderPhoneNumber: recipient,
+            kind: 'delivery_status', phoneNumberId, messageId, senderPhoneNumber: recipient, senderDisplayName: null,
             messageType: null, messageText: null, status, providerTimestamp: timestamp,
           });
         }
