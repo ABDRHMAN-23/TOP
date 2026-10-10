@@ -4,6 +4,7 @@ DO $$
 DECLARE
   table_name text;
   expected_tables text[] := ARRAY[
+    'aqarflow_workspace_memberships',
     'aqarflow_properties',
     'aqarflow_ai_usage',
     'aqarflow_whatsapp_integrations',
@@ -17,6 +18,9 @@ DECLARE
     'aqarflow_crm_viewings'
   ];
   forced_tables text[] := ARRAY[
+    'aqarflow_workspace_memberships',
+    'aqarflow_properties',
+    'aqarflow_ai_usage',
     'aqarflow_whatsapp_integrations',
     'aqarflow_whatsapp_events',
     'aqarflow_whatsapp_outbound_requests',
@@ -52,7 +56,8 @@ BEGIN
      OR has_table_privilege('authenticated','public.aqarflow_ai_usage','SELECT')
      OR has_table_privilege('authenticated','public.aqarflow_crm_contact_notes','SELECT')
      OR has_table_privilege('authenticated','public.aqarflow_crm_tasks','SELECT')
-     OR has_table_privilege('authenticated','public.aqarflow_crm_viewings','SELECT') THEN
+     OR has_table_privilege('authenticated','public.aqarflow_crm_viewings','SELECT')
+     OR has_table_privilege('authenticated','public.aqarflow_workspace_memberships','INSERT') THEN
     RAISE EXCEPTION 'Authenticated role can directly read a protected AqarFlow table';
   END IF;
 
@@ -173,6 +178,19 @@ BEGIN
     RAISE EXCEPTION 'AI quota reservation failed unexpectedly';
   END IF;
 END $$;
+RESET ROLE;
+
+-- Memberships expose only the current user's own membership or the owner's own workspace.
+SET ROLE authenticated;
+SET request.jwt.claim.sub = '00000000-0000-4000-8000-000000000003';
+DO $ BEGIN
+  IF (SELECT count(*) FROM public.aqarflow_workspace_memberships WHERE owner_id='00000000-0000-4000-8000-000000000001') <> 1 THEN
+    RAISE EXCEPTION 'Member cannot read their own workspace membership';
+  END IF;
+  IF (SELECT count(*) FROM public.aqarflow_workspace_memberships WHERE owner_id='00000000-0000-4000-8000-000000000002') <> 0 THEN
+    RAISE EXCEPTION 'Member can read another workspace membership';
+  END IF;
+END $;
 RESET ROLE;
 
 -- A valid team member can read the owner's inventory but cannot read another workspace.
