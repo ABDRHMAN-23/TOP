@@ -15,7 +15,9 @@
     "test:aqarflow:sales": "node --experimental-strip-types scripts/test-aqarflow-sales-engine.ts",
     "test:safe-redirect": "node --experimental-strip-types scripts/test-safe-redirect.ts",
     "test:aqarflow:whatsapp-cloud": "node --experimental-strip-types scripts/test-aqarflow-whatsapp-cloud.ts",
-    "eval:aqarflow:promptfoo": "npx --yes promptfoo@0.124.1 eval -c promptfoo/aqarflow-sales.promptfooconfig.yaml"
+    "eval:aqarflow:promptfoo": "npx --yes promptfoo@0.124.1 eval -c promptfoo/aqarflow-sales.promptfooconfig.yaml",
+    "test:aqarflow:runtime": "node --experimental-strip-types scripts/test-aqarflow-runtime.ts",
+    "test:aqarflow:migration": "node scripts/test-aqarflow-migration-contract.mjs"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "1.20.7",
