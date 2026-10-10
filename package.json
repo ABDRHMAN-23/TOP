@@ -18,7 +18,8 @@
     "eval:aqarflow:promptfoo": "npx --yes promptfoo@0.124.1 eval -c promptfoo/aqarflow-sales.promptfooconfig.yaml",
     "test:aqarflow:runtime": "node --experimental-strip-types scripts/test-aqarflow-runtime.ts",
     "test:aqarflow:migration": "node scripts/test-aqarflow-migration-contract.mjs",
-    "validate:aqarflow:promptfoo": "npx --yes promptfoo@0.124.1 validate config -c promptfoo/aqarflow-sales.promptfooconfig.yaml"
+    "validate:aqarflow:promptfoo": "npx --yes promptfoo@0.124.1 validate config -c promptfoo/aqarflow-sales.promptfooconfig.yaml",
+    "test:aqarflow:analyze-contract": "node scripts/test-aqarflow-analyze-contract.mjs"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "1.20.7",
