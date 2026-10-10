@@ -6,6 +6,28 @@ revoke all on schema private from public;
 revoke all on schema private from anon;
 grant usage on schema private to authenticated;
 
+-- AqarFlow owns its workspace membership model; do not depend on the removed Quvoto schema.
+create table if not exists public.aqarflow_workspace_memberships (
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  member_id uuid not null references auth.users(id) on delete cascade,
+  role text not null default 'member' check (role in ('admin','member')),
+  created_at timestamptz not null default now(),
+  primary key (owner_id, member_id),
+  constraint aqarflow_workspace_memberships_no_self_member check (owner_id <> member_id)
+);
+create index if not exists aqarflow_workspace_memberships_member_idx
+  on public.aqarflow_workspace_memberships(member_id, owner_id);
+alter table public.aqarflow_workspace_memberships enable row level security;
+alter table public.aqarflow_workspace_memberships force row level security;
+drop policy if exists aqarflow_workspace_memberships_read on public.aqarflow_workspace_memberships;
+create policy aqarflow_workspace_memberships_read
+  on public.aqarflow_workspace_memberships for select to authenticated
+  using (owner_id = (select auth.uid()) or member_id = (select auth.uid()));
+revoke all on public.aqarflow_workspace_memberships from public, anon;
+revoke insert, update, delete on public.aqarflow_workspace_memberships from authenticated;
+grant select on public.aqarflow_workspace_memberships to authenticated;
+grant all on public.aqarflow_workspace_memberships to service_role;
+
 create table if not exists public.aqarflow_properties (
   id uuid primary key default gen_random_uuid(),
   owner_user_id uuid not null references auth.users(id) on delete cascade,
@@ -32,7 +54,7 @@ create or replace function private.is_aqarflow_workspace_member(p_owner_user_id 
 returns boolean language sql stable security definer set search_path = ''
 as $$
  select auth.uid() is not null and p_owner_user_id is not null and exists (
-   select 1 from public.team_memberships tm
+   select 1 from public.aqarflow_workspace_memberships tm
    where tm.owner_id=p_owner_user_id and tm.member_id=auth.uid() and tm.owner_id<>tm.member_id
  );
 $$;
