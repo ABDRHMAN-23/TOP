@@ -37,7 +37,7 @@
 
 ## الهجرات والسلامة
 
-طبّق `202610100002_aqarflow_ai_runtime.sql` ثم `202610100003_aqarflow_whatsapp_tech_provider.sql` على قاعدة تطوير منفصلة بعد مراجعتها ومطابقة سجل هجرات قاعدة TOP الحقيقي. لا تُطبق أي هجرة على الإنتاج من هذا PR. تأكد أن مخطط `private` غير موجود ضمن Supabase Data API Exposed Schemas، ثم اختبر سياسات RLS والمالك وعضو الفريق وحساب من مساحة عمل أخرى.
+طبّق `202610100002_aqarflow_ai_runtime.sql` ثم `202610100003_aqarflow_whatsapp_tech_provider.sql` ثم `202610100004_aqarflow_crm_inbox.sql` على قاعدة تطوير منفصلة بعد مراجعتها ومطابقة سجل هجرات قاعدة TOP الحقيقي. لا تُطبق أي هجرة على الإنتاج من هذا PR. تأكد أن مخطط `private` غير موجود ضمن Supabase Data API Exposed Schemas، ثم اختبر سياسات RLS والمالك وعضو الفريق وحساب من مساحة عمل أخرى.
 
 ## ما لا يثبته CI
 
