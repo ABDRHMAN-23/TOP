@@ -11,6 +11,7 @@ const whatsappCloud=readFileSync(new URL('../lib/aqarflow/whatsapp-cloud.ts',imp
 const whatsappSend=readFileSync(new URL('../app/api/integrations/whatsapp/send/route.ts',import.meta.url),'utf8');
 const whatsappManager=readFileSync(new URL('../components/aqarflow/WhatsAppConnectionManager.tsx',import.meta.url),'utf8');
 const whatsappTemplatesRoute=readFileSync(new URL('../app/api/integrations/whatsapp/templates/route.ts',import.meta.url),'utf8');
+const whatsappRegisterRoute=readFileSync(new URL('../app/api/integrations/whatsapp/register/route.ts',import.meta.url),'utf8');
 const whatsappSendTemplateRoute=readFileSync(new URL('../app/api/integrations/whatsapp/send-template/route.ts',import.meta.url),'utf8');
 const inboxComponent=readFileSync(new URL('../components/aqarflow/AqarFlowInbox.tsx',import.meta.url),'utf8');
 const leadMigration=readFileSync(new URL('../supabase/migrations/20261010000500_aqarflow_crm_lead_pipeline.sql',import.meta.url),'utf8');
@@ -66,6 +67,12 @@ assert.match(whatsappWebhook,/existingContact\?\.display_name\|\|event\.senderDi
 assert.match(whatsappCloud,/contactNames\.get\(sender\)/);
 assert.match(whatsappSend,/if\(conversationUpdateError\)return false/);
 assert.match(whatsappManager,/نمط الربط الحالي: \{signupMode===/);
+assert.match(whatsappRegisterRoute,/requireOwnerAccount\(\)/);
+assert.match(whatsappRegisterRoute,/registerMetaWhatsAppPhone\(/);
+assert.match(whatsappRegisterRoute,/\.eq\('owner_user_id', owner\.ownerUserId\)/);
+assert.match(whatsappRegisterRoute,/!\^\\d\{6\}\$/.test\(pin\)/);
+assert.match(whatsappManager,/\/api\/integrations\/whatsapp\/register/);
+assert.match(whatsappManager,/type="password"/);
 assert.doesNotMatch(whatsappManager,/نمط الربط الحالي: \$\{/);
 assert.match(whatsappTemplatesRoute,/requireOwnerAccount\(\)/);
 assert.match(whatsappTemplatesRoute,/listMetaApprovedTextTemplates/);
