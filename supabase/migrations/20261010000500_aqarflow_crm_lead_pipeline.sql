@@ -34,7 +34,7 @@ create index if not exists aqarflow_crm_contacts_followup_idx
   on public.aqarflow_crm_contacts(owner_user_id, next_follow_up_at)
   where next_follow_up_at is not null;
 
-do $
+do $$
 begin
   if not exists (
     select 1 from pg_catalog.pg_constraint
@@ -44,7 +44,7 @@ begin
     alter table public.aqarflow_crm_contacts
       add constraint aqarflow_crm_contacts_owner_id_unique unique (owner_user_id, id);
   end if;
-end $;
+end $$;
 
 create table if not exists public.aqarflow_crm_contact_notes (
   id uuid primary key default gen_random_uuid(),
