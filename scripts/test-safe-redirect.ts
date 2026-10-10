@@ -12,11 +12,10 @@ assert.equal(safeInternalRedirectPath("\n//evil.example"), "/dashboard");
 assert.equal(safeInternalRedirectPath(null), "/dashboard");
 assert.equal(safeInternalRedirectPath("/super-admin", "/dashboard"), "/super-admin");
 
-
 const callbackSource = readFileSync(new URL("../app/auth/callback/route.ts", import.meta.url), "utf8");
-assert.match(callbackSource, /safeInternalRedirectPath\\(requestedNext, defaultDestination\\)/,
+assert.ok(callbackSource.includes("safeInternalRedirectPath(requestedNext, defaultDestination)"),
   "OAuth callback must use the tested safe-redirect helper");
-assert.doesNotMatch(callbackSource, /new URL\\(destination, url\\.origin\\)/,
+assert.ok(!callbackSource.includes("new URL(destination, url.origin)"),
   "OAuth callback must not pass unsanitized query destinations to new URL");
 
 console.log("Safe redirect tests passed.");
