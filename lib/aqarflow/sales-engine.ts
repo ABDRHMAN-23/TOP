@@ -189,6 +189,54 @@ export function matchVerifiedProperties(
     const unknowns: string[] = [];
     let score = 0;
 
+    // Never recommend a listing whose latest verified status is unavailable.
+    // Unknown/stale status remains unknown and must not be stated as available.
+    if (property.availability === "unavailable") {
+      conflicts.push("property_unavailable");
+    } else if (property.availability === "available") {
+      matchedSignals.push("availability_verified");
+      score += 5;
+    } else {
+      unknowns.push("availability_unknown");
+    }
+
+    const requestedType = cleanText(profile.propertyType, 80).toLocaleLowerCase();
+    const actualType = cleanText(property.propertyType, 80).toLocaleLowerCase();
+    if (requestedType) {
+      if (!actualType) unknowns.push("property_type_unknown");
+      else if (!actualType.includes(requestedType) && !requestedType.includes(actualType)) conflicts.push("property_type_mismatch");
+      else {
+        matchedSignals.push("property_type_satisfied");
+        score += 15;
+      }
+    }
+
+    const mustHaves = uniqueClean(profile.mustHaves);
+    for (const requiredFeature of mustHaves) {
+      const required = requiredFeature.toLocaleLowerCase();
+      if (property.verifiedFeatures?.some((feature) => {
+        const verified = feature.toLocaleLowerCase();
+        return verified.includes(required) || required.includes(verified);
+      })) {
+        matchedSignals.push("must_have_verified:" + requiredFeature);
+        score += 6;
+      } else {
+        // Missing feature evidence is unknown, not proof of absence or proof of a match.
+        unknowns.push("must_have_unverified:" + requiredFeature);
+      }
+    }
+
+    const dealBreakers = uniqueClean(profile.dealBreakers);
+    for (const dealBreaker of dealBreakers) {
+      const rejectedFeature = dealBreaker.toLocaleLowerCase();
+      if (property.verifiedFeatures?.some((feature) => {
+        const verified = feature.toLocaleLowerCase();
+        return verified === rejectedFeature || verified.includes(rejectedFeature);
+      })) {
+        conflicts.push("deal_breaker_present:" + dealBreaker);
+      }
+    }
+
     const hasBudget = profile.budgetMin != null || profile.budgetMax != null;
     const comparableCurrency = Boolean(
       property.currency && currency && property.currency.toUpperCase() === currency
