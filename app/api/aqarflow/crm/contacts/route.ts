@@ -18,7 +18,7 @@ async function getContext(){
   try{supabase=await createClient();}catch{return {error:response({error:'خدمة تسجيل الدخول غير متاحة.'},503)};}
   const {data,error}=await supabase.auth.getUser();
   if(error||!data.user)return {error:response({error:'يلزم تسجيل الدخول لإدارة العملاء.'},401)};
-  const {data:members,error:membershipError}=await supabase.from('team_memberships').select('owner_id').eq('member_id',data.user.id).neq('owner_id',data.user.id).limit(2);
+  const {data:members,error:membershipError}=await supabase.from('aqarflow_workspace_memberships').select('owner_id').eq('member_id',data.user.id).neq('owner_id',data.user.id).limit(2);
   if(membershipError)return {error:response({error:'تعذر التحقق من مساحة العمل.'},503)};
   if((members||[]).length>1)return {error:response({error:'حسابك مرتبط بأكثر من مساحة عمل؛ حدد مساحة واحدة أولًا.'},409)};
   try{return {user:data.user,ownerId:members?.[0]?.owner_id||data.user.id,admin:createAdminClient()};}
