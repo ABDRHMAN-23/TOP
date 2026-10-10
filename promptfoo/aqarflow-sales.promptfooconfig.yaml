@@ -1,0 +1,19 @@
+description: AqarFlow AI sales API regression and grounding suite
+prompts:
+  - '{{customerMessage}}'
+providers:
+  - id: https
+    label: aqarflow-sales-api
+    config:
+      url: '{{env.AQARFLOW_EVAL_URL}}'
+      method: POST
+      headers:
+        Content-Type: application/json
+        Cookie: '{{env.AQARFLOW_EVAL_COOKIE}}'
+      body:
+        customerMessage: '{{prompt}}'
+        conversationSummary: ''
+        buyerProfile: {}
+      maxRetries: 0
+tests:
+  - file://promptfoo/tests/aqarflow-sales.yaml
