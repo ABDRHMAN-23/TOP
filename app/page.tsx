@@ -1,135 +1,107 @@
-import {
-  ArrowLeft,
-  ArrowUpLeft,
-  Bell,
-  Bot,
-  Building2,
-  Check,
-  ChevronLeft,
-  CircleDollarSign,
-  Clock3,
-  House,
-  LayoutDashboard,
-  MessageCircle,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  Users,
-  Workflow,
-} from 'lucide-react';
+'use client';
 
-const metrics = [
-  { label: 'إجمالي العقارات', value: '١٢٨', delta: '+١٢ هذا الشهر', icon: House },
-  { label: 'العملاء المحتملون', value: '٣٤٦', delta: '+١٨٪ عن الشهر الماضي', icon: Users },
-  { label: 'مواعيد المعاينة', value: '٢٤', delta: '٨ مواعيد اليوم', icon: Clock3 },
-  { label: 'قيمة الفرص', value: '٢٫٤ م', delta: 'قيمة توضيحية', icon: CircleDollarSign },
+import { useMemo, useState } from 'react';
+import { ArrowLeft, ArrowUpLeft, Bell, Building2, CalendarDays, Check, ChevronDown, Home, LayoutGrid, MapPin, MessageCircle, MoreHorizontal, Plus, Search, Sparkles, TrendingUp, Users, Wallet, X } from 'lucide-react';
+
+type Section = 'overview' | 'properties' | 'clients' | 'deals' | 'calendar' | 'assistant';
+type Lead = { id: number; initials: string; name: string; property: string; stage: string; date: string; color: string };
+const nav: { id: Section; label: string; icon: typeof Home }[] = [
+  { id: 'overview', label: 'الرئيسية', icon: LayoutGrid }, { id: 'properties', label: 'العقارات', icon: Building2 },
+  { id: 'clients', label: 'العملاء', icon: Users }, { id: 'deals', label: 'الصفقات', icon: TrendingUp },
+  { id: 'calendar', label: 'المواعيد', icon: CalendarDays }, { id: 'assistant', label: 'المساعد الذكي', icon: Sparkles },
 ];
-
-const leads = [
-  { initials: 'م ع', name: 'محمد العريقي', property: 'شقة — خور مكسر', stage: 'معاينة', tone: 'blue' },
-  { initials: 'س ح', name: 'سارة حسين', property: 'فيلا — عدن الجديدة', stage: 'عميل جديد', tone: 'amber' },
-  { initials: 'ع م', name: 'عمر منصور', property: 'مكتب — المنصورة', stage: 'تفاوض', tone: 'green' },
+const initialLeads: Lead[] = [
+  { id: 1, initials: 'مع', name: 'محمد العريقي', property: 'شقة بإطلالة بحرية · خور مكسر', stage: 'معاينة', date: 'اليوم، ١١:٣٠ ص', color: 'sage' },
+  { id: 2, initials: 'سح', name: 'سارة حسين', property: 'فيلا عائلية · عدن الجديدة', stage: 'عميل جديد', date: 'اليوم، ١٢:٤٥ م', color: 'sand' },
+  { id: 3, initials: 'عم', name: 'عمر منصور', property: 'مكتب تجاري · المنصورة', stage: 'تفاوض', date: 'أمس، ٤:١٠ م', color: 'lilac' },
+  { id: 4, initials: 'نأ', name: 'نورا أحمد', property: 'شقة حديثة · كريتر', stage: 'تواصل', date: 'أمس، ١:٢٠ م', color: 'rose' },
 ];
-
-const features = [
-  { icon: Users, number: '01', title: 'كل عميل في مكانه الصحيح', text: 'تابع مصدر العميل واهتماماته وآخر تواصل والخطوة التالية دون تشتت بين الجداول والمحادثات.' },
-  { icon: House, number: '02', title: 'محفظة عقارية مرتبة', text: 'اجمع تفاصيل العقارات وأسعارها وتوفرها، واربط كل عقار بالعملاء والفرص المناسبة.' },
-  { icon: MessageCircle, number: '03', title: 'متابعة لا تسقط من الحساب', text: 'نظّم المهام والمواعيد وسجل التواصل حتى يعرف الفريق ما الذي يحتاج إلى متابعة اليوم.' },
-  { icon: Bot, number: '04', title: 'ذكاء اصطناعي عند الحاجة', text: 'مساحة مهيأة لمساعد يختصر تفاصيل العميل ويقترح ردودًا وخطوات متابعة عند تفعيل التكامل.' },
+const properties = [
+  { name: 'شقة بإطلالة بحرية', place: 'خور مكسر، عدن', price: '٨٥٬٠٠٠ ر.س', details: '٣ غرف · حمّامان · ١٦٠ م²', tone: 'sea', tag: 'متاح' },
+  { name: 'فيلا عائلية مع حديقة', place: 'عدن الجديدة', price: '٢٤٠٬٠٠٠ ر.س', details: '٥ غرف · ٤ حمّامات · ٣٢٠ م²', tone: 'villa', tag: 'مميز' },
+  { name: 'مكتب تجاري عصري', place: 'المنصورة، عدن', price: '٦٥٬٠٠٠ ر.س', details: 'مساحة مفتوحة · ١٢٠ م²', tone: 'office', tag: 'متاح' },
 ];
+const stages = ['الكل', 'عميل جديد', 'تواصل', 'معاينة', 'تفاوض'];
 
-export default function Home() {
-  return (
-    <main dir="rtl" className="min-h-screen overflow-hidden bg-[#f6f8fc] text-[#14213d]">
-      <header className="relative z-10 border-b border-white/10 bg-[#101d38] text-white">
-        <div className="mx-auto flex max-w-[1320px] items-center justify-between gap-4 px-5 py-4 sm:px-8">
-          <a href="/" className="flex items-center gap-3" aria-label="AqarFlow AI">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d6e5ff] text-[#183c7a]"><Building2 size={22} /></span>
-            <span className="text-lg font-black tracking-tight">AqarFlow<span className="text-[#91b8ff]"> AI</span><span className="mt-0.5 block text-[10px] font-medium tracking-wide text-slate-400">REAL ESTATE WORKSPACE</span></span>
-          </a>
-          <nav className="hidden items-center gap-8 text-sm font-medium text-slate-300 md:flex">
-            <a className="transition hover:text-white" href="#product">المنتج</a>
-            <a className="transition hover:text-white" href="#features">المميزات</a>
-            <a className="transition hover:text-white" href="#how-it-works">كيف يعمل</a>
-          </nav>
-          <a href="#product" className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-[#14213d] transition hover:bg-[#e9f0ff]">استكشف المنصة <ArrowLeft size={16} /></a>
+export default function HomePage() {
+  const [active, setActive] = useState<Section>('overview');
+  const [period, setPeriod] = useState('آخر ٣٠ يومًا');
+  const [search, setSearch] = useState('');
+  const [stage, setStage] = useState('الكل');
+  const [leads, setLeads] = useState(initialLeads);
+  const [notifications, setNotifications] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newInterest, setNewInterest] = useState('');
+  const [toast, setToast] = useState('');
+  const visibleLeads = useMemo(() => leads.filter((lead) => (lead.name + ' ' + lead.property).includes(search.trim()) && (stage === 'الكل' || lead.stage === stage)), [leads, search, stage]);
+  const tell = (message: string) => { setToast(message); window.setTimeout(() => setToast(''), 2600); };
+  const addLead = () => {
+    if (!newName.trim()) { tell('اكتب اسم العميل أولًا'); return; }
+    const item: Lead = { id: Date.now(), initials: newName.trim().split(/\s+/).slice(0, 2).map((x) => x[0]).join(''), name: newName.trim(), property: newInterest.trim() || 'لم يحدد العقار بعد', stage: 'عميل جديد', date: 'الآن', color: 'sage' };
+    setLeads((old) => [item, ...old]); setNewName(''); setNewInterest(''); setAddOpen(false); setActive('clients'); tell('تمت إضافة العميل إلى بيانات المعاينة');
+  };
+  const sectionTitle = nav.find((item) => item.id === active)?.label ?? 'الرئيسية';
+  const scrollToWorkspace = () => { setActive('overview'); document.getElementById('workspace')?.scrollIntoView({ behavior: 'smooth' }); };
+
+  return <main dir="rtl" className="min-h-screen bg-[#f7f6f2] text-[#202b25]">
+    <header className="sticky top-0 z-30 border-b border-[#e9e7df] bg-[#fbfaf7]/95 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-4 py-3 sm:px-7 lg:px-10">
+        <a href="#top" className="flex shrink-0 items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#214d3b] text-[#f4d9a0]"><Building2 size={21}/></span><span><span className="block text-[17px] font-black tracking-[-.04em]">AqarFlow <span className="text-[#4e8067]">AI</span></span><span className="mt-1 block text-[9px] font-semibold tracking-[.16em] text-[#8b938b]">REAL ESTATE, IN FLOW</span></span></a>
+        <nav className="hidden items-center gap-7 text-[13px] font-semibold text-[#68736b] md:flex"><a href="#workspace" className="hover:text-[#214d3b]">مساحة العمل</a><a href="#capabilities" className="hover:text-[#214d3b]">المميزات</a><a href="#preview-note" className="hover:text-[#214d3b]">عن المعاينة</a></nav>
+        <button onClick={scrollToWorkspace} className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#214d3b] px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-[#173b2b] sm:px-5 sm:text-sm">جرّب مساحة العمل <ArrowLeft size={15}/></button>
+      </div>
+    </header>
+
+    <section id="top" className="relative overflow-hidden border-b border-[#e9e7df]">
+      <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-[#d8e4d8]/65 blur-3xl"/><div className="pointer-events-none absolute right-[35%] top-0 h-64 w-64 rounded-full bg-[#f0e4cb]/60 blur-3xl"/>
+      <div className="relative mx-auto grid max-w-[1440px] items-center gap-9 px-4 py-12 sm:px-7 sm:py-16 lg:grid-cols-[.83fr_1.17fr] lg:gap-14 lg:px-10 lg:py-[76px]">
+        <div className="relative z-10"><div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d8e0d5] bg-white/70 px-3.5 py-2 text-[11px] font-bold text-[#41624d]"><span className="h-2 w-2 rounded-full bg-[#6f9a76]"/> نظام عمل صُمّم للعقار</div>
+          <h1 className="max-w-[620px] text-[2.45rem] font-black leading-[1.3] tracking-[-.045em] sm:text-5xl lg:text-[3.65rem]">كل علاقة عقارية،<span className="block text-[#47785a]">تبدأ بخطوة واضحة.</span></h1>
+          <p className="mt-5 max-w-[520px] text-[15px] leading-8 text-[#69736b] sm:text-base">نظّم عقاراتك، افهم احتياجات عملائك، وتابع كل فرصة حتى الخطوة التالية — من مساحة عمل واحدة صُممت لتناسب يومك الحقيقي.</p>
+          <div className="mt-7 flex flex-col gap-3 min-[420px]:flex-row"><button onClick={scrollToWorkspace} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#214d3b] px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_8px_22px_#214d3b20] transition hover:-translate-y-0.5 hover:bg-[#173b2b]">استكشف مساحة العمل <ArrowLeft size={16}/></button><a href="#capabilities" className="inline-flex items-center justify-center rounded-xl border border-[#d9ddd5] bg-white/70 px-5 py-3.5 text-sm font-bold text-[#3f4c42] hover:bg-white">ما الذي يمكنك إنجازه؟</a></div>
+          <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-[11px] font-medium text-[#788279]"><span className="inline-flex items-center gap-1.5"><Check size={14} className="text-[#4f815e}/> واجهة عربية متجاوبة</span><span className="inline-flex items-center gap-1.5"><Check size={14} className="text-[#4f815e}/> تفاعل مباشر دون تسجيل</span><span className="inline-flex items-center gap-1.5"><Check size={14} className="text-[#4f815e}/> بيانات تجريبية فقط</span></div>
         </div>
-      </header>
 
-      <section className="relative overflow-hidden bg-[#101d38] text-white">
-        <div className="pointer-events-none absolute -left-32 top-0 h-[430px] w-[430px] rounded-full bg-blue-500/20 blur-[100px]" />
-        <div className="pointer-events-none absolute right-1/3 top-20 h-72 w-72 rounded-full bg-indigo-400/10 blur-[90px]" />
-        <div className="relative mx-auto grid max-w-[1320px] items-center gap-12 px-5 pb-16 pt-14 sm:px-8 sm:pb-24 sm:pt-20 lg:grid-cols-[0.82fr_1.18fr] lg:gap-16">
-          <div className="relative z-10">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-2 text-xs font-semibold text-[#c8d9ff]"><span className="h-1.5 w-1.5 rounded-full bg-[#7aa8ff]" /> مساحة عمل مصممة للعقار</div>
-            <h1 className="max-w-xl text-[2.65rem] font-black leading-[1.28] tracking-tight sm:text-6xl">أدر علاقاتك العقارية،<span className="mt-1 block text-[#91b8ff]">لا تفاصيلها المتناثرة.</span></h1>
-            <p className="mt-6 max-w-lg text-base leading-8 text-slate-300 sm:text-lg">من أول استفسار إلى إتمام الصفقة؛ مساحة واحدة تجمع العقارات والعملاء والفرص ومتابعات الفريق في تجربة واضحة.</p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#product" className="inline-flex items-center gap-2 rounded-lg bg-[#d6e5ff] px-5 py-3.5 text-sm font-extrabold text-[#142f62] transition hover:bg-white">استعرض مساحة العمل <ArrowLeft size={17} /></a>
-              <a href="#features" className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">اكتشف المميزات</a>
-            </div>
-            <div className="mt-8 flex flex-wrap gap-x-5 gap-y-3 text-xs font-medium text-slate-400">
-              <span className="inline-flex items-center gap-2"><Check size={15} className="text-[#91b8ff}" /> تجربة عربية من اليمين إلى اليسار</span>
-              <span className="inline-flex items-center gap-2"><Check size={15} className="text-[#91b8ff]" /> معاينة تعمل دون قاعدة بيانات</span>
-            </div>
-          </div>
+        <div className="relative min-w-0"><div className="absolute -inset-3 rounded-[28px] border border-[#e0e4d9] sm:-inset-4"/>
+          <div className="relative overflow-hidden rounded-[22px] border border-[#e5e6de] bg-white shadow-[0_24px_70px_#243d2b14]">
+            <div className="flex items-center justify-between gap-3 border-b border-[#eeeee8] px-4 py-3 sm:px-5"><div className="flex min-w-0 items-center gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#eaf0e8] text-[#41664d]"><LayoutGrid size={17}/></div><div className="min-w-0"><p className="truncate text-sm font-extrabold">مساحة عملك</p><p className="mt-0.5 text-[10px] text-[#91988f]">لمحة سريعة عن نشاط المكتب</p></div></div><div className="flex shrink-0 items-center gap-2"><span className="hidden rounded-full bg-[#f8f0dd] px-2.5 py-1.5 text-[9px] font-bold text-[#916e2d] min-[450px]:inline-flex">وضع المعاينة</span><button onClick={() => setNotifications((v) => !v)} aria-label="فتح الإشعارات" className={'relative flex h-9 w-9 items-center justify-center rounded-xl border transition ' + (notifications ? 'border-[#b8cbb8] bg-[#eaf0e8] text-[#214d3b]' : 'border-[#e8e9e2] text-[#6f796f] hover:bg-[#f7f7f2]')}><Bell size={16}/><span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#d69a46]"/></button></div></div>
+            {notifications && <div className="border-b border-[#e8e9e2] bg-[#fbfaf6] px-4 py-3 sm:px-5"><div className="flex items-center justify-between"><p className="text-xs font-extrabold">تنبيهاتك</p><button onClick={() => setNotifications(false)} className="text-[#738075]"><X size={14}/></button></div><p className="mt-2 text-[11px] leading-6 text-[#6d786e]">لديك معاينة مجدولة اليوم، وعميلان يحتاجان إلى متابعة. هذه أمثلة توضيحية فقط.</p></div>}
+            <div className="grid min-w-0 sm:grid-cols-[148px_minmax(0,1fr)]">
+              <aside className="hidden border-l border-[#efefe8] bg-[#fcfcf9] p-3 sm:block"><p className="mb-2 px-2 text-[9px] font-bold text-[#a0a69d]">القائمة الرئيسية</p><div className="space-y-1">{nav.map(({id,label,icon:Icon})=><button key={id} onClick={()=>setActive(id)} className={'flex w-full items-center gap-2 rounded-xl px-2.5 py-2.5 text-right text-[11px] font-semibold transition '+(active===id?'bg-[#e8efe6] text-[#28533a]':'text-[#737d73] hover:bg-[#f2f3ed] hover:text-[#2c4834]')}><Icon size={14}/>{label}</button>)}</div><div className="mt-7 rounded-2xl bg-[#214d3b] p-3.5 text-white"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-[#f0d7a0]"><Sparkles size={16}/></span><p className="mt-3 text-[11px] font-extrabold">مساعد AqarFlow</p><p className="mt-1 text-[9px] leading-5 text-[#d2ded2]">نظّم معلومات العميل واستعد للخطوة التالية.</p><button onClick={()=>setActive('assistant')} className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold text-[#f0d7a0]">جرّب المساعد <ArrowLeft size={11}/></button></div></aside>
+              <div className="min-w-0 p-3 sm:p-4 lg:p-5">
+                <div className="mb-3 flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-[9px] font-semibold text-[#829083]">مساحة العمل / {sectionTitle}</p><h2 className="mt-1 text-base font-black tracking-tight sm:text-lg">{active==='overview'?'أهلًا بك، هذا ملخص يومك':sectionTitle}</h2><p className="mt-1 text-[10px] leading-5 text-[#858e84]">{active==='overview'?'كل ما يحتاج انتباهك، في لمحة واحدة.':'استكشف هذا القسم من خلال بيانات المعاينة التفاعلية.'}</p></div><div className="relative shrink-0"><select aria-label="الفترة الزمنية" value={period} onChange={(e)=>setPeriod(e.target.value)} className="max-w-[118px] appearance-none rounded-lg border border-[#e4e7df] bg-white py-2 pe-2 ps-7 text-[9px] font-bold text-[#647065] outline-none focus:border-[#8da88f] sm:max-w-none sm:px-3 sm:py-2.5 sm:text-[10px]"><option>آخر ٧ أيام</option><option>آخر ٣٠ يومًا</option><option>آخر ٩٠ يومًا</option></select><ChevronDown size={12} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[#8b958b]"/></div></div>
 
-          <div id="product" className="relative min-w-0 rounded-2xl border border-white/15 bg-[#f9fbff] p-2 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-3">
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white text-[#14213d] sm:rounded-2xl">
-              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5 sm:px-5">
-                <div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eaf1ff] text-[#315ca8]"><LayoutDashboard size={18} /></div><div><p className="text-sm font-extrabold">مساحة العمل</p><p className="mt-0.5 text-[10px] text-slate-400">نظرة عامة على نشاطك</p></div></div>
-                <div className="flex items-center gap-2"><span className="hidden rounded-md bg-amber-50 px-2.5 py-1.5 text-[10px] font-bold text-amber-700 sm:inline">بيانات تجريبية</span><button aria-label="بحث" className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500"><Search size={15} /></button><button aria-label="الإشعارات" className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500"><Bell size={15} /></button></div>
-              </div>
-              <div className="grid min-w-0 sm:grid-cols-[150px_1fr]">
-                <aside className="hidden border-l border-slate-100 bg-[#fbfcff] p-3 sm:block">
-                  <p className="mb-2 px-2 text-[9px] font-bold text-slate-400">مساحة العمل</p>
-                  <div className="flex items-center gap-2 rounded-lg bg-[#eaf1ff] px-2.5 py-2.5 text-[11px] font-bold text-[#2854a0]"><LayoutDashboard size={14} /> نظرة عامة</div>
-                  <div className="mt-1 flex items-center gap-2 rounded-lg px-2.5 py-2.5 text-[11px] text-slate-500"><House size={14} /> العقارات</div>
-                  <div className="flex items-center gap-2 rounded-lg px-2.5 py-2.5 text-[11px] text-slate-500"><Users size={14} /> العملاء</div>
-                  <div className="flex items-center gap-2 rounded-lg px-2.5 py-2.5 text-[11px] text-slate-500"><Workflow size={14} /> فرص البيع</div>
-                  <div className="flex items-center gap-2 rounded-lg px-2.5 py-2.5 text-[11px] text-slate-500"><MessageCircle size={14} /> المحادثات</div>
-                  <div className="mt-7 rounded-xl bg-[#13264b] p-3 text-white"><Sparkles size={16} className="text-[#a8c5ff]" /><p className="mt-2 text-[10px] font-bold">مساعد AqarFlow</p><p className="mt-1 text-[9px] leading-4 text-slate-300">مساحة جاهزة للمساعدة الذكية</p></div>
-                </aside>
-                <div className="min-w-0 p-3 sm:p-5">
-                  <div className="mb-4 flex items-start justify-between gap-2"><div><h2 className="text-base font-black sm:text-lg">صباح الخير 👋</h2><p className="mt-1 text-[10px] text-slate-500 sm:text-xs">إليك ملخص النشاط في مساحة العمل</p></div><span className="rounded-lg border border-slate-200 px-2.5 py-2 text-[9px] font-semibold text-slate-500">آخر ٣٠ يومًا⌄</span></div>
-                  <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-                    {metrics.map(({ label, value, delta, icon: Icon }, index) => <div key={label} className="min-w-0 rounded-xl border border-slate-100 p-3"><div className="flex items-center justify-between gap-1"><span className="truncate text-[9px] font-semibold text-slate-500 sm:text-[10px]">{label}</span><Icon size={15} className="shrink-0 text-[#4772bd]" /></div><p className="mt-2 text-xl font-black tracking-tight sm:text-2xl">{value}</p><p className={`mt-1 text-[8px] leading-4 sm:text-[9px] ${index === 3 ? 'text-slate-400' : 'text-emerald-600'}`}>{delta}</p></div>)}
-                  </div>
-                  <div className="mt-3 grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
-                    <div className="rounded-xl border border-slate-100 p-3 sm:p-4"><div className="flex items-center justify-between"><div><p className="text-xs font-extrabold">حركة فرص البيع</p><p className="mt-1 text-[9px] text-slate-400">توزيع توضيحي للفرص</p></div><span className="text-[9px] font-bold text-[#4772bd]">عرض التقرير <ChevronLeft size={12} className="inline" /></span></div><div className="mt-5 flex h-20 items-end gap-2 sm:h-24">{[34, 52, 43, 70, 57, 82, 62, 92, 73, 58, 78, 96].map((height, i) => <div key={i} className="flex flex-1 items-end"><div style={{ height: `${height}%` }} className={`w-full rounded-t-sm ${i === 11 ? 'bg-[#244f9d]' : 'bg-[#d7e4fb]'}`} /></div>)}</div><div className="mt-2 flex justify-between text-[8px] text-slate-400"><span>الأسبوع الأول</span><span>الأسبوع الأخير</span></div></div>
-                    <div className="rounded-xl border border-slate-100 p-3 sm:p-4"><p className="text-xs font-extrabold">مراحل الفرص</p><p className="mt-1 text-[9px] text-slate-400">نظرة سريعة على خط المبيعات</p><div className="mt-4 space-y-3">{[{name:'عميل جديد',n:'٣٤',w:'85%',c:'bg-[#9bb9f0]'},{name:'تواصل',n:'٢٢',w:'63%',c:'bg-[#648bd4]'},{name:'معاينة',n:'١٤',w:'43%',c:'bg-[#315ca8]'},{name:'تفاوض',n:'٧',w:'25%',c:'bg-[#172f5c]'}].map(item => <div key={item.name}><div className="mb-1 flex justify-between text-[9px]"><span className="text-slate-500">{item.name}</span><span className="font-bold">{item.n}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${item.c}`} style={{width:item.w}} /></div></div>)}</div></div>
-                  </div>
-                  <div className="mt-3 rounded-xl border border-slate-100 p-3 sm:p-4"><div className="mb-3 flex items-center justify-between"><p className="text-xs font-extrabold">آخر العملاء المحتملين</p><span className="text-[9px] font-bold text-[#4772bd]">عرض الكل <ChevronLeft size={12} className="inline" /></span></div><div className="space-y-3">{leads.map((lead) => <div key={lead.name} className="flex items-center gap-2.5"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#edf2fb] text-[9px] font-extrabold text-[#315ca8]">{lead.initials}</span><div className="min-w-0 flex-1"><p className="truncate text-[10px] font-bold">{lead.name}</p><p className="mt-0.5 truncate text-[9px] text-slate-400">{lead.property}</p></div><span className={`shrink-0 rounded-md px-2 py-1 text-[8px] font-bold ${lead.tone === 'blue' ? 'bg-blue-50 text-blue-700' : lead.tone === 'amber' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>{lead.stage}</span></div>)}</div></div>
-                </div>
+                {active==='overview' && <><div className="grid grid-cols-2 gap-2 xl:grid-cols-4">{[{label:'العقارات النشطة',value:'١٢٨',delta:'+١٢ هذا الشهر',icon:Building2},{label:'عملاء محتملون',value:String(346+Math.max(0,leads.length-initialLeads.length)),delta:'+١٨٪ عن الفترة السابقة',icon:Users},{label:'مواعيد المعاينة',value:'٢٤',delta:'٨ مواعيد اليوم',icon:CalendarDays},{label:'قيمة الفرص',value:'٢٫٤ م',delta:'قيمة توضيحية',icon:Wallet}].map(({label,value,delta,icon:Icon},i)=><div key={label} className="min-w-0 rounded-2xl border border-[#edeee8] bg-white p-3 sm:p-3.5"><div className="flex items-center justify-between gap-1"><span className="truncate text-[9px] font-semibold text-[#7f897e] sm:text-[10px]">{label}</span><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#f0f3ec] text-[#53785a]"><Icon size={14}/></span></div><p className="mt-2 text-[22px] font-black tracking-tight text-[#263a2c] sm:text-[25px]">{value}</p><p className={'mt-1 text-[8px] leading-4 sm:text-[9px] '+(i===3?'text-[#8d948a]':'text-[#54805b')}>{delta}</p></div>)}</div>
+                  <div className="mt-3 grid gap-3 lg:grid-cols-[1.15fr_.85fr]"><div className="rounded-2xl border border-[#edeee8] bg-white p-3.5 sm:p-4"><div className="flex items-start justify-between gap-2"><div><p className="text-[11px] font-extrabold sm:text-xs">نشاط الفرص</p><p className="mt-1 text-[9px] text-[#969d93]">{period} · بيانات توضيحية</p></div><span className="rounded-lg bg-[#eff4ed] px-2 py-1.5 text-[9px] font-bold text-[#55765a]">+١٢٫٨٪</span></div><div className="mt-4 flex h-[94px] items-end gap-1.5 border-b border-[#f0f0e9] pb-1 sm:h-[112px] sm:gap-2">{[34,48,42,61,50,73,58,85,68,78,61,94].map((height,i)=><div key={i} className="flex h-full flex-1 items-end"><div style={{height:height+'%'}} className={'w-full rounded-t-[4px] transition-all duration-300 '+(i===11?'bg-[#47785a]':'bg-[#dbe7d8] hover:bg-[#a9c5a5')}/></div>)}</div><div className="mt-2 flex justify-between text-[8px] text-[#9aa196]"><span>بداية الفترة</span><span>منتصفها</span><span>اليوم</span></div></div>
+                    <div className="rounded-2xl border border-[#edeee8] bg-white p-3.5 sm:p-4"><p className="text-[11px] font-extrabold sm:text-xs">خط المبيعات</p><p className="mt-1 text-[9px] text-[#969d93]">عدد الفرص حسب المرحلة</p><div className="mt-4 space-y-3.5">{[{name:'عميل جديد',n:34,w:'90%',c:'bg-[#b5cdb0]'},{name:'تواصل',n:22,w:'68%',c:'bg-[#8fb18b]'},{name:'معاينة',n:14,w:'45%',c:'bg-[#67916d]'},{name:'تفاوض',n:7,w:'27%',c:'bg-[#315c40]'}].map((item)=><div key={item.name}><div className="mb-1.5 flex justify-between text-[9px]"><span className="text-[#758074]">{item.name}</span><span className="font-extrabold text-[#344637]">{item.n}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-[#f0f1eb]"><div className={'h-full rounded-full '+item.c} style={{width:item.w}}/></div></div>)}</div></div></div>
+                </>}
+
+                {active==='properties' && <div className="mt-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{properties.map((p)=><article key={p.name} className="overflow-hidden rounded-2xl border border-[#e9ebe3] bg-white"><div className={'relative flex h-24 items-end p-3 '+(p.tone==='sea'?'bg-gradient-to-br from-[#d5e4df] via-[#b7d0ca] to-[#7ea59c]':p.tone==='villa'?'bg-gradient-to-br from-[#eee2c9] via-[#d8c6a5] to-[#9aab8a]':'bg-gradient-to-br from-[#e1e6df] via-[#b9c6b9] to-[#85988b]')}><span className="rounded-full bg-white/90 px-2.5 py-1 text-[9px] font-bold text-[#416a4a]">{p.tag}</span><span className="ms-auto rounded-full bg-white/80 p-1.5 text-[#44664b]"><Building2 size={14}/></span></div><div className="p-3.5"><p className="text-xs font-extrabold">{p.name}</p><p className="mt-1.5 flex items-center gap-1 text-[10px] text-[#879085]"><MapPin size={12}/>{p.place}</p><p className="mt-3 text-sm font-black text-[#315c40]">{p.price}</p><p className="mt-1.5 text-[9px] text-[#7d877c]">{p.details}</p><button onClick={()=>tell('تفاصيل «'+p.name+'» — بيانات تجريبية')} className="mt-3 w-full rounded-lg border border-[#dfe6dc] py-2 text-[10px] font-bold text-[#41684a] hover:bg-[#f0f5ed]">عرض التفاصيل <ArrowLeft size={12} className="inline"/></button></div></article>)}</div>}
+
+                {(active==='clients'||active==='deals') && <div className="mt-2 overflow-hidden rounded-2xl border border-[#e9ebe3] bg-white"><div className="flex flex-col gap-3 border-b border-[#f0f0ea] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4"><div><p className="text-xs font-extrabold">{active==='clients'?'قائمة العملاء':'فرص البيع النشطة'}</p><p className="mt-1 text-[9px] text-[#91998f]">{visibleLeads.length} سجلات ظاهرة · بيانات تجريبية</p></div><div className="flex flex-wrap gap-2"><label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-[#e6e8e0] px-2.5 py-2 sm:min-w-[160px]"><Search size={13} className="shrink-0 text-[#8c968b]"/><input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="ابحث عن عميل..." className="w-full min-w-0 bg-transparent text-[10px] outline-none placeholder:text-[#a4aaa1]"/></label><select aria-label="تصفية المرحلة" value={stage} onChange={(e)=>setStage(e.target.value)} className="max-w-[130px] rounded-lg border border-[#e6e8e0] bg-white px-2 py-2 text-[10px] outline-none">{stages.map((s)=><option key={s}>{s}</option>)}</select><button onClick={()=>setAddOpen(true)} className="inline-flex items-center gap-1 rounded-lg bg-[#214d3b] px-3 py-2 text-[10px] font-bold text-white"><Plus size={13}/> عميل جديد</button></div></div><div className="divide-y divide-[#f0f0ea]">{visibleLeads.length?visibleLeads.map((lead)=><div key={lead.id} className="flex items-center gap-2.5 px-3 py-3 sm:gap-3 sm:px-4"><span className={'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[10px] font-black '+(lead.color==='sage'?'bg-[#e8f0e5] text-[#477453]':lead.color==='sand'?'bg-[#f7efdf] text-[#96763e]':lead.color==='lilac'?'bg-[#eee9f5] text-[#7a6795]':'bg-[#f7e9e5] text-[#a36655')}>{lead.initials}</span><div className="min-w-0 flex-1"><p className="truncate text-[11px] font-extrabold">{lead.name}</p><p className="mt-1 truncate text-[9px] text-[#929a90]">{lead.property}</p></div><div className="hidden min-w-[82px] text-[10px] text-[#788276] md:block">{lead.date}</div><span className={'shrink-0 rounded-full px-2 py-1 text-[9px] font-bold '+(lead.stage==='معاينة'?'bg-[#e7f0e5] text-[#49734f]':lead.stage==='تفاوض'?'bg-[#f7efdc] text-[#997536]':'bg-[#f0f1eb] text-[#687368')}>{lead.stage}</span><button aria-label={'خيارات '+lead.name} onClick={()=>tell('سجل '+lead.name+' تجريبي')} className="shrink-0 rounded-lg p-1.5 text-[#9ba297] hover:bg-[#f3f4ee]"><MoreHorizontal size={16}/></button></div>):<div className="p-8 text-center text-xs text-[#8a9388]">لا توجد نتائج مطابقة. جرّب كلمة بحث أخرى.</div>}</div><div className="flex items-center justify-between bg-[#fbfbf8] px-4 py-3 text-[9px] text-[#929a90]"><span>تتغير القائمة مباشرة مع البحث والتصفية</span><button onClick={()=>{setSearch('');setStage('الكل')}} className="font-bold text-[#416b4b]">مسح عوامل التصفية</button></div></div>}
+
+                {active==='calendar' && <div className="mt-2 rounded-2xl border border-[#e9ebe3] bg-white p-4 sm:p-5"><div className="flex items-center justify-between"><div><p className="text-xs font-extrabold">مواعيد اليوم</p><p className="mt-1 text-[10px] text-[#8b958a]">جدول توضيحي قابل للتفاعل</p></div><span className="rounded-lg bg-[#eaf1e7] p-2 text-[#477453]"><CalendarDays size={17}/></span></div><div className="mt-5 space-y-3">{[{time:'١١:٣٠ ص',title:'معاينة شقة بإطلالة بحرية',person:'محمد العريقي',place:'خور مكسر'},{time:'١٢:٤٥ م',title:'مكالمة متابعة',person:'سارة حسين',place:'اتصال هاتفي'},{time:'٠٣:٠٠ م',title:'مناقشة عرض السعر',person:'عمر منصور',place:'المنصورة'}].map((event,i)=><div key={event.title} className="flex gap-3 rounded-xl border border-[#eef0e8] p-3"><div className="min-w-[65px] border-l border-[#e8ebe2] pl-3 text-[10px] font-bold text-[#5c765e]">{event.time}</div><div className="min-w-0 flex-1"><p className="text-[11px] font-extrabold">{event.title}</p><p className="mt-1 text-[10px] text-[#879085]">{event.person} · {event.place}</p></div><button onClick={(e)=>{e.currentTarget.textContent='تمت';e.currentTarget.className='self-center rounded-lg bg-[#e7f0e5] px-2.5 py-1.5 text-[9px] font-bold text-[#477453]'}} className="self-center rounded-lg border border-[#e6e9e1] px-2.5 py-1.5 text-[9px] font-bold text-[#6e7b6e]">{i===0?'تأكيد':'تمت'}</button></div>)}</div></div>}
+
+                {active==='assistant' && <div className="mt-2 rounded-2xl border border-[#e4e9df] bg-white p-4 sm:p-6"><div className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#214d3b] text-[#f0d7a0]"><Sparkles size={21}/></span><div><p className="text-sm font-black">مساعد AqarFlow</p><p className="mt-1 text-[10px] leading-5 text-[#8a9388]">اختر مهمة لتجربة شكل المساعدة — لا يوجد اتصال بنموذج ذكاء اصطناعي في هذه المعاينة.</p></div></div><div className="mt-5 grid gap-2 sm:grid-cols-2">{[{title:'تلخيص حالة العميل',desc:'ملخص افتراضي لآخر تواصل وخطوة المتابعة',icon:MessageCircle},{title:'اقتراح الخطوة التالية',desc:'أفكار عامة لتنظيم فرصة البيع',icon:ArrowUpLeft},{title:'تحضير معاينة',desc:'قائمة مختصرة بما ينبغي التأكد منه',icon:Check},{title:'مراجعة العقارات المناسبة',desc:'مطابقة تجريبية بناءً على الاهتمام',icon:Building2}].map(({title,desc,icon:Icon})=><button key={title} onClick={()=>tell(title+': نتيجة توضيحية، ويُفعّل الذكاء الاصطناعي بعد الربط.')} className="flex items-start gap-3 rounded-xl border border-[#e9ece4] p-3 text-right transition hover:border-[#b9cdb6] hover:bg-[#f7faf5]"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#edf3ea] text-[#4c7653]"><Icon size={16}/></span><span><span className="block text-[11px] font-extrabold">{title}</span><span className="mt-1 block text-[9px] leading-5 text-[#879185]">{desc}</span></span><ArrowUpLeft size={14} className="ms-auto shrink-0 text-[#9ba59a]"/></button>)}</div></div>}
+
+                <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-[#f2f4ed] px-3 py-2.5"><span className="flex min-w-0 items-center gap-2 text-[9px] leading-5 text-[#748071]"><span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#6f9a76]"/><span className="truncate">بيانات تجريبية · لا تُحفظ بعد مغادرة الصفحة</span></span><button onClick={()=>setAddOpen(true)} className="inline-flex shrink-0 items-center gap-1 text-[9px] font-extrabold text-[#3f6b49]"><Plus size={12}/> أضف عميلًا</button></div>
               </div>
             </div>
-            <div className="absolute -bottom-4 -left-2 hidden items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-xl sm:flex"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700"><ShieldCheck size={19} /></span><span><span className="block text-xs font-extrabold text-slate-800">واجهة مستقلة</span><span className="mt-0.5 block text-[10px] text-slate-500">جاهزة للمعاينة دون إعدادات</span></span></div>
+            <div className="flex items-center justify-between border-t border-[#eeeee8] bg-[#fcfcf9] px-4 py-2.5 text-[9px] text-[#9aa196]"><span>معاينة تفاعلية</span><span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-[#77a57c]"/> تعمل محليًا</span></div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto grid max-w-[1320px] gap-6 px-5 py-8 sm:grid-cols-3 sm:px-8 sm:py-10">
-          <div className="flex items-center gap-4 border-b border-slate-100 pb-5 sm:border-b-0 sm:border-l sm:pb-0 sm:pl-6"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#edf3ff] text-[#315ca8]"><LayoutDashboard size={21} /></span><div><p className="font-extrabold">رؤية موحّدة</p><p className="mt-1 text-xs leading-5 text-slate-500">كل مؤشرات العمل في شاشة واحدة</p></div></div>
-          <div className="flex items-center gap-4 border-b border-slate-100 pb-5 sm:border-b-0 sm:border-l sm:pb-0 sm:pl-6"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#edf3ff] text-[#315ca8]"><Workflow size={21} /></span><div><p className="font-extrabold">خطوات أوضح</p><p className="mt-1 text-xs leading-5 text-slate-500">حوّل المتابعة اليومية إلى سير عمل منظم</p></div></div>
-          <div className="flex items-center gap-4"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#edf3ff] text-[#315ca8]"><ShieldCheck size={21} /></span><div><p className="font-extrabold">خصوصية أولًا</p><p className="mt-1 text-xs leading-5 text-slate-500">معاينة الواجهة لا تحفظ بيانات حقيقية</p></div></div>
-        </div>
-      </section>
+    <section id="workspace" className="scroll-mt-20 border-y border-[#e8e7df] bg-white py-12 sm:py-16"><div className="mx-auto max-w-[1440px] px-4 sm:px-7 lg:px-10"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-[10px] font-black tracking-[.18em] text-[#668268]">LIVE PRODUCT PREVIEW</p><h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">ليست صورة ثابتة. جرّبها بنفسك.</h2></div><p className="max-w-lg text-[12px] leading-7 text-[#7b857a] sm:text-sm">بدّل الأقسام، ابحث عن عميل، صفِّ المراحل، أضف سجلًا جديدًا، وجرّب تنبيهات المعاينة. هذه التفاعلات تعمل دون قاعدة بيانات.</p></div><div className="mt-6 flex flex-wrap gap-2">{nav.map(({id,label,icon:Icon})=><button key={id} onClick={()=>{setActive(id);document.getElementById('top')?.scrollIntoView({behavior:'smooth'})}} className={'inline-flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-[11px] font-bold transition sm:text-xs '+(active===id?'border-[#214d3b] bg-[#214d3b] text-white':'border-[#e4e7de] bg-[#fbfbf8] text-[#687468] hover:border-[#a9bca5] hover:bg-[#f2f6ef]')}><Icon size={14}/>{label}</button>)}</div><p className="mt-3 text-[10px] text-[#9aa196]">التفاعلات والبيانات داخل هذه الصفحة تجريبية؛ الحفظ الدائم، تسجيل الدخول، الخرائط، الرسائل والذكاء الاصطناعي الحقيقي تأتي بعد ربط الخدمات.</p></div></section>
 
-      <section id="features" className="mx-auto max-w-[1320px] px-5 py-16 sm:px-8 sm:py-24">
-        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><div className="max-w-2xl"><p className="text-xs font-black tracking-[0.18em] text-[#315ca8]">BUILT FOR REAL ESTATE</p><h2 className="mt-4 text-3xl font-black leading-tight tracking-tight sm:text-4xl">أدوات أقل تشتتًا.<br />مساحة أكبر لإنجاز الصفقات.</h2></div><p className="max-w-md text-sm leading-7 text-slate-500">تجربة مصممة حول دورة العمل العقاري اليومية، لا لوحة عامة تحتاج إلى تكييفها من الصفر.</p></div>
-        <div className="mt-10 grid gap-0 border-y border-slate-200 sm:grid-cols-2 sm:gap-x-12">
-          {features.map(({ icon: Icon, number, title, text }) => <article key={number} className="grid grid-cols-[44px_1fr] gap-4 border-b border-slate-200 py-7 last:border-b-0 sm:py-9 [&:nth-last-child(2)]:sm:border-b-0"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-[#315ca8] shadow-sm ring-1 ring-slate-200"><Icon size={20} /></span><div><div className="flex items-center gap-3"><span className="text-[10px] font-black tracking-widest text-slate-400">{number}</span><h3 className="text-base font-extrabold sm:text-lg">{title}</h3></div><p className="mt-2 max-w-lg text-sm leading-7 text-slate-500">{text}</p></div></article>)}
-        </div>
-      </section>
+    <section id="capabilities" className="mx-auto max-w-[1440px] px-4 py-14 sm:px-7 sm:py-20 lg:px-10"><div className="max-w-2xl"><p className="text-[10px] font-black tracking-[.18em] text-[#668268]">MADE FOR PROPERTY TEAMS</p><h2 className="mt-3 text-3xl font-black leading-tight tracking-[-.035em] sm:text-4xl">هدوء في الواجهة.<br/>وضوح في العمل.</h2><p className="mt-4 text-sm leading-7 text-[#7a8479]">الأدوات مرتبة حول الطريقة التي تعمل بها الفرق العقارية يوميًا، مع مساحة للنمو من دون تعقيد غير ضروري.</p></div><div className="mt-9 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[{num:'01',title:'ملف عميل واضح',desc:'احتياج العميل وآخر تواصل والخطوة التالية في مكان واحد.',icon:Users},{num:'02',title:'محفظة عقارات',desc:'تفاصيل العقارات وتوفرها وأسعارها في قائمة سهلة المراجعة.',icon:Building2},{num:'03',title:'متابعة منظمة',desc:'مواعيد ومراحل بيع تساعد الفريق على معرفة الأولويات.',icon:CalendarDays},{num:'04',title:'مساعدة ذكية',desc:'تجهيز مساحة لملخصات واقتراحات بعد تفعيل التكاملات.',icon:Sparkles}].map(({num,title,desc,icon:Icon})=><article key={num} className="rounded-2xl border border-[#e6e7df] bg-white p-5 transition hover:-translate-y-1 hover:border-[#c8d7c5] hover:shadow-[0_12px_30px_#29452d0b]"><div className="flex items-center justify-between"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#edf3ea] text-[#4e7754]"><Icon size={19}/></span><span className="text-[10px] font-black tracking-widest text-[#a0a69c]">{num}</span></div><h3 className="mt-5 text-sm font-extrabold">{title}</h3><p className="mt-2 text-[11px] leading-6 text-[#7e887d]">{desc}</p></article>)}</div></section>
 
-      <section id="how-it-works" className="mx-5 mb-8 overflow-hidden rounded-2xl bg-[#eaf0fb] sm:mx-8 lg:mx-auto lg:max-w-[1264px]">
-        <div className="grid gap-8 px-6 py-10 sm:px-10 sm:py-12 md:grid-cols-[1fr_auto] md:items-center">
-          <div><p className="text-xs font-black tracking-widest text-[#315ca8]">ابدأ من هنا</p><h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">جرّب شكل مساحة عملك قبل ربط الخدمات.</h2><p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">هذه معاينة تصميمية ببيانات افتراضية. تسجيل الدخول والحفظ والذكاء الاصطناعي والرسائل الحقيقية ستُفعّل في مرحلة الربط التالية.</p></div>
-          <a href="#product" className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#142d5c] px-5 py-3.5 text-sm font-extrabold text-white transition hover:bg-[#203f79]">العودة إلى المعاينة <ArrowUpLeft size={17} /></a>
-        </div>
-      </section>
-      <footer className="mx-auto flex max-w-[1320px] flex-col gap-3 px-5 py-7 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-8"><a href="/" className="text-sm font-black text-[#14213d]">AqarFlow AI</a><span>نسخة معاينة · الأرقام والأنشطة المعروضة تجريبية</span><span>© 2026 AqarFlow AI</span></footer>
-    </main>
-  );
+    <section id="preview-note" className="mx-4 mb-5 overflow-hidden rounded-[24px] bg-[#214d3b] text-white sm:mx-7 lg:mx-10"><div className="mx-auto flex max-w-[1320px] flex-col gap-6 px-5 py-9 sm:px-9 sm:py-11 md:flex-row md:items-center md:justify-between"><div className="max-w-2xl"><p className="text-[10px] font-black tracking-[.18em] text-[#d6c28f]">A CLEARER WAY TO WORK</p><h2 className="mt-3 text-2xl font-black leading-tight sm:text-3xl">تعرّف على التجربة قبل توصيل الخدمات.</h2><p className="mt-3 text-[12px] leading-7 text-[#d0ddd1]">لا يلزم حساب أو إعداد قاعدة بيانات لاستكشاف هذه الواجهة. جميع الأسماء والأرقام المعروضة أمثلة غير حقيقية.</p></div><button onClick={scrollToWorkspace} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#f1dfb4] px-5 py-3.5 text-sm font-extrabold text-[#284a34] hover:bg-white">العودة إلى مساحة العمل <ArrowUpLeft size={16}/></button></div></section>
+    <footer className="mx-auto flex max-w-[1440px] flex-col gap-2 px-4 py-6 text-[10px] text-[#8b9489] sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-10"><a href="#top" className="text-sm font-black text-[#214d3b]">AqarFlow AI</a><span>مساحة عمل عقارية · معاينة تفاعلية ببيانات افتراضية</span><span>© 2026 AqarFlow AI</span></footer>
+
+    {addOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#17251c]/45 p-4 backdrop-blur-sm" onClick={(e)=>{if(e.target===e.currentTarget)setAddOpen(false)}}><div role="dialog" aria-modal="true" aria-labelledby="add-lead-title" className="w-full max-w-md rounded-2xl border border-[#e4e7de] bg-[#fffefa] p-5 shadow-2xl sm:p-6"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black tracking-widest text-[#6c896d]">إضافة سجل تجريبي</p><h2 id="add-lead-title" className="mt-2 text-lg font-black">عميل جديد</h2><p className="mt-1 text-[11px] leading-5 text-[#879084]">سيظهر العميل في القائمة الحالية فقط، ولن يُحفظ في قاعدة بيانات.</p></div><button onClick={()=>setAddOpen(false)} aria-label="إغلاق" className="rounded-lg p-2 text-[#7c877b] hover:bg-[#f0f2eb]"><X size={17}/></button></div><form className="mt-5 space-y-4" onSubmit={(e)=>{e.preventDefault();addLead()}}><label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#4c5b4c]">اسم العميل *</span><input autoFocus value={newName} onChange={(e)=>setNewName(e.target.value)} placeholder="مثال: أحمد سالم" className="w-full rounded-xl border border-[#dfe4d9] bg-white px-3.5 py-3 text-sm outline-none placeholder:text-[#b1b7ac] focus:border-[#7a9a7a]"/></label><label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#4c5b4c]">العقار أو الاهتمام</span><input value={newInterest} onChange={(e)=>setNewInterest(e.target.value)} placeholder="مثال: شقة بثلاث غرف في خور مكسر" className="w-full rounded-xl border border-[#dfe4d9] bg-white px-3.5 py-3 text-sm outline-none placeholder:text-[#b1b7ac] focus:border-[#7a9a7a]"/></label><div className="flex gap-2 pt-1"><button type="submit" className="flex-1 rounded-xl bg-[#214d3b] px-4 py-3 text-sm font-extrabold text-white hover:bg-[#173b2b]">إضافة إلى المعاينة</button><button type="button" onClick={()=>setAddOpen(false)} className="rounded-xl border border-[#e0e4da] px-4 py-3 text-sm font-bold text-[#687468]">إلغاء</button></div></form></div></div>}
+    {toast && <div role="status" className="fixed bottom-4 left-4 right-4 z-[60] mx-auto flex max-w-sm items-center gap-2 rounded-xl bg-[#213d2c] px-4 py-3 text-xs font-bold text-white shadow-xl sm:left-6 sm:right-auto"><Check size={15} className="shrink-0 text-[#c7dfb9]"/>{toast}</div>}
+  </main>;
 }
