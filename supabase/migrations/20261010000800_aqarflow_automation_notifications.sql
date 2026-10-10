@@ -48,7 +48,7 @@ begin
   select t.owner_user_id,
          coalesce(t.assigned_to, t.owner_user_id),
          'task_due', 'task', t.id,
-         'task_due:' || t.id::text,
+         'task_due:' || t.id::text || ':' || extract(epoch from t.due_at)::bigint::text,
          'موعد متابعة مستحق',
          left('المهمة: ' || t.title, 500)
   from public.aqarflow_crm_tasks t
@@ -59,7 +59,7 @@ begin
       select 1 from public.aqarflow_crm_notifications n
       where n.owner_user_id=t.owner_user_id
         and n.recipient_user_id=coalesce(t.assigned_to,t.owner_user_id)
-        and n.event_key='task_due:' || t.id::text
+        and n.event_key='task_due:' || t.id::text || ':' || extract(epoch from t.due_at)::bigint::text
     )
   order by t.due_at asc
   limit 500
@@ -71,7 +71,7 @@ begin
     event_key, title, body
   )
   select v.owner_user_id, v.owner_user_id, 'viewing_soon', 'viewing', v.id,
-         'viewing_soon:' || v.id::text,
+         'viewing_soon:' || v.id::text || ':' || extract(epoch from v.starts_at)::bigint::text,
          'معاينة عقار قريبة',
          left('الموعد: ' || v.title, 500)
   from public.aqarflow_crm_viewings v
@@ -82,7 +82,7 @@ begin
       select 1 from public.aqarflow_crm_notifications n
       where n.owner_user_id=v.owner_user_id
         and n.recipient_user_id=v.owner_user_id
-        and n.event_key='viewing_soon:' || v.id::text
+        and n.event_key='viewing_soon:' || v.id::text || ':' || extract(epoch from v.starts_at)::bigint::text
     )
   order by v.starts_at asc
   limit 500
