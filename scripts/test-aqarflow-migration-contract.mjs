@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-const sql=readFileSync(new URL('../supabase/migrations/202610100002_aqarflow_ai_runtime.sql',import.meta.url),'utf8');
+const sql=readFileSync(new URL('../supabase/migrations/20261010000200_aqarflow_ai_runtime.sql',import.meta.url),'utf8');
 const route=readFileSync(new URL('../app/api/aqarflow/sales/route.ts',import.meta.url),'utf8');
 const ranked=readFileSync(new URL('../lib/aqarflow/ranked-inventory.ts',import.meta.url),'utf8');
 const body=readFileSync(new URL('../lib/aqarflow/http-body.ts',import.meta.url),'utf8');
