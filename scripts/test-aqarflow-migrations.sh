@@ -11,6 +11,7 @@ psql -v ON_ERROR_STOP=1 -f scripts/aqarflow-ci-bootstrap.sql
 psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261010000200_aqarflow_ai_runtime.sql
 psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261010000300_aqarflow_whatsapp_tech_provider.sql
 psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261010000400_aqarflow_crm_inbox.sql
+psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261010000500_aqarflow_crm_lead_pipeline.sql
 psql -v ON_ERROR_STOP=1 -f scripts/test-aqarflow-migration-integration.sql
 
 tmpfile="$(mktemp)"

@@ -11,7 +11,8 @@ DECLARE
     'aqarflow_whatsapp_outbound_requests',
     'aqarflow_crm_contacts',
     'aqarflow_crm_conversations',
-    'aqarflow_crm_messages'
+    'aqarflow_crm_messages',
+    'aqarflow_crm_contact_notes'
   ];
   forced_tables text[] := ARRAY[
     'aqarflow_whatsapp_integrations',
@@ -19,7 +20,8 @@ DECLARE
     'aqarflow_whatsapp_outbound_requests',
     'aqarflow_crm_contacts',
     'aqarflow_crm_conversations',
-    'aqarflow_crm_messages'
+    'aqarflow_crm_messages',
+    'aqarflow_crm_contact_notes'
   ];
 BEGIN
   FOREACH table_name IN ARRAY expected_tables LOOP
@@ -43,12 +45,14 @@ BEGIN
      OR has_table_privilege('authenticated','public.aqarflow_crm_contacts','SELECT')
      OR has_table_privilege('authenticated','public.aqarflow_crm_conversations','SELECT')
      OR has_table_privilege('authenticated','public.aqarflow_crm_messages','SELECT')
-     OR has_table_privilege('authenticated','public.aqarflow_ai_usage','SELECT') THEN
+     OR has_table_privilege('authenticated','public.aqarflow_ai_usage','SELECT')
+     OR has_table_privilege('authenticated','public.aqarflow_crm_contact_notes','SELECT') THEN
     RAISE EXCEPTION 'Authenticated role can directly read a protected AqarFlow table';
   END IF;
 
   IF NOT has_table_privilege('service_role','public.aqarflow_whatsapp_integrations','SELECT')
-     OR NOT has_table_privilege('service_role','public.aqarflow_crm_messages','SELECT') THEN
+     OR NOT has_table_privilege('service_role','public.aqarflow_crm_messages','SELECT')
+     OR NOT has_table_privilege('service_role','public.aqarflow_crm_contact_notes','SELECT') THEN
     RAISE EXCEPTION 'Service role grants are missing';
   END IF;
 END $$;
