@@ -56,7 +56,6 @@ export default function HomePage() {
   const [newInterest, setNewInterest] = useState('');
   const [toast, setToast] = useState('');
   const [noticeOpen, setNoticeOpen] = useState(false);
-  const [mobileMenu, setMobileMenu] = useState(false);
   const [completed, setCompleted] = useState<number[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<number | null>(null);
 
@@ -107,7 +106,7 @@ export default function HomePage() {
           <div className="aq-dashboard overflow-hidden rounded-[22px] border border-[#e0e7f2] bg-white shadow-[0_28px_90px_#1b3b6b18] sm:rounded-[26px]">
             <div className="flex items-center justify-between gap-2 border-b border-[#edf1f7] bg-white px-3.5 py-3.5 sm:px-5 sm:py-4">
               <div className="flex min-w-0 items-center gap-2.5"><span className="aq-mini-mark"><LayoutDashboard size={16}/></span><div className="min-w-0"><p className="truncate text-[12px] font-black text-[#172b4d] sm:text-sm">مساحة العمل</p><p className="mt-1 truncate text-[9px] text-[#8c99ad] sm:text-[10px]">الأحد، ١١ أكتوبر · نظرة عامة</p></div></div>
-              <div className="flex shrink-0 items-center gap-2"><span className="hidden rounded-full bg-[#f1f5ff] px-2.5 py-1.5 text-[9px] font-bold text-[#4169e1] min-[430px]:inline-flex">معاينة مباشرة</span><button aria-label="الإشعارات" onClick={()=>setNoticeOpen(!noticeOpen)} className={'aq-icon-btn relative '+(noticeOpen?'!bg-[#edf2ff] !text-[#4169e1]':'')}><Bell size={16}/><span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#f59b54]"/></button><button aria-label="قائمة الأقسام" onClick={()=>setMobileMenu(!mobileMenu)} className="aq-icon-btn sm:hidden"><Menu size={16}/></button></div>
+              <div className="flex shrink-0 items-center gap-2"><span className="hidden rounded-full bg-[#f1f5ff] px-2.5 py-1.5 text-[9px] font-bold text-[#4169e1] min-[430px]:inline-flex">معاينة مباشرة</span><button aria-label="الإشعارات" onClick={()=>setNoticeOpen(!noticeOpen)} className={'aq-icon-btn relative '+(noticeOpen?'!bg-[#edf2ff] !text-[#4169e1]':'')}><Bell size={16}/><span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#f59b54]"/></button></div>
             </div>
             {noticeOpen && <div className="border-b border-[#e8edf6] bg-[#f8faff] px-4 py-3"><p className="text-[11px] font-extrabold">تنبيهاتك اليوم</p><p className="mt-1.5 text-[10px] leading-5 text-[#73829a]">موعد معاينة الساعة ١١:٣٠، وعميلان يحتاجان إلى متابعة. بيانات توضيحية.</p></div>}
             <div className="aq-app-nav flex gap-1.5 overflow-x-auto border-b border-[#edf1f7] bg-[#fbfcff] px-3 py-2.5 sm:hidden">{tabs.map(({id,label,icon:Icon})=><button key={id} onClick={()=>setActive(id)} className={'flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-[10px] font-bold transition '+(active===id?'bg-[#4169e1] text-white shadow-sm':'text-[#75839a] hover:bg-[#eef2fc]')}><Icon size={13}/>{label}</button>)}</div>
