@@ -172,7 +172,7 @@ export async function POST(request: Request) {
     }
     if (existing.status === 'sent' && existing.provider_message_id) {
       const persisted = await persistCrmOutbound(admin, owner.ownerUserId, conversationId, preview, existing.provider_message_id);
-      return response({ sent: true, persisted, messageId: existing.provider_message_id, replayed: true });
+      return response({ sent: true, persisted, retryAllowed: !persisted, messageId: existing.provider_message_id, replayed: true });
     }
     return response({
       error: 'سبق حجز هذا المفتاح. لن يعاد الإرسال تلقائيًا؛ تحقق من حالة الرسالة قبل إنشاء طلب جديد.',
@@ -205,10 +205,10 @@ export async function POST(request: Request) {
       .update({ status: 'sent', provider_message_id: sent.messageId, sent_at: new Date().toISOString() })
       .eq('owner_user_id', owner.ownerUserId).eq('idempotency_key', idempotencyKey);
     if (updateError) {
-      return response({ sent: true, persisted: false, messageId: sent.messageId, idempotencyKey }, 202);
+      return response({ sent: true, persisted: false, retryAllowed: false, messageId: sent.messageId, idempotencyKey }, 202);
     }
     const persisted = await persistCrmOutbound(admin, owner.ownerUserId, conversationId, preview, sent.messageId);
-    return response({ sent: true, persisted, messageId: sent.messageId, replayed: false }, persisted ? 200 : 202);
+    return response({ sent: true, persisted, retryAllowed: !persisted, messageId: sent.messageId, replayed: false }, persisted ? 200 : 202);
   } catch (error) {
     const knownRejection = error instanceof WhatsAppCloudApiError && error.httpStatus >= 400 && error.httpStatus < 500;
     await admin.from('aqarflow_whatsapp_outbound_requests')
