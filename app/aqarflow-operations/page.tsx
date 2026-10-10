@@ -20,6 +20,7 @@ export default async function AqarFlowOperationsPage(){
           <a href="/aqarflow-crm" className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700">العملاء المحتملون</a>
           <a href="/aqarflow-inbox" className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700">صندوق واتساب</a>
           <a href="/aqarflow-automation" className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700">الأتمتة والتنبيهات</a>
+          <a href="/aqarflow-analytics" className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-800">ذكاء المبيعات</a>
           <a href="/properties" className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700">العقارات</a>
           <a href="/dashboard" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white">لوحة العمل</a>
         </nav>
