@@ -26,7 +26,8 @@ This implementation keeps the CRM, inventory, and inbox native to the existing T
 - [ ] Configure and verify the webhook callback URL: `https://<your-development-host>/api/integrations/whatsapp/webhook`.
 - [ ] Set the same random webhook verify token in Meta and the server secret `META_WEBHOOK_VERIFY_TOKEN`; subscribe the app to the `messages` webhook field. The connection endpoint also subscribes the authorized WABA to the app.
 - [ ] Request/review the permissions required for the intended provider flow, including `business_management`, `whatsapp_business_management`, and `whatsapp_business_messaging`, as applicable to the current Meta app type and access tier. Complete Meta App Review, business verification, and Advanced Access if required.
-- [ ] Complete any remaining Meta Tech Provider steps in Meta's official dashboard, including system-user/business asset configuration, phone-number registration/PIN, approved message templates, and credit-line sharing where the chosen business model requires it. These account/financial actions are deliberately **not** performed automatically by this code.
+- [ ] Complete any remaining Meta Tech Provider steps in Meta's official dashboard, including system-user/business asset configuration and credit-line sharing where the chosen business model requires it. These account/financial actions are deliberately **not** performed automatically by this code.
+- [ ] If Meta shows the phone number as not yet connected to Cloud API, complete any required OTP/code verification in Meta first, then use the per-number registration area in `/settings/whatsapp`. Enter that number's existing six-digit two-step-verification PIN and click the registration button. The server checks the remote phone status before attempting registration; an already-connected number is not registered again. The PIN is sent for the request only and is not written to the database or logs. Test with a development number before production.
 - [ ] Test with a development WABA/phone number before connecting production numbers.
 
 ## 3. Runtime variables and server secrets
@@ -55,6 +56,7 @@ The repository's `.env.example` lists the project-wide variables. Values for rea
 
 - [ ] Sign in as the intended workspace owner on the development deployment.
 - [ ] Open `/settings/whatsapp`, start Embedded Signup, complete Meta's flow, and verify that the connected phone number appears. The integration record should contain encrypted token ciphertext, not plaintext.
+- [ ] On `/settings/whatsapp`, verify the number registration flow: an already-`CONNECTED` number should be reported as already registered without a second registration request; an unverified number should return a clear instruction to finish verification first; a verified test number should register only after the owner enters the correct six-digit PIN.
 - [ ] Send a real inbound test message from a separate test phone to the connected number. Confirm one contact, one conversation, and one inbound message appear in the CRM inbox.
 - [ ] Replay the same signed webhook event and confirm the event/message is not duplicated and the conversation is not moved backwards. Confirm a previously unprocessed webhook event can be retried to recover after a temporary persistence failure.
 - [ ] Generate a draft from the inbox. Confirm that the draft is saved but no message is sent automatically.
