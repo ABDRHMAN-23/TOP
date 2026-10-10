@@ -58,7 +58,7 @@ export async function POST(req:Request) {
     const msg=parsed.code==='message_too_long'?'رسالة العميل طويلة جدًا؛ اختصرها ثم أعد المحاولة.':parsed.code==='message_required'?'اكتب رسالة العميل أولًا.':'بيانات الطلب غير صحيحة.';
     return NextResponse.json({error:msg},{status:400,headers:{'Cache-Control':'no-store'}});
   }
-  const {data:memberships,error:membershipError}=await supabase.from('team_memberships').select('owner_id,role').eq('member_id',user.id).neq('owner_id',user.id).limit(2);
+  const {data:memberships,error:membershipError}=await supabase.from('aqarflow_workspace_memberships').select('owner_id,role').eq('member_id',user.id).neq('owner_id',user.id).limit(2);
   if(membershipError)return safeError(503);
   if((memberships||[]).length>1)return NextResponse.json({error:'حسابك مرتبط بأكثر من مساحة عمل؛ يلزم تحديد المساحة أولًا.'},{status:409,headers:{'Cache-Control':'no-store'}});
   const workspaceOwnerId=memberships?.[0]?.owner_id||user.id;
