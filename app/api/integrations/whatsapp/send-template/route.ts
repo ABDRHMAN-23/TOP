@@ -42,6 +42,10 @@ async function persistCrmOutbound(
     .select('created_at').eq('owner_user_id', ownerId).eq('provider_message_id', messageId).maybeSingle();
   if (existingMessageError) return false;
   const sentAt = existingMessage?.created_at || now;
+  const { data: outboundRequest, error: outboundRequestError } = await admin.from('aqarflow_whatsapp_outbound_requests')
+    .select('provider_status').eq('owner_user_id', ownerId).eq('provider_message_id', messageId).maybeSingle();
+  if (outboundRequestError) return false;
+  const providerStatus = outboundRequest?.provider_status || 'sent';
 
   const { error: messageError } = await admin.from('aqarflow_crm_messages').upsert({
     owner_user_id: ownerId,
@@ -51,7 +55,7 @@ async function persistCrmOutbound(
     message_type: 'template',
     message_text: preview.slice(0, 4096),
     provider_message_id: messageId,
-    provider_status: 'sent',
+    provider_status: providerStatus,
     created_at: sentAt,
     sent_at: sentAt,
   }, { onConflict: 'owner_user_id,provider_message_id', ignoreDuplicates: true });
