@@ -90,7 +90,7 @@ VALUES
  ('00000000-0000-4000-8000-000000000002','Owner B listing','sale','available');
 
 -- Level 2 tenant boundaries and workflow invariants.
-DO $
+DO $ops_check$
 DECLARE rejected boolean := false;
 BEGIN
   BEGIN
@@ -100,9 +100,9 @@ BEGIN
   EXCEPTION WHEN foreign_key_violation THEN rejected := true;
   END;
   IF NOT rejected THEN RAISE EXCEPTION 'Cross-tenant task contact relationship was not rejected'; END IF;
-END $;
+END $ops_check$;
 
-DO $
+DO $ops_check$
 DECLARE rejected boolean := false;
 BEGIN
   BEGIN
@@ -113,14 +113,14 @@ BEGIN
   EXCEPTION WHEN check_violation THEN rejected := true;
   END;
   IF NOT rejected THEN RAISE EXCEPTION 'Invalid viewing time range was not rejected'; END IF;
-END $;
+END $ops_check$;
 
 INSERT INTO public.aqarflow_crm_viewings(owner_user_id,contact_id,property_id,title,starts_at,ends_at,created_by)
 VALUES ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001',
   (SELECT id FROM public.aqarflow_properties WHERE owner_user_id='00000000-0000-4000-8000-000000000001' AND title='Owner A listing'),
   'Owner A first viewing','2030-01-01T10:00:00Z','2030-01-01T11:00:00Z','00000000-0000-4000-8000-000000000001');
 
-DO $
+DO $ops_check$
 DECLARE rejected boolean := false;
 BEGIN
   BEGIN
@@ -131,13 +131,13 @@ BEGIN
   EXCEPTION WHEN exclusion_violation THEN rejected := true;
   END;
   IF NOT rejected THEN RAISE EXCEPTION 'Overlapping viewing for one property was not rejected'; END IF;
-END $;
+END $ops_check$;
 
 INSERT INTO public.aqarflow_crm_tasks(owner_user_id,contact_id,title,due_at,created_by)
 VALUES
  ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','later follow-up','2030-01-04T10:00:00Z','00000000-0000-4000-8000-000000000001'),
  ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','earlier follow-up','2030-01-03T10:00:00Z','00000000-0000-4000-8000-000000000001');
-DO $
+DO $ops_check$
 DECLARE expected timestamptz; actual timestamptz;
 BEGIN
   SELECT min(due_at) INTO expected FROM public.aqarflow_crm_tasks
@@ -146,17 +146,17 @@ BEGIN
   SELECT next_follow_up_at INTO actual FROM public.aqarflow_crm_contacts
    WHERE owner_user_id='00000000-0000-4000-8000-000000000001' AND id='10000000-0000-4000-8000-000000000001';
   IF actual IS DISTINCT FROM expected THEN RAISE EXCEPTION 'CRM next_follow_up_at was not synchronized to the earliest active task'; END IF;
-END $;
+END $ops_check$;
 
 UPDATE public.aqarflow_crm_tasks SET status='completed',completed_at='2030-01-02T10:00:00Z'
  WHERE owner_user_id='00000000-0000-4000-8000-000000000001' AND title='earlier follow-up';
-DO $
+DO $ops_check$
 DECLARE actual timestamptz;
 BEGIN
   SELECT next_follow_up_at INTO actual FROM public.aqarflow_crm_contacts
    WHERE owner_user_id='00000000-0000-4000-8000-000000000001' AND id='10000000-0000-4000-8000-000000000001';
   IF actual IS DISTINCT FROM '2030-01-04T10:00:00Z'::timestamptz THEN RAISE EXCEPTION 'Completing a task did not advance the next follow-up'; END IF;
-END $;
+END $ops_check$;
 
 -- The owner can read only their own property.
 SET ROLE authenticated;
