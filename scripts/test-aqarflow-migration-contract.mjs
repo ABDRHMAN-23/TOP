@@ -25,7 +25,7 @@ assert.match(route,/if\(selected\.length===0\)/);
 assert.ok(route.indexOf('if(selected.length===0)')<route.indexOf("runtimeEnv('GEMINI_API_KEY')"));
 assert.match(route,/validateSalesDraft\(/);
 assert.match(body,/reader\.cancel\(\)/);
-assert.match(body,/totalBytes>maxBytes/);
+assert.match(body,/totalBytes\\s*>\\s*maxBytes/);
 assert.match(props,/supabase\.auth\.getUser\(\)/);
 assert.match(props,/owner_user_id/);
 assert.match(props,/ctx\.user!\.id!==ctx\.ownerId/);
