@@ -14,6 +14,12 @@ function encodeBase64Url(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
+function copyToArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buffer).set(bytes);
+  return buffer;
+}
+
 function decodeBase64Url(value: string): Uint8Array | null {
   if (!/^[A-Za-z0-9_-]+$/.test(value)) return null;
   try {
@@ -87,7 +93,7 @@ export async function verifySignedLegalConsentToken(
   const validSignature = await crypto.subtle.verify(
     'HMAC',
     key,
-    signature,
+    copyToArrayBuffer(signature),
     new TextEncoder().encode(parts[0]),
   );
   if (!validSignature) return null;
