@@ -15,17 +15,25 @@ async function persistCrmOutbound(admin:ReturnType<typeof createAdminClient>,own
   if(!conversationId)return true;
   const now=new Date().toISOString();
   const {data:conversation,error:conversationError}=await admin.from('aqarflow_crm_conversations')
-    .select('id,contact_id,integration_id').eq('owner_user_id',ownerId).eq('id',conversationId).maybeSingle();
+    .select('id,contact_id,integration_id,last_message_at,last_message_preview,updated_at')
+    .eq('owner_user_id',ownerId).eq('id',conversationId).maybeSingle();
   if(conversationError||!conversation)return false;
+  const {data:existingMessage,error:existingMessageError}=await admin.from('aqarflow_crm_messages')
+    .select('created_at').eq('owner_user_id',ownerId).eq('provider_message_id',messageId).maybeSingle();
+  if(existingMessageError)return false;
+  const sentAt=existingMessage?.created_at||now;
   const {error:messageError}=await admin.from('aqarflow_crm_messages').upsert({
     owner_user_id:ownerId,conversation_id:conversationId,direction:'outbound',channel:'whatsapp',message_type:'text',
-    message_text:message,provider_message_id:messageId,provider_status:'sent',created_at:now,sent_at:now,
+    message_text:message,provider_message_id:messageId,provider_status:'sent',created_at:sentAt,sent_at:sentAt,
   },{onConflict:'owner_user_id,provider_message_id',ignoreDuplicates:true});
   if(messageError)return false;
-  const {error:conversationUpdateError}=await admin.from('aqarflow_crm_conversations')
-    .update({last_message_at:now,last_message_preview:message.slice(0,500),updated_at:now})
-    .eq('owner_user_id',ownerId).eq('id',conversationId);
-  if(conversationUpdateError)return false;
+  // Idempotent replays must not replace a newer conversation preview with an older send.
+  if(Date.parse(sentAt)>=Date.parse(conversation.last_message_at)){
+    const {error:conversationUpdateError}=await admin.from('aqarflow_crm_conversations').update({
+      last_message_at:sentAt,last_message_preview:message.slice(0,500),updated_at:now,
+    }).eq('owner_user_id',ownerId).eq('id',conversationId);
+    if(conversationUpdateError)return false;
+  }
   return true;
 }
 
