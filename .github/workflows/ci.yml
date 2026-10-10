@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, migration/aqarflow-ai]
+    branches: [main, migration/aqarflow-ai, 'integration/**']
   pull_request:
 
 jobs:
