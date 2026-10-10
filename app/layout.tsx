@@ -1,26 +1,31 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import InstallPrompt from '@/components/InstallPrompt';
-import QuvotoLogo from '@/components/QuvotoLogo';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://quvoto.com'),
-  title: { default: 'QUVOTO — AI Voice Quotes for Contractors', template: '%s | QUVOTO' },
-  description: 'Turn a contractor voice note into a professional, editable quote in seconds. QUVOTO uses speech-to-text and AI to structure job details, pricing and notes into a customer-ready quote.',
-  applicationName: 'QUVOTO',
-  keywords: ['voice quote software','AI quote generator for contractors','contractor quoting software','plumber quote software','electrician quote software','voice to quote','AI estimating software','quote PDF generator'],
+  title: { default: 'AqarFlow AI — منصة المبيعات العقارية الذكية', template: '%s | AqarFlow AI' },
+  description: 'واجهة AqarFlow AI لإدارة العملاء المحتملين والعقارات ومتابعات المبيعات والتقارير في مكان واحد.',
+  applicationName: 'AqarFlow AI',
+  keywords: ['AqarFlow AI', 'إدارة العقارات', 'CRM عقاري', 'المبيعات العقارية', 'إدارة العملاء المحتملين'],
   alternates: { canonical: '/' },
-  openGraph: { type: 'website', siteName: 'QUVOTO', title: 'QUVOTO — AI Voice Quotes for Contractors', description: 'Speak your job notes. Get a professional quote ready to review and send.', url: '/' },
-  twitter: { card: 'summary_large_image', title: 'QUVOTO — AI Voice Quotes for Contractors', description: 'Turn field voice notes into professional customer-ready quotes.' },
-  robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 } },
-  icons: { icon: '/quvoto-logo.jpg?v=18', shortcut: '/quvoto-logo.jpg?v=18', apple: '/quvoto-logo.jpg?v=18' },
-  appleWebApp: { capable: true, title: 'QUVOTO', statusBarStyle: 'default' },
-  other: { 'mobile-web-app-capable': 'yes', 'theme-color': '#1769E0' },
+  openGraph: {
+    type: 'website',
+    siteName: 'AqarFlow AI',
+    title: 'AqarFlow AI — منصة المبيعات العقارية الذكية',
+    description: 'واجهة موحّدة لإدارة العقارات والعملاء ومتابعات المبيعات.',
+    url: '/',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'AqarFlow AI — منصة المبيعات العقارية الذكية',
+    description: 'واجهة موحّدة لإدارة العقارات والعملاء ومتابعات المبيعات.',
+  },
+  robots: { index: true, follow: true },
+  other: { 'mobile-web-app-capable': 'yes', 'theme-color': '#1d4ed8' },
 };
 
-export default function Layout({children}:{children:React.ReactNode}) {
-  return <html lang="en"><body className={inter.className}>{children}<footer className="border-t border-slate-200 bg-white px-4 py-8"><div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row"><a href="/" aria-label="QUVOTO home"><QuvotoLogo className="h-8 w-8"/></a><p className="text-xs font-semibold text-slate-400">QUVOTO · Speak. Quote. Done.</p></div></footer><InstallPrompt/></body></html>;
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <html lang="ar" dir="rtl"><body className={inter.className}>{children}</body></html>;
 }
