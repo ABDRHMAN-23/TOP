@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+const automationMigration=readFileSync(new URL('../supabase/migrations/20261010000800_aqarflow_automation_notifications.sql',import.meta.url),'utf8');
+const automationDispatch=readFileSync(new URL('../app/api/aqarflow/automation/dispatch/route.ts',import.meta.url),'utf8');
+const notificationsRoute=readFileSync(new URL('../app/api/aqarflow/notifications/route.ts',import.meta.url),'utf8');
+const automationComponent=readFileSync(new URL('../components/aqarflow/AqarFlowAutomation.tsx',import.meta.url),'utf8');
 const sql=readFileSync(new URL('../supabase/migrations/20261010000200_aqarflow_ai_runtime.sql',import.meta.url),'utf8');
 const whatsappMigration=readFileSync(new URL('../supabase/migrations/20261010000300_aqarflow_whatsapp_tech_provider.sql',import.meta.url),'utf8');
 const route=readFileSync(new URL('../app/api/aqarflow/sales/route.ts',import.meta.url),'utf8');
@@ -148,4 +152,21 @@ assert.match(operationsContract,/AqarFlowTaskStatuses/);
 assert.match(operationsContract,/AqarFlowViewingStatuses/);
 assert.match(operationsComponent,/\/api\/aqarflow\/operations\/tasks/);
 assert.match(operationsComponent,/\/api\/aqarflow\/operations\/viewings/);
+
+assert.match(automationMigration,/create table if not exists public\\.aqarflow_crm_notifications/i);
+assert.match(automationMigration,/enable row level security/i);
+assert.match(automationMigration,/force row level security/i);
+assert.match(automationMigration,/revoke all on public\\.aqarflow_crm_notifications from public, anon, authenticated/i);
+assert.match(automationMigration,/aqarflow_dispatch_due_notifications/i);
+assert.match(automationMigration,/on conflict \\(owner_user_id,recipient_user_id,event_key\\) do nothing/i);
+assert.match(automationDispatch,/runtimeEnv\\('CRON_SECRET'\\)/);
+assert.match(automationDispatch,/authorization !== expected/);
+assert.match(automationDispatch,/aqarflow_dispatch_due_notifications/);
+assert.doesNotMatch(automationDispatch,/sendMetaWhatsApp|sendWhatsApp/);
+assert.match(notificationsRoute,/supabase\\.auth\\.getUser\\(\\)/);
+assert.match(notificationsRoute,/\\.eq\\('owner_user_id', ctx\\.ownerId\\)/);
+assert.match(notificationsRoute,/\\.eq\\('recipient_user_id', ctx\\.user\\.id\\)/);
+assert.match(automationComponent,/\\/api\\/aqarflow\\/notifications/);
+assert.match(automationComponent,/لا تُرسل رسائل للعميل تلقائيًا/);
+
 console.log('AqarFlow migration and runtime security contract checks passed.');
