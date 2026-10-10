@@ -144,7 +144,7 @@ create or replace function private.prevent_aqarflow_viewing_overlap()
 returns trigger
 language plpgsql
 set search_path = ''
-as $
+as $viewing_guard$
 begin
   if new.property_id is null or new.status not in ('scheduled','confirmed') then
     return new;
@@ -166,7 +166,7 @@ begin
   end if;
   return new;
 end;
-$;
+$viewing_guard$;
 revoke all on function private.prevent_aqarflow_viewing_overlap() from public,anon,authenticated;
 
 drop trigger if exists aqarflow_viewings_prevent_overlap on public.aqarflow_crm_viewings;
