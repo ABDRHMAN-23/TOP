@@ -85,10 +85,18 @@ export async function POST(request:Request) {
   for(const event of acceptedEvents){
     const integration=integrations.get(event.phoneNumberId)!;
     if(event.kind==='delivery_status'){
-      const {error}=await admin.from('aqarflow_crm_messages')
+      // A delivery status can race ahead of CRM message persistence. Store it on the
+      // outbound request first, then update the message row if it already exists.
+      // The send handler reads this value when it materializes the CRM message.
+      const {error:outboundStatusError}=await admin.from('aqarflow_whatsapp_outbound_requests')
+        .update({provider_status:event.status})
+        .eq('owner_user_id',integration.owner_user_id).eq('integration_id',integration.id)
+        .eq('provider_message_id',event.messageId);
+      if(outboundStatusError)return NextResponse.json({error:'Could not persist WhatsApp outbound delivery status.'},{status:503});
+      const {error:messageStatusError}=await admin.from('aqarflow_crm_messages')
         .update({provider_status:event.status})
         .eq('owner_user_id',integration.owner_user_id).eq('provider_message_id',event.messageId);
-      if(error)return NextResponse.json({error:'Could not persist WhatsApp delivery status.'},{status:503});
+      if(messageStatusError)return NextResponse.json({error:'Could not persist WhatsApp CRM delivery status.'},{status:503});
       continue;
     }
     if(!event.senderPhoneNumber)continue;
