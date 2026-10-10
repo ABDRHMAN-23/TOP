@@ -66,7 +66,6 @@ async function persistCrmOutbound(
   }
   return true;
 }
-}
 
 export async function POST(request: Request) {
   const owner = await requireOwnerAccount();
