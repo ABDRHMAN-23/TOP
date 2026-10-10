@@ -376,3 +376,66 @@ export async function sendMetaWhatsAppTemplate(options: {
   if (!messageId) throw new WhatsAppCloudApiError(response.status, 'template_send_invalid_provider_response');
   return { messageId };
 }
+
+
+export async function registerMetaWhatsAppPhone(options: {
+  graphApiVersion: string;
+  phoneNumberId: string;
+  accessToken: string;
+  pin: string;
+  fetcher?: typeof fetch;
+}): Promise<{ registered: true; alreadyRegistered: boolean; phoneStatus: string }> {
+  const graphVersion = options.graphApiVersion.trim();
+  if (!/^v\d+\.\d+$/.test(graphVersion)) throw new Error('META_GRAPH_API_VERSION must be pinned explicitly.');
+  if (!/^\d{5,40}$/.test(options.phoneNumberId)) throw new Error('Invalid WhatsApp phone number ID.');
+  if (!options.accessToken || options.accessToken.length > 8192) throw new Error('Invalid WhatsApp access token.');
+  if (!/^\d{6}$/.test(options.pin)) throw new Error('The WhatsApp two-step verification PIN must contain exactly six digits.');
+
+  const requestFetch = options.fetcher || fetch;
+  const detailsUrl = new URL('https://graph.facebook.com/' + graphVersion + '/' + options.phoneNumberId);
+  detailsUrl.searchParams.set('fields', 'status,code_verification_status');
+  let detailsResponse: Response;
+  try {
+    detailsResponse = await requestFetch(detailsUrl, {
+      method: 'GET',
+      headers: { Authorization: 'Bearer ' + options.accessToken, Accept: 'application/json' },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(12_000),
+    });
+  } catch {
+    throw new WhatsAppCloudApiError(0, 'phone_registration_lookup_network_or_timeout');
+  }
+  const details: unknown = await detailsResponse.json().catch(() => null);
+  if (!detailsResponse.ok || !isRecord(details)) {
+    throw new WhatsAppCloudApiError(detailsResponse.status, 'phone_registration_lookup_rejected');
+  }
+  const status = cleanString(details.status, 40).toUpperCase();
+  const verification = cleanString(details.code_verification_status, 40).toUpperCase();
+  if (status === 'CONNECTED') {
+    return { registered: true, alreadyRegistered: true, phoneStatus: status };
+  }
+  if (verification !== 'VERIFIED') {
+    throw new WhatsAppCloudApiError(409, 'phone_number_not_verified');
+  }
+
+  let registerResponse: Response;
+  try {
+    registerResponse = await requestFetch(
+      new URL('https://graph.facebook.com/' + graphVersion + '/' + options.phoneNumberId + '/register'),
+      {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + options.accessToken, 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ messaging_product: 'whatsapp', pin: options.pin }),
+        cache: 'no-store',
+        signal: AbortSignal.timeout(15_000),
+      },
+    );
+  } catch {
+    throw new WhatsAppCloudApiError(0, 'phone_registration_network_or_timeout');
+  }
+  const result: unknown = await registerResponse.json().catch(() => null);
+  if (!registerResponse.ok || !isRecord(result) || result.success !== true) {
+    throw new WhatsAppCloudApiError(registerResponse.status, 'phone_registration_provider_rejected');
+  }
+  return { registered: true, alreadyRegistered: false, phoneStatus: status || 'REGISTERED' };
+}
