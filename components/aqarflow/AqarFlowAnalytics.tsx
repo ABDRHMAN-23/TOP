@@ -51,7 +51,8 @@ function dateLabel(value: string) {
     ? new Intl.DateTimeFormat('ar-YE', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(date)
     : value;
 }
-function queryFor(days: number) {
+function queryFor(days: number, custom: { from: string; to: string } | null) {
+  if (custom) return '?' + new URLSearchParams({ from: custom.from, to: custom.to }).toString();
   return '?days=' + encodeURIComponent(String(days));
 }
 function BucketBars({ items, valueKey, labelKey }: {
@@ -78,6 +79,9 @@ function BucketBars({ items, valueKey, labelKey }: {
 
 export default function AqarFlowAnalytics() {
   const [days, setDays] = useState(30);
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+  const [customPeriod, setCustomPeriod] = useState<{ from: string; to: string } | null>(null);
   const [data, setData] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -88,7 +92,7 @@ export default function AqarFlowAnalytics() {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('/api/aqarflow/analytics' + queryFor(days), { cache: 'no-store' });
+      const response = await fetch('/api/aqarflow/analytics' + queryFor(days, customPeriod), { cache: 'no-store' });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'تعذر تحميل التقرير.');
       setData(body as Analytics);
@@ -97,7 +101,7 @@ export default function AqarFlowAnalytics() {
     } finally {
       setLoading(false);
     }
-  }, [days]);
+  }, [days, customPeriod]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -118,12 +122,26 @@ export default function AqarFlowAnalytics() {
     return result.slice(-24);
   }, [data, days]);
 
+  function applyCustomPeriod() {
+    setError('');
+    setNotice('');
+    if (!customFrom || !customTo) {
+      setError('أدخل تاريخ البداية والنهاية لتطبيق الفترة المخصصة.');
+      return;
+    }
+    if (customFrom > customTo) {
+      setError('تاريخ النهاية يجب ألا يسبق تاريخ البداية.');
+      return;
+    }
+    setCustomPeriod({ from: customFrom, to: customTo });
+  }
+
   async function exportCsv() {
     setExporting(true);
     setError('');
     setNotice('');
     try {
-      const response = await fetch('/api/aqarflow/analytics/export' + queryFor(days), { cache: 'no-store' });
+      const response = await fetch('/api/aqarflow/analytics/export' + queryFor(days, customPeriod), { cache: 'no-store' });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         throw new Error(body.error || 'تعذر تصدير التقرير.');
@@ -178,9 +196,9 @@ export default function AqarFlowAnalytics() {
         <p className="mt-1 text-sm text-slate-500">تُستخدم فترة واحدة لكل المؤشرات والتصدير.</p>
       </div>
       <div className="flex flex-wrap gap-2">
-        {[7, 30, 90, 365].map(value => <button key={value} aria-pressed={days === value}
-          onClick={() => setDays(value)}
-          className={'min-h-10 rounded-xl border px-4 text-sm font-bold ' + (days === value
+        {[7, 30, 90, 365].map(value => <button key={value} aria-pressed={!customPeriod && days === value}
+          onClick={() => { setDays(value); setCustomPeriod(null); setError(''); }}
+          className={'min-h-10 rounded-xl border px-4 text-sm font-bold ' + (!customPeriod && days === value
             ? 'border-blue-700 bg-blue-700 text-white'
             : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50')}>
           {value === 365 ? 'سنة' : value + ' يوم'}
@@ -189,6 +207,19 @@ export default function AqarFlowAnalytics() {
           className="min-h-10 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white disabled:opacity-50">
           {exporting ? 'جارٍ التصدير…' : 'تصدير التقرير إلى CSV'}
         </button>
+      </div>
+      <div className="mt-4 grid w-full grid-cols-1 gap-2 border-t border-slate-100 pt-4 sm:grid-cols-[1fr_1fr_auto]">
+        <label className="space-y-1 text-xs font-semibold text-slate-600">
+          <span className="block">من تاريخ</span>
+          <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+            className="min-h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800" />
+        </label>
+        <label className="space-y-1 text-xs font-semibold text-slate-600">
+          <span className="block">إلى تاريخ</span>
+          <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+            className="min-h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800" />
+        </label>
+        <button onClick={applyCustomPeriod} className="self-end min-h-10 rounded-xl border border-blue-700 px-4 text-sm font-bold text-blue-800 hover:bg-blue-50">تطبيق فترة مخصصة</button>
       </div>
     </section>
 
