@@ -45,7 +45,17 @@ async function persistCrmOutbound(
   const { data: outboundRequest, error: outboundRequestError } = await admin.from('aqarflow_whatsapp_outbound_requests')
     .select('provider_status').eq('owner_user_id', ownerId).eq('provider_message_id', messageId).maybeSingle();
   if (outboundRequestError) return false;
-  const providerStatus = outboundRequest?.provider_status || 'sent';
+  const { data: latestStatuses, error: latestStatusError } = await admin.from('aqarflow_whatsapp_events')
+    .select('provider_status,provider_timestamp,received_at').eq('owner_user_id', ownerId)
+    .eq('provider_message_id', messageId).eq('event_kind', 'delivery_status')
+    .order('provider_timestamp', { ascending: false, nullsFirst: false }).order('received_at', { ascending: false }).limit(1);
+  if (latestStatusError) return false;
+  const providerStatus = latestStatuses?.[0]?.provider_status || outboundRequest?.provider_status || 'sent';
+  if (latestStatuses?.[0]?.provider_status) {
+    const { error: statusRepairError } = await admin.from('aqarflow_whatsapp_outbound_requests').update({ provider_status: providerStatus })
+      .eq('owner_user_id', ownerId).eq('provider_message_id', messageId);
+    if (statusRepairError) return false;
+  }
 
   const { error: messageError } = await admin.from('aqarflow_crm_messages').upsert({
     owner_user_id: ownerId,
