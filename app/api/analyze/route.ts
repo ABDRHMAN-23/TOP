@@ -387,6 +387,7 @@ async function extractWithGemini(transcript: string) {
   try {
     response = await fetch(`${geminiBaseUrl()}/v1beta/interactions`, {
       method: 'POST',
+      signal: AbortSignal.timeout(20_000),
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey,
