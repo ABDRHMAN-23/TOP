@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowUpLeft, Building2, Bot, ChartNoAxesCombined, CheckCircle2, ChevronLeft, CircleDollarSign, Clock3, Home, MessageCircle, Search, ShieldCheck, Sparkles, Users, Workflow } from 'lucide-react';
+import { ArrowLeft, ArrowUpLeft, Building2, Bot, ChartNoAxesCombined, CheckCircle2, ChevronLeft, CircleDollarSign, Clock3, House, MessageCircle, Search, ShieldCheck, Sparkles, Users, Workflow } from 'lucide-react';
 
 const metrics = [
   { label: 'عقارات معروضة', value: '١٢٨', note: 'معاينة توضيحية', icon: Building2 },
@@ -9,7 +9,7 @@ const metrics = [
 
 const features = [
   { icon: Users, title: 'إدارة العملاء المحتملين', text: 'رتّب الاستفسارات، قيّم جاهزية العميل، واعرف الخطوة التالية لكل فرصة.' },
-  { icon: Home, title: 'إدارة العقارات', text: 'اعرض الوحدات والأسعار والتفاصيل في مساحة منظمة وسهلة التصفح.' },
+  { icon: House, title: 'إدارة العقارات', text: 'اعرض الوحدات والأسعار والتفاصيل في مساحة منظمة وسهلة التصفح.' },
   { icon: MessageCircle, title: 'صندوق محادثات موحّد', text: 'صمّم سير عمل لمتابعة محادثات العملاء من مكان واحد. ربط واتساب يأتي لاحقًا.' },
   { icon: Bot, title: 'مساعد المبيعات الذكي', text: 'واجهة جاهزة لمساعدة فريقك في إعداد الردود وخطط المتابعة عند تفعيل التكامل.' },
   { icon: ChartNoAxesCombined, title: 'تقارير المبيعات', text: 'تابع مراحل الفرص والنشاط ومؤشرات الأداء من لوحة واضحة.' },
