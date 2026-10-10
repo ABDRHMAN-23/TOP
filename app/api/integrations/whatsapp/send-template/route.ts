@@ -158,6 +158,7 @@ export async function POST(request: Request) {
     return response({ error: 'عدد المعاملات لا يطابق المتغيرات الموجودة في نص القالب.' }, 400);
   }
   const preview = renderPreview(template.bodyText, parameters);
+  if (preview.length > 4096) return response({ error: 'النص النهائي للقالب يتجاوز الحد الذي يمكن حفظه في سجل المحادثة.' }, 400);
   const requestHash = await sha256Hex([
     phoneNumberId, to, templateName, language, JSON.stringify(parameters), conversationId || '',
   ].join('\n'));
