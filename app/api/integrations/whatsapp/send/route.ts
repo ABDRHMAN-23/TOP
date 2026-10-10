@@ -22,9 +22,13 @@ async function persistCrmOutbound(admin:ReturnType<typeof createAdminClient>,own
     .select('created_at').eq('owner_user_id',ownerId).eq('provider_message_id',messageId).maybeSingle();
   if(existingMessageError)return false;
   const sentAt=existingMessage?.created_at||now;
+  const {data:outboundRequest,error:outboundRequestError}=await admin.from('aqarflow_whatsapp_outbound_requests')
+    .select('provider_status').eq('owner_user_id',ownerId).eq('provider_message_id',messageId).maybeSingle();
+  if(outboundRequestError)return false;
+  const providerStatus=outboundRequest?.provider_status||'sent';
   const {error:messageError}=await admin.from('aqarflow_crm_messages').upsert({
     owner_user_id:ownerId,conversation_id:conversationId,direction:'outbound',channel:'whatsapp',message_type:'text',
-    message_text:message,provider_message_id:messageId,provider_status:'sent',created_at:sentAt,sent_at:sentAt,
+    message_text:message,provider_message_id:messageId,provider_status:providerStatus,created_at:sentAt,sent_at:sentAt,
   },{onConflict:'owner_user_id,provider_message_id',ignoreDuplicates:true});
   if(messageError)return false;
   // Idempotent replays must not replace a newer conversation preview with an older send.
