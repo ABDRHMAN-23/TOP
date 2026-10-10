@@ -4,8 +4,10 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-09-30",
   "compatibility_flags": ["nodejs_compat"],
+  "keep_vars": true,
   "vars": {
     "GEMINI_API_URL": "https://generativelanguage.googleapis.com",
+    "AQARFLOW_GEMINI_MODEL": "gemini-3.5-flash-lite",
     "META_GRAPH_API_VERSION": "v26.0",
     "GEMINI_TRANSCRIBE_MODEL": "gemini-3.5-transcribe",
     "GEMINI_MODEL": "gemini-3.8-flash"

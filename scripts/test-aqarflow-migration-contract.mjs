@@ -6,6 +6,7 @@ const ranked=readFileSync(new URL('../lib/aqarflow/ranked-inventory.ts',import.m
 const body=readFileSync(new URL('../lib/aqarflow/http-body.ts',import.meta.url),'utf8');
 const inbox=readFileSync(new URL('../app/api/aqarflow/inbox/route.ts',import.meta.url),'utf8');
 const leadMigration=readFileSync(new URL('../supabase/migrations/20261010000500_aqarflow_crm_lead_pipeline.sql',import.meta.url),'utf8');
+const wrangler=readFileSync(new URL('../wrangler.jsonc',import.meta.url),'utf8');
 const props=readFileSync(new URL('../app/api/aqarflow/properties/route.ts',import.meta.url),'utf8');
 assert.match(sql,/create table if not exists public\.aqarflow_properties/i);
 assert.match(sql,/alter table public\.aqarflow_properties enable row level security/i);
@@ -34,6 +35,9 @@ assert.match(props,/ctx\.user!\.id!==ctx\.ownerId/);
 assert.match(leadMigration,/create table if not exists public\.aqarflow_crm_contact_notes/i);
 assert.match(leadMigration,/enable row level security/i);
 assert.match(leadMigration,/force row level security/i);
+assert.match(wrangler,/AQARFLOW_GEMINI_MODEL.*gemini-3\.5-flash-lite/);
+assert.match(wrangler,/META_GRAPH_API_VERSION.*v26\.0/);
+assert.match(wrangler,/\"keep_vars\": true/);
 assert.match(leadMigration,/foreign key \(owner_user_id, contact_id\)/i);
 assert.match(leadMigration,/unique \(owner_user_id, id\)/i);
 assert.match(inbox,/action==='update_contact'/);
