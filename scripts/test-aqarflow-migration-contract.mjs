@@ -17,6 +17,7 @@ const whatsappSendTemplateRoute=readFileSync(new URL('../app/api/integrations/wh
 const inboxComponent=readFileSync(new URL('../components/aqarflow/AqarFlowInbox.tsx',import.meta.url),'utf8');
 const leadMigration=readFileSync(new URL('../supabase/migrations/20261010000500_aqarflow_crm_lead_pipeline.sql',import.meta.url),'utf8');
 const operationsMigration=readFileSync(new URL('../supabase/migrations/20261010000600_aqarflow_sales_operations.sql',import.meta.url),'utf8');
+const hardeningMigration=readFileSync(new URL('../supabase/migrations/20261010000700_aqarflow_database_hardening.sql',import.meta.url),'utf8');
 const operationsTasks=readFileSync(new URL('../app/api/aqarflow/operations/tasks/route.ts',import.meta.url),'utf8');
 const operationsViewings=readFileSync(new URL('../app/api/aqarflow/operations/viewings/route.ts',import.meta.url),'utf8');
 const operationsContract=readFileSync(new URL('../lib/aqarflow/operations-contract.ts',import.meta.url),'utf8');
@@ -24,6 +25,12 @@ const operationsComponent=readFileSync(new URL('../components/aqarflow/AqarFlowO
 const wrangler=readFileSync(new URL('../wrangler.jsonc',import.meta.url),'utf8');
 const props=readFileSync(new URL('../app/api/aqarflow/properties/route.ts',import.meta.url),'utf8');
 assert.match(sql,/create table if not exists public\.aqarflow_properties/i);
+assert.match(sql,/create table if not exists public\.aqarflow_workspace_memberships/i);
+assert.match(sql,/from public\.aqarflow_workspace_memberships tm/i);
+assert.doesNotMatch(sql,/from public\.team_memberships tm/i);
+assert.match(hardeningMigration,/force row level security on public\.aqarflow_properties/i);
+assert.match(hardeningMigration,/force row level security on public\.aqarflow_ai_usage/i);
+assert.match(hardeningMigration,/aqarflow_crm_tasks_owner_conversation_contact_fk_idx/i);
 assert.match(sql,/alter table public\.aqarflow_properties enable row level security/i);
 assert.match(sql,/revoke all on public\.aqarflow_properties from public,anon/i);
 assert.match(sql,/owner_user_id=\(select auth\.uid\(\)\)/i);
