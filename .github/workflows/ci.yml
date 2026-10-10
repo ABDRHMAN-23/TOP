@@ -23,6 +23,7 @@ jobs:
       - run: npm run validate:aqarflow:promptfoo
       - run: npm run test:aqarflow:whatsapp-cloud
       - run: npm run test:safe-redirect
+      - run: npm run test:legal-consent
       - run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
