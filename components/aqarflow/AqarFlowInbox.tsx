@@ -8,6 +8,8 @@ type Contact={
  preferred_area:string|null;preferred_property_type:string|null;lead_score:number;next_follow_up_at:string|null;notes:Note[];
 };
 type Message={id:string;conversation_id:string;direction:'inbound'|'outbound';message_type:string;message_text:string|null;ai_draft:string|null;facts_used:string[];unknowns:string[];provider_message_id:string|null;provider_status:string|null;created_at:string;sent_at:string|null};
+type Template={name:string;language:string;category:string|null;bodyText:string;parameterCount:number};
+type PendingTemplateSend={signature:string;key:string;conversationId:string};
 type Conversation={id:string;status:string;handoff_required:boolean;last_message_at:string;last_message_preview:string|null;contact:Contact|null;integration:{phone_number_id:string;display_phone_number:string|null;verified_name:string|null}|null;messages:Message[]};
 type LeadForm={leadStage:string;intent:string;budgetMin:string;budgetMax:string;budgetCurrency:string;preferredArea:string;preferredPropertyType:string;leadScore:string;nextFollowUpAt:string};
 
@@ -32,7 +34,9 @@ function leadFormFrom(contact:Contact|null):LeadForm{
 export default function AqarFlowInbox({initialConversationId=''}:{initialConversationId?:string}){
  const [conversations,setConversations]=useState<Conversation[]>([]);const [selectedId,setSelectedId]=useState('');const [canSend,setCanSend]=useState(false);const [canManageCrm,setCanManageCrm]=useState(false);
  const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [notice,setNotice]=useState('');const [draft,setDraft]=useState('');const [leadForm,setLeadForm]=useState<LeadForm>({...emptyLead});const [noteDraft,setNoteDraft]=useState('');
+ const [templates,setTemplates]=useState<Template[]>([]);const [templatesLoading,setTemplatesLoading]=useState(false);const [selectedTemplateKey,setSelectedTemplateKey]=useState('');const [templateParams,setTemplateParams]=useState<string[]>([]);const [templateError,setTemplateError]=useState('');const [templateNotice,setTemplateNotice]=useState('');
  const pendingSend=useRef<{text:string;conversationId:string;key:string}|null>(null);
+ const pendingTemplateSend=useRef<PendingTemplateSend|null>(null);
  const refresh=useCallback(async(keepId?:string)=>{
   const r=await fetch('/api/aqarflow/inbox',{cache:'no-store'});const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر تحميل صندوق المحادثات.');
   const rows=(b.conversations||[]) as Conversation[];setConversations(rows);setCanSend(Boolean(b.canSend));setCanManageCrm(Boolean(b.canManageCrm));
@@ -45,6 +49,8 @@ export default function AqarFlowInbox({initialConversationId=''}:{initialConvers
  const selected=useMemo(()=>conversations.find(x=>x.id===selectedId)||null,[conversations,selectedId]);
  useEffect(()=>{setLeadForm(leadFormFrom(selected?.contact||null));setNoteDraft('');},[selected?.contact,selected?.id]);
  const latestInbound=useMemo(()=>selected?[...selected.messages].reverse().find(m=>m.direction==='inbound'&&m.message_text)?.message_text||'':'',[selected]);
+ const templateKey=(template:Template)=>template.name+'::'+template.language;
+ const selectedTemplate=useMemo(()=>templates.find(template=>templateKey(template)===selectedTemplateKey)||null,[templates,selectedTemplateKey]);
  function setLead<K extends keyof LeadForm>(key:K,value:LeadForm[K]){setLeadForm(old=>({...old,[key]:value}));}
  async function generateDraft(){
   if(!selected||!latestInbound)return;setBusy(true);setError('');setNotice('');
@@ -81,6 +87,55 @@ export default function AqarFlowInbox({initialConversationId=''}:{initialConvers
    setNoteDraft('');setNotice('أضيفت الملاحظة إلى سجل العميل.');await refresh(selected.id);
   }catch(e){setError(e instanceof Error?e.message:'تعذر حفظ الملاحظة.');}finally{setBusy(false);}
  }
+ async function loadTemplates(){
+  const phoneNumberId=selected?.integration?.phone_number_id;
+  if(!phoneNumberId){setTemplateError('لا يوجد رقم واتساب مرتبط بهذه المحادثة.');return;}
+  setTemplatesLoading(true);setTemplateError('');setTemplateNotice('');
+  try{
+   const r=await fetch('/api/integrations/whatsapp/templates?phoneNumberId='+encodeURIComponent(phoneNumberId),{cache:'no-store'});
+   const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر تحميل القوالب المعتمدة.');
+   const rows=(b.templates||[]) as Template[];setTemplates(rows);
+   if(rows.length===0){setSelectedTemplateKey('');setTemplateParams([]);setTemplateNotice('لم يعثر Meta على قوالب نصية معتمدة مدعومة لهذا الرقم.');}
+   else{
+    const selectedStillExists=rows.some(template=>templateKey(template)===selectedTemplateKey);
+    const next=selectedStillExists?rows.find(template=>templateKey(template)===selectedTemplateKey)!:rows[0];
+    setSelectedTemplateKey(templateKey(next));setTemplateParams(old=>templateKey(next)===selectedTemplateKey&&old.length===next.parameterCount?old:new Array(next.parameterCount).fill(''));
+    setTemplateNotice('تم تحميل القوالب النصية المعتمدة مباشرة من Meta.');
+   }
+  }catch(e){setTemplateError(e instanceof Error?e.message:'تعذر تحميل القوالب المعتمدة.');}
+  finally{setTemplatesLoading(false);}
+ }
+ function selectTemplate(key:string){
+  const template=templates.find(item=>templateKey(item)===key)||null;
+  setSelectedTemplateKey(key);setTemplateParams(new Array(template?.parameterCount||0).fill(''));setTemplateError('');setTemplateNotice('');
+  pendingTemplateSend.current=null;
+ }
+ async function sendApprovedTemplate(){
+  if(!selected||!selected.contact?.phone_number||!selected.integration?.phone_number_id||!selectedTemplate)return;
+  if(!canSend){setTemplateError('إرسال الرسائل متاح لمالك مساحة العمل فقط.');return;}
+  if(templateParams.length!==selectedTemplate.parameterCount||templateParams.some(value=>!value.trim())){setTemplateError('أكمل جميع معاملات القالب قبل الإرسال.');return;}
+  setBusy(true);setTemplateError('');setTemplateNotice('');
+  try{
+   const signature=JSON.stringify({conversationId:selected.id,phoneNumberId:selected.integration.phone_number_id,to:selected.contact.phone_number,name:selectedTemplate.name,language:selectedTemplate.language,parameters:templateParams});
+   if(!pendingTemplateSend.current||pendingTemplateSend.current.signature!==signature){
+    pendingTemplateSend.current={signature,conversationId:selected.id,key:'tpl_'+crypto.randomUUID().replace(/-/g,'')};
+   }
+   const idempotencyKey=pendingTemplateSend.current.key;
+   const r=await fetch('/api/integrations/whatsapp/send-template',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    phoneNumberId:selected.integration.phone_number_id,to:selected.contact.phone_number,
+    templateName:selectedTemplate.name,language:selectedTemplate.language,parameters:templateParams,
+    idempotencyKey,conversationId:selected.id,
+   })});
+   const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر إرسال القالب المعتمد.');
+   if(b.persisted===false){
+    setTemplateNotice('أكدت Meta الإرسال، لكن تعذر استكمال سجل CRM. اضغط المحاولة مرة أخرى مع إبقاء القالب كما هو لإكمال حفظ السجل دون إعادة إرسال الرسالة.');
+   }else{
+    pendingTemplateSend.current=null;setTemplateNotice(b.replayed?'تمت مطابقة الرسالة السابقة وتحديث سجل المحادثة دون إرسال نسخة أخرى.':'تم إرسال القالب المعتمد وتسجيله في سجل المحادثة.');
+   }
+   await refresh(selected.id);
+  }catch(e){setTemplateError(e instanceof Error?e.message:'تعذر إرسال القالب المعتمد.');}
+  finally{setBusy(false);}
+ }
  async function sendReply(){
   if(!selected||!selected.contact?.phone_number||!selected.integration?.phone_number_id||!draft.trim())return;
   if(!canSend){setError('الإرسال متاح لمالك مساحة العمل فقط في هذه النسخة.');return;}
@@ -100,7 +155,7 @@ export default function AqarFlowInbox({initialConversationId=''}:{initialConvers
  return <section dir="rtl" className="grid min-h-[72vh] gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
   <aside className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
    <div className="border-b p-4"><h2 className="font-black">محادثات واتساب</h2><p className="mt-1 text-xs text-slate-500">{conversations.length} محادثة حديثة</p><button onClick={()=>refresh(selectedId).catch(e=>setError(String(e)))} className="mt-2 text-sm font-bold text-blue-700">تحديث</button></div>
-   {conversations.length===0?<p className="p-6 text-sm leading-6 text-slate-500">لا توجد رسائل بعد. بعد إعداد Webhook في Meta، ستظهر الرسائل الواردة هنا.</p>:<div className="max-h-[65vh] overflow-y-auto divide-y">{conversations.map(c=><button key={c.id} onClick={()=>{pendingSend.current=null;setSelectedId(c.id);const d=[...c.messages].reverse().find(m=>m.ai_draft);setDraft(d?.ai_draft||'');}} className={'block w-full p-4 text-right hover:bg-slate-50 '+(selectedId===c.id?'bg-blue-50':'')}><span className="flex items-center justify-between gap-2"><strong className="truncate text-sm">{c.contact?.display_name||c.contact?.phone_number||'عميل واتساب'}</strong>{c.handoff_required&&<span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900">مراجعة</span>}</span><span className="mt-1 block truncate text-xs text-slate-500">{c.last_message_preview||'رسالة جديدة'}</span><time className="mt-2 block text-[10px] text-slate-400">{new Date(c.last_message_at).toLocaleString('ar')}</time></button>)}</div>}
+   {conversations.length===0?<p className="p-6 text-sm leading-6 text-slate-500">لا توجد رسائل بعد. بعد إعداد Webhook في Meta، ستظهر الرسائل الواردة هنا.</p>:<div className="max-h-[65vh] overflow-y-auto divide-y">{conversations.map(c=><button key={c.id} onClick={()=>{pendingSend.current=null;pendingTemplateSend.current=null;setSelectedId(c.id);setTemplates([]);setSelectedTemplateKey('');setTemplateParams([]);setTemplateError('');setTemplateNotice('');const d=[...c.messages].reverse().find(m=>m.ai_draft);setDraft(d?.ai_draft||'');}} className={'block w-full p-4 text-right hover:bg-slate-50 '+(selectedId===c.id?'bg-blue-50':'')}><span className="flex items-center justify-between gap-2"><strong className="truncate text-sm">{c.contact?.display_name||c.contact?.phone_number||'عميل واتساب'}</strong>{c.handoff_required&&<span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900">مراجعة</span>}</span><span className="mt-1 block truncate text-xs text-slate-500">{c.last_message_preview||'رسالة جديدة'}</span><time className="mt-2 block text-[10px] text-slate-400">{new Date(c.last_message_at).toLocaleString('ar')}</time></button>)}</div>}
   </aside>
   <div className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
    {!selected?<div className="m-auto p-8 text-center text-slate-500">اختر محادثة لعرض الرسائل.</div>:<>
@@ -134,6 +189,17 @@ export default function AqarFlowInbox({initialConversationId=''}:{initialConvers
      <label className="block text-sm font-bold">مسودة قابلة للتعديل<textarea rows={4} maxLength={1200} value={draft} onChange={e=>setDraft(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 p-3 font-normal outline-none focus:border-blue-600" placeholder="أنشئ مسودة بالذكاء الاصطناعي أو اكتب ردك هنا…"/></label>
      <div className="flex flex-wrap items-center justify-between gap-3"><span className="text-xs text-slate-500">لا تُرسل أي رسالة قبل ضغط زر الإرسال.</span><button disabled={busy||!draft.trim()||!canSend} onClick={sendReply} className="min-h-11 rounded-xl bg-blue-700 px-5 py-2 font-bold text-white disabled:opacity-50">{canSend?'إرسال عبر واتساب':'الإرسال متاح للمالك فقط'}</button></div>
     </div>
+    <section className="space-y-3 border-t bg-slate-50 p-4">
+     <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-black">قوالب واتساب المعتمدة</h3><p className="mt-1 text-xs leading-5 text-slate-500">للإرسال خارج نافذة 24 ساعة. يتم جلب الاعتماد الحالي من Meta، ولا ترسل القوالب إلا بعد الضغط اليدوي على الزر.</p></div><button disabled={templatesLoading||busy||!selected.integration?.phone_number_id} onClick={loadTemplates} className="min-h-10 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold disabled:opacity-50">{templatesLoading?'جارٍ التحميل…':'تحديث القوالب من Meta'}</button></div>
+     {templateError&&<p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{templateError}</p>}
+     {templateNotice&&<p role="status" className="rounded-xl bg-blue-50 p-3 text-sm text-blue-800">{templateNotice}</p>}
+     {templates.length>0&&<label className="block text-sm font-bold">القالب واللغة<select value={selectedTemplateKey} onChange={e=>selectTemplate(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-3 font-normal"><option value="">اختر قالبًا معتمدًا</option>{templates.map(template=><option key={templateKey(template)} value={templateKey(template)}>{template.name} · {template.language}{template.category?' · '+template.category:''}</option>)}</select></label>}
+     {selectedTemplate&&<div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3"><p className="text-xs font-bold text-slate-600">معاينة متن القالب</p><p className="whitespace-pre-wrap text-sm leading-6">{selectedTemplate.bodyText}</p><p className="text-xs text-slate-500">المعاملات المطلوبة: {selectedTemplate.parameterCount}. يقتصر هذا المسار على قوالب النص؛ القوالب ذات أزرار ديناميكية أو وسائط غير مدعومة تُستبعد.</p>
+      {selectedTemplate.parameterCount>0&&<div className="grid gap-3 sm:grid-cols-2">{templateParams.map((value,index)=><label key={index} className="text-xs font-bold text-slate-600">قيمة المتغير {index+1}<input value={value} maxLength={1024} onChange={e=>setTemplateParams(old=>old.map((item,i)=>i===index?e.target.value:item))} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm font-normal" placeholder={'أدخل قيمة {{'+(index+1)+'}}'}/></label>)}</div>}
+      <div className="flex flex-wrap items-center justify-between gap-3"><span className="text-xs text-slate-500">معاينة تقريبية فقط؛ Meta هي المرجع النهائي للقالب المعتمد.</span><button disabled={busy||!canSend||templateParams.length!==selectedTemplate.parameterCount||templateParams.some(value=>!value.trim())} onClick={sendApprovedTemplate} className="min-h-11 rounded-xl bg-blue-700 px-5 py-2 font-bold text-white disabled:opacity-50">{busy?'جارٍ التحقق والإرسال…':'إرسال القالب المعتمد يدويًا'}</button></div>
+     </div>}
+     {templates.length===0&&!templatesLoading&&!templateNotice&&<p className="text-xs text-slate-500">اضغط تحديث القوالب لعرض القوالب المدعومة والمعتمدة حاليًا من Meta.</p>}
+    </section>
    </>}
   </div>
  </section>;
