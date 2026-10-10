@@ -13,7 +13,7 @@ export async function requireOwnerAccount(): Promise<OwnerAccess> {
   if (error || !data.user) return { ok: false, status: 401, message: 'Authentication required.' };
 
   const { data: memberships, error: membershipError } = await supabase
-    .from('team_memberships').select('owner_id').eq('member_id', data.user.id)
+    .from('aqarflow_workspace_memberships').select('owner_id').eq('member_id', data.user.id)
     .neq('owner_id', data.user.id).limit(1);
   if (membershipError) return { ok: false, status: 503, message: 'Workspace membership could not be verified.' };
   if ((memberships || []).length > 0) {
