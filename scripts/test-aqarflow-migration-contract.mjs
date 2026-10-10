@@ -67,7 +67,7 @@ assert.match(whatsappWebhook,/processing_status:'received'/);
 assert.match(whatsappWebhook,/for\(const event of acceptedEvents\)/);
 assert.match(whatsappMigration,/provider_status text check \(provider_status is null or length\(provider_status\) <= 40\)/i);
 assert.match(whatsappMigration,/aqarflow_whatsapp_outbound_provider_message_idx/i);
-assert.match(whatsappWebhook,/from\('aqarflow_whatsapp_outbound_requests'\)[\s\S]{0,220}update\(\{provider_status:event\.status\}\)/);
+assert.match(whatsappWebhook,/from\('aqarflow_whatsapp_outbound_requests'\)[\s\S]{0,260}update\(\{provider_status:latestStatus\}\)/);
 assert.match(whatsappSend,/select\('provider_status'\)\.eq\('owner_user_id',ownerId\)\.eq\('provider_message_id',messageId\)/);
 assert.match(whatsappSend,/provider_status:providerStatus/);
 assert.match(whatsappSendTemplateRoute,/select\('provider_status'\)\.eq\('owner_user_id', ownerId\)\.eq\('provider_message_id', messageId\)/);
