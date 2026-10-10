@@ -35,10 +35,13 @@ function parse(v:unknown){
     if(features.length>12)return null;
   }
   const availability=typeof r.availability==='string'&&AVAILABILITY.has(r.availability)?r.availability:null;if(!availability)return null;
+  if(r.availabilityVerified!==undefined&&typeof r.availabilityVerified!=='boolean')return null;
+  // A selected availability value is not proof by itself. Require an explicit owner attestation.
+  if(availability!=='unknown'&&r.availabilityVerified!==true)return null;
   if(r.isActive!==undefined&&typeof r.isActive!=='boolean')return null;
   return {title,property_type:clean(r.propertyType,80)||null,purpose,price,currency,area,bedrooms,bathrooms,
     location_label:clean(r.locationLabel,180)||null,verified_features:features,availability,
-    facts_last_verified_at:new Date().toISOString(),is_active:typeof r.isActive==='boolean'?r.isActive:true,updated_at:new Date().toISOString()};
+    facts_last_verified_at:r.availabilityVerified===true?new Date().toISOString():null,is_active:typeof r.isActive==='boolean'?r.isActive:true,updated_at:new Date().toISOString()};
 }
 async function body(req:Request):Promise<{ok:true;value:unknown}|{ok:false;status:number;error:string}>{
   const length=Number(req.headers.get('content-length')||0);if(Number.isFinite(length)&&length>16000)return {ok:false,status:413,error:'حجم الطلب أكبر من الحد المسموح.'};
