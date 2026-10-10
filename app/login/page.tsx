@@ -41,9 +41,24 @@ export default function LoginPage() {
       ? new URLSearchParams(window.location.search).get('error')
       : null;
 
-  const rememberConsent = () => {
-    document.cookie =
-      'quvoto_legal_consent=2026-10-02; Max-Age=900; Path=/; SameSite=Lax';
+  const registerConsent = async () => {
+    const response = await fetch('/api/legal-consent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        termsAccepted: true,
+        privacyAcknowledged: true,
+        termsVersion: '2026-10-02',
+        privacyVersion: '2026-10-02',
+      }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(typeof result.error === 'string'
+        ? result.error
+        : 'Could not securely record your legal acknowledgement. Please try again.');
+    }
   };
 
   const socialLogin = async (provider: 'google' | 'apple') => {
@@ -58,7 +73,13 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-    rememberConsent();
+    try {
+      await registerConsent();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not securely record your legal acknowledgement.');
+      setLoading(false);
+      return;
+    }
 
     const supabase = createClient();
     try {
@@ -109,26 +130,35 @@ export default function LoginPage() {
     if (!email.trim()) return;
 
     setLoading(true);
-    rememberConsent();
-
-    const supabase = createClient();
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: {
-        emailRedirectTo:
-          window.location.origin +
-          '/auth/callback?next=' +
-          encodeURIComponent(next),
-      },
-    });
-
-    if (otpError) {
-      setError(otpError.message);
-    } else {
-      setMessage('Check your email for your secure QUVOTO sign-in link.');
+    try {
+      await registerConsent();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not securely record your legal acknowledgement.');
+      setLoading(false);
+      return;
     }
 
-    setLoading(false);
+    const supabase = createClient();
+    try {
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: {
+          emailRedirectTo:
+            window.location.origin +
+            '/auth/callback?next=' +
+            encodeURIComponent(next),
+        },
+      });
+      if (otpError) {
+        setError(otpError.message);
+      } else {
+        setMessage('Check your email for your secure QUVOTO sign-in link.');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not start secure sign-in.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {

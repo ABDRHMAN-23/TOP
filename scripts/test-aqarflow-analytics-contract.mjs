@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+const migration = readFileSync(new URL('../supabase/migrations/20261010001000_aqarflow_sales_intelligence.sql', import.meta.url), 'utf8');
+const route = readFileSync(new URL('../app/api/aqarflow/analytics/route.ts', import.meta.url), 'utf8');
+const exportRoute = readFileSync(new URL('../app/api/aqarflow/analytics/export/route.ts', import.meta.url), 'utf8');
+const context = readFileSync(new URL('../lib/aqarflow/analytics-context.ts', import.meta.url), 'utf8');
+const period = readFileSync(new URL('../lib/aqarflow/analytics-period.ts', import.meta.url), 'utf8');
+const component = readFileSync(new URL('../components/aqarflow/AqarFlowAnalytics.tsx', import.meta.url), 'utf8');
+const page = readFileSync(new URL('../app/aqarflow-analytics/page.tsx', import.meta.url), 'utf8');
+
+assert.match(migration, /create or replace function public\.aqarflow_sales_analytics/i);
+assert.match(migration, /create or replace function public\.aqarflow_export_sales_analytics/i);
+assert.match(migration, /security invoker/i);
+assert.match(migration, /revoke all on function public\.aqarflow_sales_analytics\(uuid,timestamptz,timestamptz\) from public, anon, authenticated/i);
+assert.match(migration, /grant execute on function public\.aqarflow_sales_analytics\(uuid,timestamptz,timestamptz\) to service_role/i);
+assert.match(migration, /from public\.aqarflow_crm_contacts c[\s\S]*where c\.owner_user_id = p_owner_user_id/i);
+assert.match(route, /supabase|from '.*analytics-context'/i);
+assert.match(route, /context\.ownerId/);
+assert.match(route, /aqarflow_sales_analytics/);
+assert.match(context, /supabase\.auth\.getUser\(\)/);
+assert.match(context, /\.eq\('member_id', data\.user\.id\)/);
+assert.match(context, /\.limit\(2\)/);
+assert.match(exportRoute, /aqarflow_export_sales_analytics/);
+assert.match(exportRoute, /X-AqarFlow-Export-Truncated/);
+assert.match(exportRoute, /spreadsheet formula injection/i);
+assert.match(period, /366 \* DAY_MS/);
+assert.match(period, /strictUtcDate/);
+assert.match(component, /\/api\/aqarflow\/analytics/);
+assert.match(component, /\/api\/aqarflow\/analytics\/export/);
+assert.match(component, /تصدير التقرير إلى CSV/);
+assert.match(page, /createClient/);
+console.log('AqarFlow Level 4 analytics contract checks passed.');

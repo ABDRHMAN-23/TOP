@@ -1,11 +1,15 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "to",
-  "main": ".open-next/worker.js",
+  "main": "./worker.ts",
   "compatibility_date": "2026-09-30",
   "compatibility_flags": ["nodejs_compat"],
+  "keep_vars": true,
   "vars": {
     "GEMINI_API_URL": "https://generativelanguage.googleapis.com",
+    "AQARFLOW_GEMINI_MODEL": "gemini-3.5-flash-lite",
+    "META_GRAPH_API_VERSION": "v26.0",
+    "META_WHATSAPP_SIGNUP_MODE": "cloud_api",
     "GEMINI_TRANSCRIBE_MODEL": "gemini-3.5-transcribe",
     "GEMINI_MODEL": "gemini-3.8-flash"
   },
@@ -13,10 +17,19 @@
     "required": [
       "GEMINI_API_KEY",
       "SUPABASE_SECRET_KEY",
+      "CRON_SECRET",
+      "QUVOTO_LEGAL_CONSENT_SECRET",
+      "META_APP_ID",
+      "META_APP_SECRET",
+      "META_WEBHOOK_VERIFY_TOKEN",
+      "META_TOKEN_ENCRYPTION_KEY",
       "LEMON_SQUEEZY_API_KEY",
       "LEMON_SQUEEZY_STORE_ID",
       "LEMON_SQUEEZY_WEBHOOK_SECRET"
     ]
+  },
+  "triggers": {
+    "crons": ["*/5 * * * *"]
   },
   "assets": {
     "directory": ".open-next/assets",
