@@ -220,6 +220,9 @@ export async function POST(request: Request) {
     return response({
       error: 'لم تؤكد Meta إرسال القالب. لن تتم إعادة المحاولة تلقائيًا لتجنب إرسال نسخة مكررة.',
       idempotencyKey,
+      // A provider 4xx is a definite rejection. The UI may generate a fresh idempotency key
+      // for an explicit user retry; network/5xx outcomes remain ambiguous and must not retry.
+      retryAllowed: knownRejection,
     }, 502);
   }
 }
