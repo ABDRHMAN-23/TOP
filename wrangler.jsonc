@@ -17,6 +17,7 @@
     "required": [
       "GEMINI_API_KEY",
       "SUPABASE_SECRET_KEY",
+      "CRON_SECRET",
       "QUVOTO_LEGAL_CONSENT_SECRET",
       "META_APP_ID",
       "META_APP_SECRET",
