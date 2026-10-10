@@ -153,13 +153,31 @@ assert.match(prompt, /Apartment A/);
 assert.doesNotMatch(prompt, /A real listing/, "free-form property descriptions must not enter model context");
 
 assert.equal(validateSalesDraft({
-  replyDraft: "توجد شقة بثلاث غرف ضمن الخيارات المتاحة.",
+  replyDraft: "توجد شقة بثلاث غرف ضمن الخيارات المسجلة.",
   factsUsed: ["property-1: bedrooms=3"],
   unknowns: [],
   nextBestAction: "send_photos",
   askOneQuestion: null,
   handoffRequired: false,
 }, properties)?.nextBestAction, "send_photos");
+
+assert.equal(validateSalesDraft({
+  replyDraft: "توجد شقة بثلاث غرف ضمن الخيارات المتاحة.",
+  factsUsed: ["property-1: bedrooms=3"],
+  unknowns: [],
+  nextBestAction: "send_photos",
+  askOneQuestion: null,
+  handoffRequired: false,
+}, properties), null, "an unverified availability assertion must be rejected");
+
+assert.equal(validateSalesDraft({
+  replyDraft: "العقار متاح الآن.",
+  factsUsed: ["availability-fresh: title=Fresh listing"],
+  unknowns: [],
+  nextBestAction: "answer_question",
+  askOneQuestion: null,
+  handoffRequired: false,
+}, [freshAvailability])?.nextBestAction, "answer_question", "fresh verified availability claims may pass");
 
 assert.deepEqual(
   findUnsupportedNumericClaims("شقة من 3 غرف بسعر 98,000 ومساحتها 120 مترًا.", properties),
