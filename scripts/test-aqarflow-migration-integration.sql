@@ -12,7 +12,9 @@ DECLARE
     'aqarflow_crm_contacts',
     'aqarflow_crm_conversations',
     'aqarflow_crm_messages',
-    'aqarflow_crm_contact_notes'
+    'aqarflow_crm_contact_notes',
+    'aqarflow_crm_tasks',
+    'aqarflow_crm_viewings'
   ];
   forced_tables text[] := ARRAY[
     'aqarflow_whatsapp_integrations',
@@ -21,7 +23,9 @@ DECLARE
     'aqarflow_crm_contacts',
     'aqarflow_crm_conversations',
     'aqarflow_crm_messages',
-    'aqarflow_crm_contact_notes'
+    'aqarflow_crm_contact_notes',
+    'aqarflow_crm_tasks',
+    'aqarflow_crm_viewings'
   ];
 BEGIN
   FOREACH table_name IN ARRAY expected_tables LOOP
@@ -46,13 +50,17 @@ BEGIN
      OR has_table_privilege('authenticated','public.aqarflow_crm_conversations','SELECT')
      OR has_table_privilege('authenticated','public.aqarflow_crm_messages','SELECT')
      OR has_table_privilege('authenticated','public.aqarflow_ai_usage','SELECT')
-     OR has_table_privilege('authenticated','public.aqarflow_crm_contact_notes','SELECT') THEN
+     OR has_table_privilege('authenticated','public.aqarflow_crm_contact_notes','SELECT')
+     OR has_table_privilege('authenticated','public.aqarflow_crm_tasks','SELECT')
+     OR has_table_privilege('authenticated','public.aqarflow_crm_viewings','SELECT') THEN
     RAISE EXCEPTION 'Authenticated role can directly read a protected AqarFlow table';
   END IF;
 
   IF NOT has_table_privilege('service_role','public.aqarflow_whatsapp_integrations','SELECT')
      OR NOT has_table_privilege('service_role','public.aqarflow_crm_messages','SELECT')
-     OR NOT has_table_privilege('service_role','public.aqarflow_crm_contact_notes','SELECT') THEN
+     OR NOT has_table_privilege('service_role','public.aqarflow_crm_contact_notes','SELECT')
+     OR NOT has_table_privilege('service_role','public.aqarflow_crm_tasks','SELECT')
+     OR NOT has_table_privilege('service_role','public.aqarflow_crm_viewings','SELECT') THEN
     RAISE EXCEPTION 'Service role grants are missing';
   END IF;
 END $$;
@@ -80,6 +88,75 @@ INSERT INTO public.aqarflow_properties(owner_user_id,title,purpose,availability)
 VALUES
  ('00000000-0000-4000-8000-000000000001','Owner A listing','sale','available'),
  ('00000000-0000-4000-8000-000000000002','Owner B listing','sale','available');
+
+-- Level 2 tenant boundaries and workflow invariants.
+DO $
+DECLARE rejected boolean := false;
+BEGIN
+  BEGIN
+    INSERT INTO public.aqarflow_crm_tasks(owner_user_id,contact_id,title,due_at,created_by)
+    VALUES ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002',
+      'cross-tenant task','2030-01-01T10:00:00Z','00000000-0000-4000-8000-000000000001');
+  EXCEPTION WHEN foreign_key_violation THEN rejected := true;
+  END;
+  IF NOT rejected THEN RAISE EXCEPTION 'Cross-tenant task contact relationship was not rejected'; END IF;
+END $;
+
+DO $
+DECLARE rejected boolean := false;
+BEGIN
+  BEGIN
+    INSERT INTO public.aqarflow_crm_viewings(owner_user_id,contact_id,property_id,title,starts_at,ends_at,created_by)
+    VALUES ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001',
+      (SELECT id FROM public.aqarflow_properties WHERE owner_user_id='00000000-0000-4000-8000-000000000001' AND title='Owner A listing'),
+      'invalid duration','2030-01-01T10:00:00Z','2030-01-01T10:00:00Z','00000000-0000-4000-8000-000000000001');
+  EXCEPTION WHEN check_violation THEN rejected := true;
+  END;
+  IF NOT rejected THEN RAISE EXCEPTION 'Invalid viewing time range was not rejected'; END IF;
+END $;
+
+INSERT INTO public.aqarflow_crm_viewings(owner_user_id,contact_id,property_id,title,starts_at,ends_at,created_by)
+VALUES ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001',
+  (SELECT id FROM public.aqarflow_properties WHERE owner_user_id='00000000-0000-4000-8000-000000000001' AND title='Owner A listing'),
+  'Owner A first viewing','2030-01-01T10:00:00Z','2030-01-01T11:00:00Z','00000000-0000-4000-8000-000000000001');
+
+DO $
+DECLARE rejected boolean := false;
+BEGIN
+  BEGIN
+    INSERT INTO public.aqarflow_crm_viewings(owner_user_id,contact_id,property_id,title,starts_at,ends_at,created_by)
+    VALUES ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001',
+      (SELECT id FROM public.aqarflow_properties WHERE owner_user_id='00000000-0000-4000-8000-000000000001' AND title='Owner A listing'),
+      'Overlapping viewing','2030-01-01T10:30:00Z','2030-01-01T11:30:00Z','00000000-0000-4000-8000-000000000001');
+  EXCEPTION WHEN exclusion_violation THEN rejected := true;
+  END;
+  IF NOT rejected THEN RAISE EXCEPTION 'Overlapping viewing for one property was not rejected'; END IF;
+END $;
+
+INSERT INTO public.aqarflow_crm_tasks(owner_user_id,contact_id,title,due_at,created_by)
+VALUES
+ ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','later follow-up','2030-01-04T10:00:00Z','00000000-0000-4000-8000-000000000001'),
+ ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','earlier follow-up','2030-01-03T10:00:00Z','00000000-0000-4000-8000-000000000001');
+DO $
+DECLARE expected timestamptz; actual timestamptz;
+BEGIN
+  SELECT min(due_at) INTO expected FROM public.aqarflow_crm_tasks
+   WHERE owner_user_id='00000000-0000-4000-8000-000000000001'
+     AND contact_id='10000000-0000-4000-8000-000000000001' AND status IN ('pending','in_progress');
+  SELECT next_follow_up_at INTO actual FROM public.aqarflow_crm_contacts
+   WHERE owner_user_id='00000000-0000-4000-8000-000000000001' AND id='10000000-0000-4000-8000-000000000001';
+  IF actual IS DISTINCT FROM expected THEN RAISE EXCEPTION 'CRM next_follow_up_at was not synchronized to the earliest active task'; END IF;
+END $;
+
+UPDATE public.aqarflow_crm_tasks SET status='completed',completed_at='2030-01-02T10:00:00Z'
+ WHERE owner_user_id='00000000-0000-4000-8000-000000000001' AND title='earlier follow-up';
+DO $
+DECLARE actual timestamptz;
+BEGIN
+  SELECT next_follow_up_at INTO actual FROM public.aqarflow_crm_contacts
+   WHERE owner_user_id='00000000-0000-4000-8000-000000000001' AND id='10000000-0000-4000-8000-000000000001';
+  IF actual IS DISTINCT FROM '2030-01-04T10:00:00Z'::timestamptz THEN RAISE EXCEPTION 'Completing a task did not advance the next follow-up'; END IF;
+END $;
 
 -- The owner can read only their own property.
 SET ROLE authenticated;
