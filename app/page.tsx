@@ -3,9 +3,8 @@
 import { useMemo, useState } from 'react';
 import {
   ArrowDownLeft, ArrowLeft, ArrowUpLeft, Bell, Building2, CalendarDays,
-  Check, ChevronDown, CircleHelp, Clock3, Command, Compass, Filter,
-  Home as HomeIcon, LayoutDashboard, MapPin, Menu, MessageCircle,
-  MoreHorizontal, Plus, Search, Settings2, Sparkles, TrendingUp, Users,
+  Check, ChevronDown, LayoutDashboard, MapPin, MessageCircle,
+  MoreHorizontal, Plus, Search, Sparkles, TrendingUp, Users,
   Wallet, X, Zap,
 } from 'lucide-react';
 
