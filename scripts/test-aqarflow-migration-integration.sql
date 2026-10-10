@@ -183,14 +183,15 @@ RESET ROLE;
 -- Memberships expose only the current user's own membership or the owner's own workspace.
 SET ROLE authenticated;
 SET request.jwt.claim.sub = '00000000-0000-4000-8000-000000000003';
-DO $ BEGIN
+DO $membership_check$
+BEGIN
   IF (SELECT count(*) FROM public.aqarflow_workspace_memberships WHERE owner_id='00000000-0000-4000-8000-000000000001') <> 1 THEN
     RAISE EXCEPTION 'Member cannot read their own workspace membership';
   END IF;
   IF (SELECT count(*) FROM public.aqarflow_workspace_memberships WHERE owner_id='00000000-0000-4000-8000-000000000002') <> 0 THEN
     RAISE EXCEPTION 'Member can read another workspace membership';
   END IF;
-END $;
+END $membership_check$;
 RESET ROLE;
 
 -- A valid team member can read the owner's inventory but cannot read another workspace.
