@@ -41,7 +41,8 @@ const demoScenarios: Record<string, {
   },
 };
 
-const demoConversations: Record<string, ChatMessage[]> = {\n  expensive: [
+const demoConversations: Record<string, ChatMessage[]> = {
+  expensive: [
   {
     "from": "customer",
     "text": "السلام عليكم، شفت إعلان الشقة في المنصورة. ممكن الصور والتفاصيل والسعر؟",
