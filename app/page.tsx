@@ -3,9 +3,8 @@
 import { useMemo, useState } from 'react';
 import {
   ArrowDownUp, ArrowLeft, ArrowUpLeft, Bath, BedDouble, Bell, Building2,
-  Check, ChevronDown, Heart, Home, MapPin, Maximize, Menu, Search, SlidersHorizontal,
-  Sparkles, X, Phone, Share2, CarFront, ShieldCheck, Trees, Waves, CalendarDays,
-  Grid2X2, List, ChevronLeft, ChevronRight, KeyRound, CircleDollarSign, Compass,
+  Check, ChevronDown, Heart, MapPin, Maximize, Menu, Search, SlidersHorizontal,
+  X, Phone, Share2, ShieldCheck, CalendarDays, Grid2X2, ChevronLeft, ChevronRight, Compass,
 } from 'lucide-react';
 
 type Listing = {
