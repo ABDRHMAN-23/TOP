@@ -15,6 +15,8 @@ assert.equal(inferredSoft.budgetFlexibility, "slight", "explicit willingness to 
 const inferredHard = inferBasicBuyerProfileHints("ميزانيتي 200 دولار حد نهائي، ما أقدر أزيد.");
 assert.equal(inferredHard.budgetFlexibility, "hard", "firm budget language must override flexibility");
 assert.equal(inferBasicBuyerProfileHints("أريد 200 مترًا").budgetMax, undefined, "bare numbers without an explicit currency must not be treated as money");
+assert.equal(inferBasicBuyerProfileHints("هل الشقة سعرها 200 دولار؟").budgetMax, undefined, "a property price question must not be mistaken for the customer's budget");
+assert.equal(normalizeBuyerProfile({budgetMax:200,currency:"USD",budgetFlexibility:"slight"}).budgetFlexibility,"slight","explicit saved budget flexibility must survive profile normalization");
 
 assert.equal(buildNoMatchSalesDraft(0).unknowns[0],'active_inventory_empty');
 const tailoredNoMatch=buildNoMatchSalesDraft(5,{intent:'rent',propertyType:'شقة',preferredAreas:['المنصورة'],budgetMax:200,currency:'USD'});
