@@ -158,6 +158,18 @@ const CARDS: Record<string, SalesKnowledgeCard> = {
     ],
     avoid: ["لا تعرض عقارًا آخر ولا تطرح محاولة أخيرة للإقناع.", "لا تدّع أن الإلغاء تم قبل نجاح حفظه."],
   },
+  "transparent-identity": {
+    id: "transparent-identity",
+    title: "الصدق عند السؤال عن هوية المساعد",
+    principle: "لا حاجة إلى تقديم إفصاح تقني غير مطلوب في كل رسالة، لكن السؤال المباشر يستحق جوابًا صادقًا لا ينتحل هوية بشرية.",
+    useWhen: "عندما يسأل العميل هل يتحدث مع إنسان أو موظف أم مع مساعد افتراضي.",
+    actions: [
+      "أجب بجملة قصيرة وواضحة أنك المساعد الافتراضي للمكتب.",
+      "ارجع مباشرة إلى طلب العميل العقاري بدل شرح التقنية أو سرد قواعد التسويق.",
+      "إذا طلب العميل إنسانًا، سلّم المحادثة إلى موظف ولا تحاول إقناعه بالبقاء.",
+    ],
+    avoid: ["لا تدّع أنك شخص أو موظف محدد.", "لا تبدأ كل محادثة بهذا الإفصاح إن لم يُسأل عنه."],
+  },
   "human-handoff": {
     id: "human-handoff",
     title: "التسليم إلى موظف",
@@ -221,6 +233,7 @@ const CARDS: Record<string, SalesKnowledgeCard> = {
 const MOMENT_CARDS: Record<string, string[]> = {
   stop_contact: ["opt-out", "natural-voice"],
   human_handoff: ["human-handoff", "natural-voice"],
+  identity_question: ["transparent-identity", "natural-voice"],
   abusive_customer: ["service-recovery", "respectful-boundaries", "natural-voice"],
   privacy_request: ["privacy", "human-handoff", "natural-voice"],
   discount_request: ["negotiation", "price-objection", "near-budget"],
