@@ -64,7 +64,7 @@ assert.ok(hardBudget.goldReply.includes("200"), "gold reply must acknowledge the
 
 const nearBudget = byId("MT-BUDGET-NEAR-02");
 assert.ok(nearBudget.goldReply.includes("215") && nearBudget.goldReply.includes("15"), "near-budget gold reply must disclose the price and exact overage");
-assert.ok(nearBudget.goldReply.includes("لا أعتبره ضمن ميزانيتك"), "near-budget gold reply must not misrepresent fit");
+assert.ok(nearBudget.goldReply.includes("ما أعتبره ضمن ميزانيتك"), "near-budget gold reply must not misrepresent fit");
 
 const optOut = byId("MT-OPTOUT-12");
 assert.equal(optOut.targetAction, "opt_out");
