@@ -402,7 +402,7 @@
       "id": "DIRECT-01",
       "category": "direct_question",
       "customerMessage": "هل الشقة مفروشة أم غير مفروشة؟",
-      "expectedMoment": "general_discovery",
+      "expectedMoment": "property_fact_question",
       "objective": "الإجابة من سجل العقار أو بيان أن المعلومة تحتاج تأكيدًا.",
       "mustNot": [
         "لا تستنتج التأثيث من صور الأثاث."
