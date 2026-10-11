@@ -178,10 +178,53 @@ export async function GET() {
   let admin: ReturnType<typeof createAdminClient>;
   try { admin = createAdminClient(); } catch { return NextResponse.json({ error: 'Secure integration storage is unavailable.' }, { status: 503 }); }
   const { data, error } = await admin.from('aqarflow_whatsapp_integrations')
-    .select('id,waba_id,phone_number_id,display_phone_number,verified_name,graph_api_version,status,last_verified_at,token_expires_at')
+    .select('id,waba_id,phone_number_id,display_phone_number,verified_name,graph_api_version,status,last_verified_at,token_expires_at,auto_reply_enabled')
     .eq('owner_user_id', owner.ownerUserId).neq('status', 'disconnected').order('created_at', { ascending: false });
   if (error) return NextResponse.json({ error: 'Could not load WhatsApp connections. Apply the migrations in development first.' }, { status: 503 });
   return NextResponse.json({ integrations: data || [] }, { headers: { 'Cache-Control': 'no-store' } });
+}
+
+export async function PATCH(request: Request) {
+  const owner = await requireOwnerAccount();
+  if (!owner.ok) return NextResponse.json({ error: owner.message }, { status: owner.status, headers: { 'Cache-Control': 'no-store' } });
+
+  const body = await readBoundedJson(request, 4096);
+  if (!body.ok || !isRecord(body.value) || !isId(body.value.phoneNumberId) || typeof body.value.autoReplyEnabled !== 'boolean') {
+    return NextResponse.json({ error: 'A valid phoneNumberId and autoReplyEnabled boolean are required.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
+  }
+
+  let admin: ReturnType<typeof createAdminClient>;
+  try { admin = createAdminClient(); } catch { return NextResponse.json({ error: 'Secure integration storage is unavailable.' }, { status: 503 }); }
+
+  const { data: integration, error: readError } = await admin.from('aqarflow_whatsapp_integrations')
+    .select('id,phone_number_id,status,auto_reply_enabled,access_token_ciphertext,access_token_iv,token_expires_at')
+    .eq('owner_user_id', owner.ownerUserId).eq('phone_number_id', body.value.phoneNumberId).maybeSingle();
+  if (readError) return NextResponse.json({ error: 'Could not verify WhatsApp settings.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+  if (!integration) return NextResponse.json({ error: 'WhatsApp number is not connected to this workspace.' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
+
+  if (body.value.autoReplyEnabled) {
+    if (integration.status !== 'active' || !integration.access_token_ciphertext || !integration.access_token_iv) {
+      return NextResponse.json({ error: 'Reconnect and verify this WhatsApp number before enabling automatic replies.' }, { status: 409, headers: { 'Cache-Control': 'no-store' } });
+    }
+    if (integration.token_expires_at && Date.parse(integration.token_expires_at) <= Date.now() + 60_000) {
+      return NextResponse.json({ error: 'WhatsApp authorization has expired or is expiring; reconnect before enabling automatic replies.' }, { status: 409, headers: { 'Cache-Control': 'no-store' } });
+    }
+    if (!runtimeEnv('GEMINI_API_KEY') || !runtimeEnv('META_TOKEN_ENCRYPTION_KEY')) {
+      return NextResponse.json({ error: 'AI or WhatsApp token encryption is not configured on the server.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+    }
+  }
+
+  const { data, error } = await admin.from('aqarflow_whatsapp_integrations')
+    .update({ auto_reply_enabled: body.value.autoReplyEnabled, updated_at: new Date().toISOString() })
+    .eq('owner_user_id', owner.ownerUserId).eq('phone_number_id', body.value.phoneNumberId)
+    .select('phone_number_id,auto_reply_enabled').maybeSingle();
+  if (error) return NextResponse.json({ error: 'Could not update automatic reply settings.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+  if (!data) return NextResponse.json({ error: 'WhatsApp number is not connected to this workspace.' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
+
+  return NextResponse.json({
+    phoneNumberId: data.phone_number_id,
+    autoReplyEnabled: data.auto_reply_enabled,
+  }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function DELETE(request: Request) {
@@ -194,7 +237,7 @@ export async function DELETE(request: Request) {
   let admin: ReturnType<typeof createAdminClient>;
   try { admin = createAdminClient(); } catch { return NextResponse.json({ error: 'Secure integration storage is unavailable.' }, { status: 503 }); }
   const { data, error } = await admin.from('aqarflow_whatsapp_integrations')
-    .update({ status: 'disconnected', access_token_ciphertext: null, access_token_iv: null, updated_at: new Date().toISOString() })
+    .update({ status: 'disconnected', auto_reply_enabled: false, access_token_ciphertext: null, access_token_iv: null, updated_at: new Date().toISOString() })
     .eq('owner_user_id', owner.ownerUserId).eq('phone_number_id', body.value.phoneNumberId).select('phone_number_id').maybeSingle();
   if (error) return NextResponse.json({ error: 'Could not disconnect WhatsApp. Check the migration state.' }, { status: 503 });
   if (!data) return NextResponse.json({ error: 'WhatsApp number is not connected to this workspace.' }, { status: 404 });
