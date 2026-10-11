@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 export const metadata: Metadata = {
   title: { default: 'AqarFlow — ملك التسويق العقاري', template: '%s | AqarFlow' },
-  description: 'منظومة مبيعات عقارية يفهم العميل، ويتعامل مع الاعتراضات، ويقترح العقار المناسب من مخزون المكتب، مع الحفاظ على الصدق وأخلاق المهنة.',
+  description: 'منظومة مبيعات عقارية تساعد المكتب على فهم العملاء، ومعالجة الاعتراضات، وتحويل المحادثات إلى خطوات بيع مناسبة مع الحفاظ على الصدق وأخلاق المهنة.',
   applicationName: 'AqarFlow',
   keywords: ['AqarFlow', 'منظومة مبيعات عقارية', 'تسويق عقاري', 'أتمتة واتساب للمكاتب العقارية', 'إدارة العملاء العقاريين'],
   alternates: { canonical: '/' },
@@ -14,13 +14,13 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'AqarFlow',
     title: 'AqarFlow — منظومة المبيعات العقارية',
-    description: 'عقل مبيعات عقاري يساعد المكتب على فهم العملاء، ومعالجة الاعتراضات، وتحويل المحادثات إلى خطوات بيع مناسبة.',
+    description: 'منظومة مبيعات تساعد المكتب على فهم العملاء، ومعالجة الاعتراضات، وتحويل المحادثات إلى خطوات بيع مناسبة.',
     url: '/',
   },
   twitter: {
     card: 'summary',
     title: 'AqarFlow — منظومة المبيعات العقارية',
-    description: 'مبيعات عقارية أذكى: محادثات محترمة، مطابقة دقيقة للعقارات، وإقناع أخلاقي.',
+    description: 'مبيعات عقارية أكثر فاعلية: محادثات محترمة، مطابقة دقيقة للعقارات، وإقناع أخلاقي.',
   },
   robots: { index: true, follow: true },
   other: { 'mobile-web-app-capable': 'yes', 'theme-color': '#12392f' },
