@@ -154,6 +154,9 @@ export function mergeBuyerProfileForConversation(
     else delete merged.preferredAreas;
   }
 
+  const rejectedTypeOnly = /^(?:لا اريد|ما اريد|ما ابغى|ما ابغي|مش عايز|مش عاوز|لا ابغى|لا ابغي|do not want|don't want|not interested in)\s+(?:(?:a|an|the)\s+)?(?:شقة|شقق|فيلا|فلل|بيت|منزل|أرض|ارض|اراضي|مكتب|محل|apartment|flat|villa|house|home|land|plot|office|shop|store)\s*[.!؟?]*$/i.test(message);
+  if (rejectedTypeOnly && !next.propertyType) delete merged.propertyType;
+
   const rejectedValues = uniqueClean(next.dealBreakers);
   const rejectedKeys = new Set(rejectedValues.map((value) => value.toLocaleLowerCase()));
   if (rejectedKeys.size) {
