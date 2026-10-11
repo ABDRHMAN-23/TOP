@@ -6,6 +6,7 @@ const notificationsRoute=readFileSync(new URL('../app/api/aqarflow/notifications
 const automationComponent=readFileSync(new URL('../components/aqarflow/AqarFlowAutomation.tsx',import.meta.url),'utf8');
 const scheduledWorker=readFileSync(new URL('../worker.ts',import.meta.url),'utf8');
 const sql=readFileSync(new URL('../supabase/migrations/20261010000200_aqarflow_ai_runtime.sql',import.meta.url),'utf8');
+const autoReplyMigration=readFileSync(new URL('../supabase/migrations/20261011000100_aqarflow_ai_auto_reply.sql',import.meta.url),'utf8');
 const whatsappMigration=readFileSync(new URL('../supabase/migrations/20261010000300_aqarflow_whatsapp_tech_provider.sql',import.meta.url),'utf8');
 const route=readFileSync(new URL('../app/api/aqarflow/sales/route.ts',import.meta.url),'utf8');
 const ranked=readFileSync(new URL('../lib/aqarflow/ranked-inventory.ts',import.meta.url),'utf8');
@@ -29,6 +30,16 @@ const operationsContract=readFileSync(new URL('../lib/aqarflow/operations-contra
 const operationsComponent=readFileSync(new URL('../components/aqarflow/AqarFlowOperations.tsx',import.meta.url),'utf8');
 const wrangler=readFileSync(new URL('../wrangler.jsonc',import.meta.url),'utf8');
 const props=readFileSync(new URL('../app/api/aqarflow/properties/route.ts',import.meta.url),'utf8');
+assert.match(autoReplyMigration,/ai_auto_reply_opted_out boolean not null default false/i);
+assert.match(autoReplyMigration,/buyer_profile jsonb not null default '\\{\\}'::jsonb/i);
+assert.match(autoReplyMigration,/create or replace function public\\.aqarflow_reserve_webhook_ai_request/i);
+assert.match(autoReplyMigration,/create or replace function public\\.aqarflow_record_webhook_ai_usage/i);
+assert.match(autoReplyMigration,/revoke all on function public\\.aqarflow_reserve_webhook_ai_request\\(uuid\\) from public, anon, authenticated/i);
+assert.match(autoReplyMigration,/grant execute on function public\\.aqarflow_reserve_webhook_ai_request\\(uuid\\) to service_role/i);
+assert.match(autoReplyMigration,/grant execute on function public\\.aqarflow_record_webhook_ai_usage\\(uuid,uuid,text,integer,integer,integer,boolean,text\\) to service_role/i);
+for(const match of autoReplyMigration.matchAll(/create or replace function\\s+([^\\s(]+)[\\s\\S]*?\\$function\\$;/gi)){
+  if(/security\\s+definer/i.test(match[0])) assert.match(match[0],/set search_path\\s*=\\s*''/i);
+}
 assert.match(sql,/create table if not exists public\.aqarflow_properties/i);
 assert.match(sql,/create table if not exists public\.aqarflow_workspace_memberships/i);
 assert.match(sql,/from public\.aqarflow_workspace_memberships tm/i);
