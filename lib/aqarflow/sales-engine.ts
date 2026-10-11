@@ -168,6 +168,9 @@ export function mergeBuyerProfileForConversation(
     merged.mustHaves = uniqueClean([...(merged.mustHaves || []), ...requiredValues]);
   }
 
+  if (Array.isArray(merged.mustHaves) && merged.mustHaves.length === 0) delete merged.mustHaves;
+  if (Array.isArray(merged.dealBreakers) && merged.dealBreakers.length === 0) delete merged.dealBreakers;
+  if (Array.isArray(merged.preferredAreas) && merged.preferredAreas.length === 0) delete merged.preferredAreas;
   return merged;
 }
 
