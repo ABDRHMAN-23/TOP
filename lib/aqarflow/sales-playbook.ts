@@ -30,6 +30,7 @@ export type SalesPlaybookInput = {
     currency?: string | null;
     preferredTone?: string | null;
   } | null;
+  nearBudgetAlternativeMode?: boolean;
 };
 
 export type SalesPlaybookGuidance = {
@@ -286,6 +287,6 @@ export function buildSalesPlaybookGuidance(input: SalesPlaybookInput): SalesPlay
     objective: base.objective,
     do: doRules,
     avoid: avoidRules,
-    knowledgeCards: getSalesKnowledgeCards(moment),
+    knowledgeCards: getSalesKnowledgeCards(moment, Boolean(input.nearBudgetAlternativeMode)),
   };
 }
