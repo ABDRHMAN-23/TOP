@@ -15,7 +15,7 @@ The assistant is designed to understand a customer's priorities, match them to v
 - `app/api/aqarflow/demo-sales/route.ts`: optional public live-preview endpoint that uses fictional sample inventory, the same prompt and fact validator, and a per-visitor quota; it never sends WhatsApp messages or reads office listings.
 - `app/api/integrations/whatsapp/webhook/route.ts`: Meta signature validation, idempotent webhook event processing, opt-out/handoff priority, and auto-reply dispatch.
 - `components/aqarflow/WhatsAppConnectionManager.tsx`: owner-controlled WhatsApp connection and per-number auto-reply toggle.
-- `data/aqarflow-sales/scenarios.v1.json`: 51 seed cases for classification/evaluation. These are not a 15,000-case reviewed corpus.
+- `data/aqarflow-sales/scenarios.v1.json`: 55 seed cases for classification/evaluation. These are not a 15,000-case reviewed corpus.
 - `data/aqarflow-sales/multiturn-gold-seeds.v1.json`: 22 authored multi-turn evaluation seeds with gold replies and safety criteria. They are not fine-tuning data until reviewed and converted by a training pipeline.
 - `docs/AQARFLOW_KING_OF_MARKETING_AR.md`: product principles, evaluation strategy, budget rules, and the growth plan for the scenario set.
 - `docs/AQARFLOW_SALES_KNOWLEDGE_CATALOG_AR.md`: documentation for the original knowledge cards.
