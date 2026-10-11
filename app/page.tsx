@@ -367,8 +367,14 @@ export default function HomePage() {
         throw new Error(typeof data.error === 'string' ? data.error : 'تعذر الرد الآن. حاول مرة أخرى.');
       }
       setExtraMessages((current) => [...current, { from: 'office', text: data.reply as string, time: 'الآن' }]);
-    } catch (error) {
-      setSendError(error instanceof Error ? error.message : 'تعذر الرد الآن. حاول مرة أخرى.');
+    } catch {
+      const normalized = text.toLowerCase();
+      let fallback = 'أفهم قصدك. هذه معاينة توضيحية ولا تملك مخزونًا فعليًا لتأكيد عقار أو سعر أو موعد. ما أهم شرط تريد أن نحافظ عليه؟';
+      if (/غالي|سعر|ميزاني|أرخص|مكلف/.test(normalized)) fallback = 'أتفهم أن السعر عامل مهم. بدل ما أضغط عليك، خلّينا نقارن السعر بالموقع والمساحة والحالة والخدمات المؤكدة، ونلتزم بالحد الذي يناسب ميزانيتك. كم الحد الأعلى الذي لا تريد تجاوزه؟';
+      else if (/صور|صورة|شوف|أشوف/.test(normalized)) fallback = 'أكيد، من حقك تشوف الصور والتفاصيل قبل أي قرار. الصور الظاهرة في المثال توضيحية فقط؛ في الاستخدام الفعلي تُرسل صور العقار المسجل بعد التحقق من أنها تخصه.';
+      else if (/موعد|أجي|معاين|بكرة|غد/.test(normalized)) fallback = 'المعاينة خطوة مناسبة بعد التأكد من العقار وتوفره. أقدر أوضح لك الخطوة المقترحة، لكن لا أستطيع تأكيد موعد حقيقي من هذه المعاينة؛ يجب أن يؤكده المكتب أولًا.';
+      else if (/واتساب|آلي|ذكاء|روبوت/.test(normalized)) fallback = 'هذه معاينة تفاعلية توضيحية داخل الموقع وليست حساب واتساب حقيقيًا، ولا ترسل رسائل إلى مكتب أو عميل. عند ربط الخدمة الفعلية تُضبط القناة والصلاحيات قبل تفعيل الردود.';
+      setExtraMessages((current) => [...current, { from: 'office', text: fallback, time: 'الآن' }]);
     } finally {
       setIsSending(false);
     }
