@@ -9,6 +9,10 @@ assert.equal(parseAqarFlowSalesRequest({customerMessage:'x'.repeat(1601)}).ok,fa
 assert.deepEqual(inferBasicBuyerProfileHints('أبحث عن شقة للبيع فيها ٣ غرف نوم').bedroomsMin,3);
 assert.equal(normalizeBuyerProfile({preferredAreas:'Aden',mustHaves:['parking']}).preferredAreas,undefined);
 assert.equal(buildNoMatchSalesDraft(0).unknowns[0],'active_inventory_empty');
+const tailoredNoMatch=buildNoMatchSalesDraft(5,{intent:'rent',propertyType:'شقة',preferredAreas:['المنصورة'],budgetMax:200,currency:'USD'});
+assert.match(tailoredNoMatch.replyDraft,/المنصورة/,'no-match reply should acknowledge the requested area');
+assert.match(tailoredNoMatch.replyDraft,/الميزانية/,'no-match reply should preserve an explicit budget');
+assert.equal(tailoredNoMatch.nextBestAction,'ask_one_question');
 const sample = Array.from({length:9},(_,i)=>({id:'p'+i,title:'Property '+i,purpose:'sale',price:200000,currency:'USD',bedrooms:1,locationLabel:'Sanaa',factsLastVerifiedAt:new Date().toISOString()}));
 sample[8]={id:'p8',title:'Target Aden 3-bedroom',purpose:'sale',price:80000,currency:'USD',bedrooms:3,locationLabel:'Aden',factsLastVerifiedAt:new Date().toISOString()};
 const ranked=rankPropertyCandidates({intent:'buy',budgetMax:90000,currency:'USD',preferredAreas:['Aden'],bedroomsMin:3},sample);
