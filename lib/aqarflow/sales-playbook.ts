@@ -77,7 +77,7 @@ export function classifySalesMoment(message: string): SalesMoment {
   ) return "hesitation";
 
   if (
-    /(?:نصب|احتيال|اثق فيكم|كيف اضمن|كيف اتاكد|موثوق|موثوقين|وثائق الملكية|صك الملكية|الوضع القانوني|مضمون|مضمونة|نسبة الربح|عائد الاستثمار|رقم العميل|رقم هاتف العميل|بيانات عميل|خصوصية|رقم المالك|بيانات المالك|scam|fraud|can i trust|prove it|legal status|ownership documents|guaranteed return)/i.test(text)
+    /(?:نصب|احتيال|اثق فيكم|كيف اضمن|كيف اتاكد|موثوق|موثوقين|وثائق الملكية|صك الملكية|الوضع القانوني|قانوني|قانونية|مشكلة قانونية|مضمون|مضمونة|نسبة الربح|عائد الاستثمار|رقم العميل|رقم هاتف العميل|بيانات عميل|خصوصية|رقم المالك|بيانات المالك|scam|fraud|can i trust|prove it|legal status|ownership documents|guaranteed return)/i.test(text)
   ) return "trust_concern";
 
   if (
