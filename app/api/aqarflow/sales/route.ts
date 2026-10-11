@@ -75,7 +75,7 @@ export async function POST(req:Request) {
   }
   const rankingStartedAt=Date.now();
   const candidates=(rows||[]).map((r:unknown)=>mapProperty(r as PropertyRow));
-  const buyerProfile=mergeBuyerProfile(inferBasicBuyerProfileHints(parsed.value.customerMessage),parsed.value.buyerProfile);
+  const buyerProfile=mergeBuyerProfile(parsed.value.buyerProfile,inferBasicBuyerProfileHints(parsed.value.customerMessage));
   const ranked=rankPropertyCandidates(buyerProfile,candidates);
   const selected=ranked.filter(m=>m.eligible).slice(0,5).map(m=>m.property);
   if(selected.length===0) {
