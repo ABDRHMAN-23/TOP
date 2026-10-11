@@ -18,6 +18,7 @@ psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261010000800_aqarflow_automatio
 psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261010000900_aqarflow_notification_recipient_index.sql
 psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261010001000_aqarflow_sales_intelligence.sql
 psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261011000100_aqarflow_ai_auto_reply.sql
+psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261011000200_aqarflow_public_demo.sql
 psql -v ON_ERROR_STOP=1 -f scripts/test-aqarflow-migration-integration.sql
 
 tmpfile="$(mktemp)"
