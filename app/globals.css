@@ -930,3 +930,10 @@ img{max-width:100%}
   .af-login-back{min-height:44px}
   .af-workspace-settings,.af-workspace-exit{min-height:40px}
 }
+
+
+/* Live demo conversation states */
+.af-demo-status{margin:8px 0 0;padding:0 4px;color:#64746e;font-size:12px;line-height:1.7}
+.af-demo-error{margin:8px 0 0;padding:9px 11px;border:1px solid #f0c9c5;border-radius:10px;background:#fff8f7;color:#a43127;font-size:12px;line-height:1.7}
+.af-demo-input-row button:disabled{opacity:.5;cursor:not-allowed}
+.af-demo-loading{display:inline-block;font-size:24px;line-height:1;transform:translateY(-3px)}
