@@ -139,14 +139,14 @@ function isNegatedAreaMention(normalizedMessage: string, phrase: string): boolea
     if (index < 0) return false;
     const start = Math.max(0, index - 52);
     const prefix = normalizedMessage.slice(start, index).split(/[,،;؛.!؟?]/).pop() || "";
-    if (/(?:لا اريد|ما اريد|ما ابغى|ما ابغي|مش عايز|مش عاوز|بدون|not|don't want|do not want)(?:\\s+[^\\s,،;؛.!؟?]+){0,3}\\s*$/i.test(prefix)) return true;
+    if (/(?:لا اريد|ما اريد|ما ابغى|ما ابغي|مش عايز|مش عاوز|بدون|not|don't want|do not want)(?:\s+[^\s,،;؛.!؟?]+){0,3}\s*$/i.test(prefix)) return true;
     offset = index + needle.length;
   }
   return false;
 }
 
 function positiveRequestTail(normalizedMessage: string): string {
-  const parts = normalizedMessage.split(/(?:[,،;؛.]+(?=\\s*(?:ابغى|ابغي|ابي|اريد|احتاج|لازم|want|need|looking for))|\\bbut\\b|\\binstead\\b|\\brather than\\b|لكن|ولكن|بل|بدل(?:ا)? من)/i);
+  const parts = normalizedMessage.split(/(?:[,،;؛.]+(?=\s*(?:ابغى|ابغي|ابي|اريد|احتاج|لازم|want|need|looking for))|\bbut\b|\binstead\b|\brather than\b|لكن|ولكن|بل|بدل(?:ا)? من)/i);
   return parts[parts.length - 1] || normalizedMessage;
 }
 
