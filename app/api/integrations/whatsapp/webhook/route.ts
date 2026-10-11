@@ -4,6 +4,7 @@ import { runtimeEnv } from '@/lib/runtime-env';
 import { parseMetaWhatsAppWebhook, verifyMetaWebhookChallenge, verifyMetaWebhookSignature } from '@/lib/aqarflow/whatsapp-cloud';
 import { readBoundedUtf8Body } from '@/lib/aqarflow/whatsapp-http';
 import { handleWhatsAppAutomaticReply, type AutoReplyIntegration } from '@/lib/aqarflow/automatic-sales-reply';
+import { classifySalesMoment } from '@/lib/aqarflow/sales-playbook';
 
 export const dynamic='force-dynamic';
 export async function GET(request:Request) {
@@ -91,6 +92,19 @@ export async function POST(request:Request) {
     acceptedKeysInBatch.add(uniqueKey);
     return true;
   });
+  // Pre-scan the full webhook batch so a later opt-out or human request suppresses
+  // replies to earlier messages from the same sender in this same provider delivery.
+  const batchOptOutSenders=new Set<string>();
+  const batchHandoffSenders=new Set<string>();
+  for(const event of acceptedEvents){
+    if(event.kind!=='inbound_message'||event.messageType!=='text'||!event.senderPhoneNumber)continue;
+    const integration=integrations.get(event.phoneNumberId);
+    if(!integration)continue;
+    const senderKey=integration.owner_user_id+':'+event.senderPhoneNumber;
+    const moment=classifySalesMoment(event.messageText||'');
+    if(moment==='stop_contact')batchOptOutSenders.add(senderKey);
+    if(moment==='human_handoff')batchHandoffSenders.add(senderKey);
+  }
   if(acceptedEvents.length===0)return NextResponse.json({
     received:true,eventCount:0,duplicateEvents:processableEvents.length,
     ignoredDisconnected:events.length-processableEvents.length,
@@ -183,12 +197,17 @@ export async function POST(request:Request) {
     if(messageError)return NextResponse.json({error:'Could not persist CRM message.'},{status:503});
 
     if(event.kind==='inbound_message') {
+      const senderKey=integration.owner_user_id+':'+event.senderPhoneNumber;
+      const currentMoment=classifySalesMoment(event.messageText||'');
+      if(batchHandoffSenders.has(senderKey)&&currentMoment!=='human_handoff'&&currentMoment!=='stop_contact'){
+        continue;
+      }
       const replyResult=await handleWhatsAppAutomaticReply(admin,{
         integration,
         event,
         contactId:contact.id,
         conversationId:conversation.id,
-        contactOptedOut:Boolean(contact.ai_auto_reply_opted_out),
+        contactOptedOut:Boolean(contact.ai_auto_reply_opted_out)||batchOptOutSenders.has(senderKey),
         priorBuyerProfile:existingConversation?.buyer_profile??{},
       });
       if(replyResult.action==='failed') {
