@@ -5,25 +5,25 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 export const metadata: Metadata = {
-  title: { default: 'AqarFlow — اكتشف العقارات للبيع والإيجار', template: '%s | AqarFlow AI' },
-  description: 'تصفح عقارات للبيع والإيجار في عدن. قارن الأسعار والمساحات والصور وافتح تفاصيل كل عقار في تجربة تفاعلية.',
+  title: { default: 'AqarFlow AI — ملك التسويق العقاري', template: '%s | AqarFlow AI' },
+  description: 'مساعد مبيعات عقاري يفهم العميل، ويتعامل مع الاعتراضات، ويقترح العقار المناسب من مخزون المكتب، مع الحفاظ على الصدق وأخلاق المهنة.',
   applicationName: 'AqarFlow AI',
-  keywords: ['AqarFlow', 'عقارات عدن', 'عقارات للبيع', 'عقارات للإيجار', 'شقق وفلل'],
+  keywords: ['AqarFlow AI', 'مساعد مبيعات عقاري', 'تسويق عقاري', 'أتمتة واتساب للمكاتب العقارية', 'إدارة العملاء العقاريين'],
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     siteName: 'AqarFlow AI',
     title: 'AqarFlow AI — منصة المبيعات العقارية الذكية',
-    description: 'اكتشف عقارات للبيع والإيجار، وتصفح الصور والمواصفات ومعلومات التواصل.',
+    description: 'عقل مبيعات عقاري يساعد المكتب على فهم العملاء، ومعالجة الاعتراضات، وتحويل المحادثات إلى خطوات بيع مناسبة.',
     url: '/',
   },
   twitter: {
     card: 'summary',
     title: 'AqarFlow AI — منصة المبيعات العقارية الذكية',
-    description: 'واجهة موحّدة لإدارة العقارات والعملاء ومتابعات المبيعات.',
+    description: 'مبيعات عقارية أذكى: محادثات محترمة، مطابقة دقيقة للعقارات، وإقناع أخلاقي.',
   },
   robots: { index: true, follow: true },
-  other: { 'mobile-web-app-capable': 'yes', 'theme-color': '#13212e' },
+  other: { 'mobile-web-app-capable': 'yes', 'theme-color': '#12392f' },
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
