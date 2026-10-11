@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [legal, setLegal] = useState(false);
+  const [authVerified, setAuthVerified] = useState(false);
   const normalizedPhone = useMemo(() => normalizePhone(phone), [phone]);
 
   const next = useMemo(() => {
@@ -49,6 +50,7 @@ export default function LoginPage() {
     event?.preventDefault();
     setError('');
     setMessage('');
+    setAuthVerified(false);
 
     if (!legal) {
       setError('وافق على شروط الاستخدام وأقرّ بسياسة الخصوصية قبل المتابعة.');
@@ -76,11 +78,30 @@ export default function LoginPage() {
         return;
       }
       setStep('otp');
-      setMessage('أرسلنا طلب رمز التحقق إلى واتساب إن كانت قناة WhatsApp OTP مفعّلة في إعدادات الخدمة. أدخل الرمز لإكمال الدخول أو التسجيل.');
+      setMessage('تم قبول طلب إرسال الرمز. أدخل الرمز الذي يصلك عبر واتساب لإكمال الدخول أو التسجيل.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر بدء التحقق. حاول مجددًا.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function finalizeLogin() {
+    setError('');
+    try {
+      const response = await fetch('/api/legal-consent/finalize', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(typeof result.error === 'string' ? result.error : 'تعذّر حفظ الموافقة القانونية.');
+      }
+      window.location.assign(next);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذّر إكمال التسجيل. اضغط إعادة المحاولة.');
     }
   }
 
@@ -106,7 +127,8 @@ export default function LoginPage() {
         setError('رمز التحقق غير صحيح أو انتهت صلاحيته. راجع الرمز أو اطلب رمزًا جديدًا.');
         return;
       }
-      window.location.assign(next);
+      setAuthVerified(true);
+      await finalizeLogin();
     } catch {
       setError('تعذر التحقق من الرمز الآن. حاول مرة أخرى.');
     } finally {
@@ -165,7 +187,7 @@ export default function LoginPage() {
                 <div className="rounded-2xl border border-[#dce7d8] bg-[#f5f9f2] p-4">
                   <p className="text-xs font-bold text-[#617165]">رمز التحقق للرقم</p>
                   <p dir="ltr" className="mt-1 text-lg font-black tracking-wide text-[#244b39]">{normalizedPhone}</p>
-                  <button type="button" disabled={loading} onClick={() => { setStep('phone'); setOtp(''); setMessage(''); setError(''); }} className="mt-2 text-xs font-extrabold text-[#2b7057] underline">تغيير الرقم</button>
+                  <button type="button" disabled={loading} onClick={() => { setStep('phone'); setOtp(''); setMessage(''); setError(''); setAuthVerified(false); }} className="mt-2 text-xs font-extrabold text-[#2b7057] underline">تغيير الرقم</button>
                 </div>
                 <label className="block text-sm font-extrabold text-[#34483a]">
                   رمز التحقق
@@ -185,6 +207,7 @@ export default function LoginPage() {
                   {loading ? <Loader2 className="animate-spin" size={18} /> : <><span>تحقق وادخل إلى المكتب</span><ArrowLeft size={17} /></>}
                 </button>
                 <button type="button" disabled={loading} onClick={() => void sendCode()} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-extrabold text-[#2b7057] transition hover:bg-[#f1f6ef] disabled:opacity-50">إعادة إرسال الرمز</button>
+                {authVerified && <button type="button" disabled={loading} onClick={() => void finalizeLogin()} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#dce5da] px-4 py-2 text-sm font-extrabold text-[#244b39] transition hover:bg-[#f1f6ef] disabled:opacity-50">إعادة المحاولة وحفظ الموافقة</button>}
               </form>
             )}
 
