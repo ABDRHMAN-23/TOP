@@ -84,7 +84,8 @@ export function inferInventoryHints(message: string, rows: InventoryHintRow[]): 
 
   if (!hints.propertyType) {
     const positiveTail = positiveRequestTail(normalizedMessage);
-    const requestedFamily = typeFamily(positiveTail) || (!negativeIntent ? typeFamily(normalizedMessage) : null);
+    const rejectedTypeOnly = /^(?:لا اريد|ما اريد|ما ابغى|ما ابغي|مش عايز|مش عاوز|لا ابغى|لا ابغي|do not want|don't want|not interested in)\\s+(?:a\\s+|an\\s+|the\\s+)?(?:شقة|شقق|فيلا|فلل|بيت|منزل|أرض|ارض|اراضي|مكتب|محل|apartment|flat|villa|house|home|land|plot|office|shop|store)\\s*[.!؟?]*$/i.test(normalizedMessage);
+    const requestedFamily = rejectedTypeOnly ? null : typeFamily(positiveTail) || (!negativeIntent ? typeFamily(normalizedMessage) : null);
     if (requestedFamily) {
       const record = rows.find((row) => row.property_type && typeFamily(row.property_type) === requestedFamily);
       // Keep explicit property type even when this workspace has zero current listings of that type.
