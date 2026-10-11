@@ -189,7 +189,7 @@ export default function HomePage() {
                 <span className="af-demo-menu-dot">•••</span>
               </div>
               <div className="af-demo-transcript" aria-live="polite">
-                {extraMessages.length === 0 ? <div className="af-demo-message office"><p>وعليكم السلام، حيّاك الله. تفضل، كيف أقدر أخدمك؟</p><small>الآن <CheckCheck size={12} /></small></div> : null}
+                {extraMessages.length === 0 ? <div className="af-demo-message office"><p>مرحبًا، حيّاك الله. كيف أقدر أخدمك؟</p><small>الآن <CheckCheck size={12} /></small></div> : null}
                 {extraMessages.map((message, index) => (
                   <div className={message.from === 'customer' ? 'af-demo-message customer' : 'af-demo-message office'} key={'extra-' + index}>
                     <p>{message.text}</p><small>{message.time} {message.from === 'office' ? <CheckCheck size={12} /> : null}</small>
@@ -204,7 +204,6 @@ export default function HomePage() {
               {sendError ? <p className="af-demo-error" role="alert">{sendError}</p> : null}
               <p className="af-demo-disclaimer"><ShieldCheck size={13} /> المحادثة للتجربة فقط؛ لا تتصل بمخزون عقارات أو بواتساب.</p>
             </div>
-    </aside>
           </div>
         </div>
       </section>
