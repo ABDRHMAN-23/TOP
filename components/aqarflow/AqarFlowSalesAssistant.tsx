@@ -42,7 +42,7 @@ export default function AqarFlowSalesAssistant() {
       <button disabled={loading||!message.trim()} className="min-h-12 w-full rounded-xl bg-blue-700 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">{loading?'يجري تحليل العقارات والتحقق من الرد…':'إنشاء مسودة رد آمنة'}</button>
     </form>
     {result&&<div className="mt-6 space-y-4 border-t border-slate-200 pt-6">
-      <div className="rounded-2xl bg-slate-50 p-4"><h2 className="font-bold text-slate-900">مسودة الرد</h2><p className="mt-2 whitespace-pre-wrap leading-8 text-slate-800">{result.replyDraft}</p>{result.askOneQuestion&&<p className="mt-3 rounded-lg border-r-4 border-blue-600 bg-white p-3 text-sm">السؤال المقترح: {result.askOneQuestion}</p>}</div>
+      <div className="rounded-2xl bg-slate-50 p-4"><h2 className="font-bold text-slate-900">مسودة الرد</h2><p className="mt-2 whitespace-pre-wrap leading-8 text-slate-800">{result.replyDraft}</p>{result.askOneQuestion&&!result.replyDraft.includes(result.askOneQuestion)&&<p className="mt-3 rounded-lg border-r-4 border-blue-600 bg-white p-3 text-sm">السؤال المقترح: {result.askOneQuestion}</p>}</div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-xl border p-3"><p className="text-xs font-bold text-slate-500">العقارات المطابقة</p><p className="mt-1 text-xl font-black">{result.matchedPropertyIds.length}</p></div>
         <div className="rounded-xl border p-3"><p className="text-xs font-bold text-slate-500">استهلاك التوكنز / زمن الرد</p><p className="mt-1 font-black">{result.usage?.totalTokens??'—'} / {result.usage?.latencyMs??'—'} ms</p><p className="mt-1 break-all text-xs text-slate-500">{result.usage?.model}</p></div>
