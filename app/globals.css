@@ -983,3 +983,6 @@ img{max-width:100%}
   .af-whatsapp-transcript .af-demo-message p{font-size:10px}
   .af-property-attachment>img{height:165px}
 }
+
+.af-whatsapp-demo-label{padding:8px 12px;background:#e9f3ec;border-bottom:1px solid #dbe8df;color:#32634b;text-align:center;font-size:10px;font-weight:700}
+.af-whatsapp-transcript{display:flex;flex-direction:column}
