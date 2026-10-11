@@ -10,6 +10,7 @@ const autoReplyMigration=readFileSync(new URL('../supabase/migrations/2026101100
 const publicDemoMigration=readFileSync(new URL('../supabase/migrations/20261011000200_aqarflow_public_demo.sql',import.meta.url),'utf8');
 const whatsappMigration=readFileSync(new URL('../supabase/migrations/20261010000300_aqarflow_whatsapp_tech_provider.sql',import.meta.url),'utf8');
 const route=readFileSync(new URL('../app/api/aqarflow/sales/route.ts',import.meta.url),'utf8');
+const publicDemoRoute=readFileSync(new URL('../app/api/aqarflow/demo-sales/route.ts',import.meta.url),'utf8');
 const ranked=readFileSync(new URL('../lib/aqarflow/ranked-inventory.ts',import.meta.url),'utf8');
 const body=readFileSync(new URL('../lib/aqarflow/http-body.ts',import.meta.url),'utf8');
 const inbox=readFileSync(new URL('../app/api/aqarflow/inbox/route.ts',import.meta.url),'utf8');
@@ -72,6 +73,13 @@ const functions=[...sql.matchAll(/create or replace function\s+([^\s(]+)[\s\S]*?
 assert.ok(functions.length>=5);
 for(const match of functions){if(/security\s+definer/i.test(match[0])){assert.ok(match[1].toLowerCase().startsWith('private.'));assert.match(match[0],/set search_path\s*=\s*''/i);}}
 assert.match(route,/supabase\.auth\.getUser\(\)/);
+assert.ok(publicDemoRoute.includes("readBoundedUtf8Body"), "public demo request body must be byte bounded");
+assert.ok(publicDemoRoute.includes("MAX_MESSAGE_CHARS = 500"), "public demo must enforce a short customer-message limit");
+assert.ok(publicDemoRoute.includes("aqarflow_consume_public_demo_quota"), "public demo must reserve a rate-limit slot");
+assert.ok(publicDemoRoute.includes("buildPersonalizedSalesPrompt"), "public demo must use the same sales prompt");
+assert.ok(publicDemoRoute.includes("validateSalesDraft"), "public demo output must pass the grounded sales validator");
+assert.ok(publicDemoRoute.includes("getDemoInventory"), "public demo must use isolated illustrative inventory");
+assert.doesNotMatch(publicDemoRoute,/sendMetaWhatsAppText|sendMetaWhatsAppTemplate|aqarflow_crm_messages|aqarflow_properties/, "public demo must never send messages or read/write real office inventory");
 assert.match(route,/readBoundedUtf8Body\(req,MAX_REQUEST_BODY_BYTES\)/);
 assert.match(route,/\.eq\('owner_user_id',workspaceOwnerId\)/);
 assert.match(route,/\.limit\(50\)/);
