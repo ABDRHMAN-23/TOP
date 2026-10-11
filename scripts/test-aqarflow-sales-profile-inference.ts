@@ -1,0 +1,43 @@
+import assert from "node:assert/strict";
+import { inferInventoryHints } from "../lib/aqarflow/sales-profile-inference.ts";
+
+const noInventory = inferInventoryHints(
+  "أبحث عن شقة للإيجار في المنصورة وميزانيتي 200 دولار",
+  [],
+);
+assert.equal(noInventory.intent, "rent");
+assert.equal(noInventory.propertyType, "شقة", "explicit property type should be kept even with empty inventory");
+assert.ok(noInventory.preferredAreas?.includes("المنصورة"), "explicit area should be kept even with empty inventory");
+assert.equal(noInventory.budgetMax, 200, "explicit budget should be retained");
+assert.equal(noInventory.currency, "USD");
+
+const changedPreference = inferInventoryHints("لا أريد المنصورة، أريد فيلا في خور مكسر", []);
+assert.equal(changedPreference.propertyType, "فيلا");
+assert.deepEqual(changedPreference.preferredAreas, ["خور مكسر"], "a rejected area should not overwrite the positively requested area");
+
+const rejectedOnly = inferInventoryHints("ما أبغى المنصورة", []);
+assert.deepEqual(rejectedOnly.preferredAreas, [], "explicitly rejected location should be cleared from current preferences");
+
+const noStockTypeCorrection = inferInventoryHints("لا أريد شقة، أريد فيلا", []);
+assert.equal(noStockTypeCorrection.propertyType, "فيلا", "the positive end of a correction should win over the rejected type");
+
+const availableInventory = inferInventoryHints(
+  "أريد شقة في المنصورة، مهم عندي موقف سيارة",
+  [{
+    property_type: "شقة",
+    location_label: "المنصورة، عدن",
+    verified_features: ["موقف سيارة", "مصعد"],
+  }],
+);
+assert.equal(availableInventory.propertyType, "شقة");
+assert.ok(availableInventory.preferredAreas?.includes("المنصورة"));
+assert.ok(availableInventory.mustHaves?.includes("موقف سيارة"), "known required feature should be extracted");
+assert.ok(!availableInventory.mustHaves?.includes("مصعد"), "unmentioned feature must not be inferred");
+
+const excludedFeature = inferInventoryHints(
+  "أريد شقة بدون مسبح",
+  [{ property_type: "شقة", location_label: "المنصورة، عدن", verified_features: ["مسبح", "مصعد"] }],
+);
+assert.ok(excludedFeature.dealBreakers?.includes("مسبح"), "explicitly rejected feature should become a deal-breaker");
+
+console.log("AqarFlow buyer-profile inference tests passed.");
