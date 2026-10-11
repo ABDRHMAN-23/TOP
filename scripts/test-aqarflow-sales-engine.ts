@@ -342,6 +342,12 @@ const withExactSelection = selectPropertiesForSalesReply(
 );
 assert.deepEqual(withExactSelection.properties.map((property) => property.id), ["within-200"], "an exact in-budget property must win over a more expensive option even when slight flexibility is allowed");
 assert.equal(withExactSelection.nearBudgetAlternativeMode, false);
+const unknownAvailabilityRanked = rankPropertyCandidates(
+  nearBudgetProfile,
+  [{ ...nearBudgetCandidates[0], id: "status-unknown", title: "Unverified availability flat", price: 200, availability: "unknown", factsLastVerifiedAt: null }],
+);
+const unknownAvailabilitySelection = selectPropertiesForSalesReply(nearBudgetProfile, unknownAvailabilityRanked);
+assert.equal(unknownAvailabilitySelection.properties.length, 0, "a matching price alone must not recommend an unverified-availability listing");
 assert.equal(
   selectNearBudgetAlternative({ ...nearBudgetProfile, budgetFlexibility: "hard" }, nearBudgetRanked),
   null,
