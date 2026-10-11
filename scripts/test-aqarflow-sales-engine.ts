@@ -5,6 +5,7 @@ import {
   findUnsupportedNumericClaims,
   matchVerifiedProperties,
   mergeBuyerProfile,
+  mergeBuyerProfileForConversation,
   sanitizeVerifiedProperties,
   validateSalesDraft,
 } from "../lib/aqarflow/sales-engine.ts";
@@ -29,6 +30,24 @@ assert.deepEqual(
   mergeBuyerProfile({ mustHaves: ["balcony", "parking"] }, { mustHaves: ["sea view"] }).mustHaves,
   ["balcony", "parking", "sea view"],
   "partial extraction must not erase previously captured requirements",
+);
+assert.deepEqual(
+  mergeBuyerProfileForConversation(
+    { preferredAreas: ["المنصورة"], mustHaves: ["balcony"] },
+    { preferredAreas: ["عدن"], dealBreakers: ["balcony"] },
+    "لا أريد المنصورة، أبغى عدن وبدون شرفة",
+  ),
+  { preferredAreas: ["عدن"], dealBreakers: ["balcony"] },
+  "explicitly corrected areas and rejected features must replace stale customer preferences",
+);
+assert.deepEqual(
+  mergeBuyerProfileForConversation(
+    { preferredAreas: ["Aden"], mustHaves: ["parking"] },
+    { preferredAreas: ["Mansoura"], mustHaves: ["elevator"] },
+    "أبحث أيضًا عن خيارات في المنصورة وأحتاج مصعدًا",
+  ).preferredAreas,
+  ["Aden", "Mansoura"],
+  "additional preferences should accumulate when the customer has not corrected the previous preference",
 );
 
 const malformedProfile = mergeBuyerProfile(
