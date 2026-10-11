@@ -265,7 +265,7 @@ export function buildSalesPlaybookGuidance(input: SalesPlaybookInput): SalesPlay
       const rate = flexibility === "slight" ? 10 : 20;
       const ceiling = Math.round(input.buyerProfile.budgetMax * (1 + rate / 100) * 100) / 100;
       doRules.push(
-        `ذكر العميل مرونة صريحة في الميزانية المرجعية ${input.buyerProfile.budgetMax} ${currency}؛ يمكن النظر فقط في بديل قريب لا يتجاوز ${ceiling} ${currency} (مرونة ${rate}٪ كحد أقصى)، ويجب توضيح السعر والزيادة بدقة دون ضغط. لا تفترض مرونة أخرى.`,
+        `ذكر العميل مرونة صريحة في الميزانية المرجعية ${input.buyerProfile.budgetMax} ${currency}؛ يمكن النظر فقط في بديل قريب لا يتجاوز ${ceiling} ${currency} (مرونة ${rate}٪ كحد أقصى)، ويجب توضيح أنه أعلى من الميزانية المرجعية، مع ذكر السعر والزيادة بدقة ودون ضغط. لا تفترض مرونة أخرى.`,
       );
     } else {
       const ceiling = Math.round(input.buyerProfile.budgetMax * 1.1 * 100) / 100;
