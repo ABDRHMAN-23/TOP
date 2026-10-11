@@ -233,9 +233,14 @@ const MOMENT_CARDS: Record<string, string[]> = {
   general_discovery: ["discovery", "value-framing", "alternatives"],
 };
 
-export function getSalesKnowledgeCards(moment: string): SalesKnowledgeCard[] {
+export function getSalesKnowledgeCards(moment: string, nearBudgetAlternativeMode = false): SalesKnowledgeCard[] {
   const ids = MOMENT_CARDS[moment] || MOMENT_CARDS.general_discovery;
-  return ids.map((id) => CARDS[id]).filter((card): card is SalesKnowledgeCard => Boolean(card));
+  // Keep every turn token-efficient: use no more than two relevant cards.
+  // If a near-budget option is being presented, reserve the second card for its specific safeguards.
+  const selectedIds = nearBudgetAlternativeMode
+    ? [ids[0] || "discovery", "near-budget"]
+    : ids.slice(0, 2);
+  return selectedIds.map((id) => CARDS[id]).filter((card): card is SalesKnowledgeCard => Boolean(card));
 }
 
 export function listSalesKnowledgeCardIds(): string[] {
