@@ -292,7 +292,7 @@
       "id": "URGENT-02",
       "category": "urgency",
       "customerMessage": "أحتاج بيتًا اليوم، الأمر ضروري.",
-      "expectedMoment": "general_discovery",
+      "expectedMoment": "urgent_timeline",
       "objective": "تواصل مختصر وفوري مع المخزون والحالات المؤكدة.",
       "mustNot": [
         "لا تعرض عقارًا مجهول التوافر."
@@ -422,7 +422,7 @@
       "id": "REFUSE-01",
       "category": "refusal",
       "customerMessage": "لا، هذا العقار لا يناسبني.",
-      "expectedMoment": "hesitation",
+      "expectedMoment": "property_rejection",
       "objective": "احترام الرفض وتحديث تفضيلات العميل ثم عرض بديل فقط إذا رغب.",
       "mustNot": [
         "لا تحاول إعادة بيع العقار المرفوض بالقوة."
