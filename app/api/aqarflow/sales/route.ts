@@ -4,7 +4,7 @@ import { runtimeEnv } from '@/lib/runtime-env';
 import { readBoundedUtf8Body } from '@/lib/aqarflow/http-body';
 import { buildPersonalizedSalesPrompt, validateSalesDraft, mergeBuyerProfile, buildAllowedSalesContextNumbers, type VerifiedProperty } from '@/lib/aqarflow/sales-engine';
 import { generateGeminiJson, GeminiRuntimeError } from '@/lib/aqarflow/gemini-runtime';
-import { rankPropertyCandidates, selectNearBudgetAlternative } from '@/lib/aqarflow/ranked-inventory';
+import { rankPropertyCandidates, selectPropertiesForSalesReply } from '@/lib/aqarflow/ranked-inventory';
 import { MAX_REQUEST_BODY_BYTES, MAX_REQUEST_BODY_CHARS, buildNoMatchSalesDraft, inferBasicBuyerProfileHints, parseAqarFlowSalesRequest } from '@/lib/aqarflow/runtime-contract';
 
 export const dynamic = 'force-dynamic';
@@ -77,15 +77,9 @@ export async function POST(req:Request) {
   const candidates=(rows||[]).map((r:unknown)=>mapProperty(r as PropertyRow));
   const buyerProfile=mergeBuyerProfile(parsed.value.buyerProfile,inferBasicBuyerProfileHints(parsed.value.customerMessage));
   const ranked=rankPropertyCandidates(buyerProfile,candidates);
-  let selected=ranked.filter(m=>m.eligible).slice(0,5).map(m=>m.property);
-  let nearBudgetAlternativeMode=false;
-  if(selected.length===0) {
-    const nearBudgetAlternative=selectNearBudgetAlternative(buyerProfile,ranked);
-    if(nearBudgetAlternative) {
-      selected=[nearBudgetAlternative];
-      nearBudgetAlternativeMode=true;
-    }
-  }
+  const selection=selectPropertiesForSalesReply(buyerProfile,ranked);
+  const selected=selection.properties;
+  const nearBudgetAlternativeMode=selection.nearBudgetAlternativeMode;
   if(selected.length===0) {
     const validated=validateSalesDraft(buildNoMatchSalesDraft(candidates.length,buyerProfile),[]);
     const latencyMs=Math.max(0,Date.now()-rankingStartedAt);
