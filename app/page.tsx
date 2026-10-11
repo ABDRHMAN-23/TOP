@@ -2,134 +2,184 @@
 
 import { useMemo, useState } from 'react';
 import {
-  ArrowDownLeft, ArrowLeft, ArrowUpLeft, Bell, Building2, CalendarDays,
-  Check, ChevronDown, Home, LayoutDashboard, MapPin, MessageCircle,
-  Plus, Search, Sparkles, TrendingUp, Users, Wallet, X,
-  ArrowUpRight, BedDouble, Maximize2, Phone, Filter,
+  ArrowDownUp, ArrowLeft, ArrowUpLeft, Bath, BedDouble, Bell, Building2,
+  Check, ChevronDown, Heart, Home, MapPin, Maximize, Menu, Search, SlidersHorizontal,
+  Sparkles, X, Phone, Share2, CarFront, ShieldCheck, Trees, Waves, CalendarDays,
+  Grid2X2, List, ChevronLeft, ChevronRight, KeyRound, CircleDollarSign, Compass,
 } from 'lucide-react';
 
-type Tab = 'overview' | 'properties' | 'clients' | 'pipeline' | 'calendar' | 'assistant';
-type Lead = { id: number; name: string; initials: string; interest: string; stage: string; date: string; phone: string };
-const tabs: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
-  { id: 'overview', label: 'الرئيسية', icon: LayoutDashboard },
-  { id: 'properties', label: 'العقارات', icon: Building2 },
-  { id: 'clients', label: 'العملاء', icon: Users },
-  { id: 'pipeline', label: 'الصفقات', icon: TrendingUp },
-  { id: 'calendar', label: 'المواعيد', icon: CalendarDays },
-  { id: 'assistant', label: 'مساعدك الذكي', icon: Sparkles },
-];
-const seedLeads: Lead[] = [
-  { id: 1, name: 'محمد العريقي', initials: 'مع', interest: 'شقة بإطلالة بحرية · خور مكسر', stage: 'معاينة', date: 'اليوم · ١١:٣٠ ص', phone: '+967 77 123 4567' },
-  { id: 2, name: 'سارة حسين', initials: 'سح', interest: 'فيلا عائلية · عدن الجديدة', stage: 'عميل جديد', date: 'اليوم · ١٢:٤٥ م', phone: '+967 73 234 5678' },
-  { id: 3, name: 'عمر منصور', initials: 'عم', interest: 'مكتب تجاري · المنصورة', stage: 'تفاوض', date: 'أمس · ٤:١٠ م', phone: '+967 71 345 6789' },
-  { id: 4, name: 'نورا أحمد', initials: 'نأ', interest: 'شقة حديثة · كريتر', stage: 'تواصل', date: 'أمس · ١:٢٠ م', phone: '+967 70 456 7890' },
-];
-const homes = [
-  { id: 1, title: 'بيت على البحر', area: 'خور مكسر، عدن', price: '٨٥٬٠٠٠', beds: '٣ غرف', size: '١٦٠ م²', status: 'متاح', image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1000&q=85', tag: 'اختيار مميز' },
-  { id: 2, title: 'فيلا الحديقة الهادئة', area: 'عدن الجديدة', price: '٢٤٠٬٠٠٠', beds: '٥ غرف', size: '٣٢٠ م²', status: 'معاينة مجدولة', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=85', tag: 'جديد' },
-  { id: 3, title: 'مساحة عمل معاصرة', area: 'المنصورة، عدن', price: '٦٥٬٠٠٠', beds: 'مفتوح', size: '١٢٠ م²', status: 'متاح', image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1000&q=85', tag: 'تجاري' },
-];
-const stages = ['الكل', 'عميل جديد', 'تواصل', 'معاينة', 'تفاوض'];
+type Listing = {
+  id: number; title: string; type: string; deal: 'بيع' | 'إيجار'; price: number; currency: string;
+  area: string; district: string; address: string; beds: number; baths: number; size: number;
+  image: string; gallery: string[]; badge: string; description: string; features: string[];
+  agent: string; phone: string; published: string;
+};
 
-function Photo({ src, alt, className = '' }: { src: string; alt: string; className?: string }) {
-  return <div className={'aq-photo ' + className}><img src={src} alt={alt} loading="lazy" /><span className="aq-photo-shade" /></div>;
-}
-function PropertyCard({ home, onSelect }: { home: typeof homes[number]; onSelect: (id: number) => void }) {
-  return <button onClick={() => onSelect(home.id)} className="aq-property-card group text-right">
-    <div className="relative"><Photo src={home.image} alt={home.title} className="h-[170px] sm:h-[190px]" /><span className="aq-property-tag">{home.tag}</span><span className="aq-property-open"><ArrowUpRight size={17}/></span></div>
-    <div className="p-4 sm:p-5"><div className="flex items-start justify-between gap-3"><div><h3 className="text-[15px] font-bold text-[#202c24]">{home.title}</h3><p className="mt-1.5 flex items-center gap-1 text-[11px] text-[#7c857c]"><MapPin size={12}/>{home.area}</p></div><span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#7c987b]" /></div>
-      <div className="mt-4 flex items-center gap-3 border-t border-[#eeeae2] pt-3.5 text-[11px] text-[#727b72]"><span className="flex items-center gap-1.5"><BedDouble size={14}/>{home.beds}</span><span className="flex items-center gap-1.5"><Maximize2 size={13}/>{home.size}</span><span className="ms-auto font-bold text-[#283b2f]">{home.price} <small className="font-medium text-[#8b9288]">ر.س</small></span></div>
+const listings: Listing[] = [
+  {
+    id: 101, title: 'شقة بإطلالة مفتوحة على البحر', type: 'شقة', deal: 'بيع', price: 78500, currency: 'USD',
+    area: 'خور مكسر', district: 'عدن', address: 'خور مكسر، بالقرب من ساحل أبين، عدن',
+    beds: 3, baths: 2, size: 168,
+    image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=88',
+    gallery: ['https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=88','https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=88','https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1400&q=88'],
+    badge: 'اختيار المحرر', description: 'شقة عصرية بتوزيع عملي ومساحات مضيئة، مع شرفة واسعة وإطلالة مفتوحة. الصور لأغراض العرض ضمن المعاينة، وتحتاج تفاصيل العقار وسعره إلى تأكيد قبل أي قرار.',
+    features: ['شرفة واسعة','مصعد في المبنى','موقف سيارة','مطبخ مجهز','إطلالة مفتوحة'], agent: 'مكتب الساحل العقاري', phone: '+967 770 000 101', published: 'منذ يومين',
+  },
+  {
+    id: 102, title: 'فيلا مستقلة بحديقة خاصة', type: 'فيلا', deal: 'بيع', price: 189000, currency: 'USD',
+    area: 'عدن الجديدة', district: 'عدن', address: 'عدن الجديدة، منطقة سكنية هادئة، عدن',
+    beds: 5, baths: 4, size: 340,
+    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=88',
+    gallery: ['https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=88','https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1400&q=88','https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=88'],
+    badge: 'مساحة عائلية', description: 'فيلا بتصميم معاصر، غرفة معيشة واسعة وحديقة خارجية خاصة. هذا الإعلان جزء من بيانات المعاينة وليس عرض بيع موثقًا.',
+    features: ['حديقة خاصة','موقف سيارتين','غرفة خادمة','مطبخ واسع','مدخل مستقل'], agent: 'مكتب الساحل العقاري', phone: '+967 770 000 102', published: 'منذ ٤ أيام',
+  },
+  {
+    id: 103, title: 'شقة مفروشة للإيجار الشهري', type: 'شقة', deal: 'إيجار', price: 620, currency: 'USD/شهر',
+    area: 'المنصورة', district: 'عدن', address: 'المنصورة، بالقرب من الخدمات الرئيسية، عدن',
+    beds: 2, baths: 2, size: 118,
+    image: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=88',
+    gallery: ['https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1400&q=88','https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=88','https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1400&q=88'],
+    badge: 'مفروشة', description: 'شقة مفروشة بأثاث معاصر، مناسبة للإقامة الطويلة. الإيجار المذكور تجريبي ولا يشمل بالضرورة الخدمات أو التأمين.',
+    features: ['أثاث كامل','تكييف','إنترنت متاح بالمبنى','حراسة','قريبة من الخدمات'], agent: 'مكتب الساحل العقاري', phone: '+967 770 000 103', published: 'اليوم',
+  },
+  {
+    id: 104, title: 'منزل مستقل بطابع هادئ', type: 'منزل', deal: 'بيع', price: 112000, currency: 'USD',
+    area: 'كريتر', district: 'عدن', address: 'كريتر، حي سكني، عدن',
+    beds: 4, baths: 3, size: 225,
+    image: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1200&q=88',
+    gallery: ['https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1400&q=88','https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=88','https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1400&q=88'],
+    badge: 'منزل مستقل', description: 'منزل بتقسيم عملي ومساحات مناسبة للعائلة، مع مساحة خارجية. الموقع والسعر والصور تجريبية وتحتاج تحققًا ميدانيًا.',
+    features: ['مدخل مستقل','فناء','مطبخ مستقل','خزان مياه','قريب من السوق'], agent: 'مكتب الساحل العقاري', phone: '+967 770 000 104', published: 'منذ أسبوع',
+  },
+  {
+    id: 105, title: 'مساحة تجارية بواجهة زجاجية', type: 'تجاري', deal: 'إيجار', price: 950, currency: 'USD/شهر',
+    area: 'الشيخ عثمان', district: 'عدن', address: 'الشيخ عثمان، شارع تجاري، عدن',
+    beds: 0, baths: 1, size: 145,
+    image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=88',
+    gallery: ['https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1400&q=88','https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1400&q=88','https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1400&q=88'],
+    badge: 'تجاري', description: 'مساحة مرنة تصلح لمكتب أو نشاط تجاري خفيف، بواجهة زجاجية ومساحة مفتوحة. الإعلان تجريبي.',
+    features: ['واجهة زجاجية','مساحة مفتوحة','حمام','مدخل مباشر','قابل للتقسيم'], agent: 'مكتب الساحل العقاري', phone: '+967 770 000 105', published: 'منذ ٣ أيام',
+  },
+  {
+    id: 106, title: 'شقة عملية قريبة من الخدمات', type: 'شقة', deal: 'إيجار', price: 380, currency: 'USD/شهر',
+    area: 'المعلا', district: 'عدن', address: 'المعلا، شارع سكني، عدن',
+    beds: 2, baths: 1, size: 92,
+    image: 'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1200&q=88',
+    gallery: ['https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1400&q=88','https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1400&q=88','https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=88'],
+    badge: 'عملية', description: 'شقة بتصميم بسيط وتوزيع مريح، بالقرب من الخدمات اليومية. السعر والصور والمعلومات أمثلة للمعاينة وليست إعلانًا موثقًا.',
+    features: ['قريبة من الخدمات','تهوية جيدة','مطبخ مستقل','مياه متاحة','مدخل مشترك'], agent: 'مكتب الساحل العقاري', phone: '+967 770 000 106', published: 'اليوم',
+  },
+];
+
+const money = (price: number, currency: string) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(price) + ' ' + currency;
+type DealFilter = 'الكل' | 'بيع' | 'إيجار';
+
+function ListingCard({ item, saved, onSave, onOpen }: { item: Listing; saved: boolean; onSave: (id:number)=>void; onOpen:(item:Listing)=>void }) {
+  return <article className="market-card">
+    <button className="market-photo-button" onClick={() => onOpen(item)} aria-label={'عرض تفاصيل ' + item.title}>
+      <img className="market-photo" src={item.image} alt={item.title} loading="lazy"/>
+      <span className="market-photo-gradient"/>
+      <span className="market-tag">{item.deal === 'بيع' ? 'للبيع' : 'للإيجار'}</span>
+      <span className="market-image-count"><Grid2X2 size={12}/> {item.gallery.length} صور</span>
+    </button>
+    <button className={'market-save ' + (saved ? 'saved' : '')} onClick={() => onSave(item.id)} aria-label={saved ? 'إزالة من المحفوظات' : 'حفظ العقار'}><Heart size={17} fill={saved ? 'currentColor' : 'none'}/></button>
+    <div className="market-card-body">
+      <div className="market-price-line"><strong>{money(item.price,item.currency)}</strong><span>{item.badge}</span></div>
+      <button className="market-listing-title" onClick={() => onOpen(item)}>{item.title}</button>
+      <p className="market-location"><MapPin size={14}/>{item.area}، {item.district}</p>
+      <div className="market-specs"><span><BedDouble size={15}/>{item.beds ? item.beds + ' غرف' : 'مساحة مفتوحة'}</span><span><Bath size={15}/>{item.baths} حمام</span><span><Maximize size={14}/>{item.size} م²</span></div>
+      <button className="market-details" onClick={() => onOpen(item)}>عرض العقار بالكامل <ArrowLeft size={15}/></button>
     </div>
-  </button>;
+  </article>;
 }
 
 export default function HomePage() {
-  const [active, setActive] = useState<Tab>('overview');
-  const [leads, setLeads] = useState(seedLeads);
+  const [deal, setDeal] = useState<DealFilter>('الكل');
+  const [kind, setKind] = useState('كل الأنواع');
+  const [district, setDistrict] = useState('كل المناطق');
   const [search, setSearch] = useState('');
-  const [stage, setStage] = useState('الكل');
-  const [period, setPeriod] = useState('هذا الشهر');
-  const [addOpen, setAddOpen] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newInterest, setNewInterest] = useState('');
+  const [sort, setSort] = useState('recommended');
+  const [saved, setSaved] = useState<number[]>([]);
+  const [selected, setSelected] = useState<Listing | null>(null);
+  const [photoIndex, setPhotoIndex] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [mobileMenu, setMobileMenu] = useState(false);
   const [toast, setToast] = useState('');
-  const [noticeOpen, setNoticeOpen] = useState(false);
-  const [selectedProperty, setSelectedProperty] = useState<number | null>(null);
-  const [query, setQuery] = useState('');
-  const filtered = useMemo(() => leads.filter((lead) => (lead.name + ' ' + lead.interest).toLowerCase().includes(search.trim().toLowerCase()) && (stage === 'الكل' || lead.stage === stage)), [leads, search, stage]);
-  const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(''), 2600); };
-  const addLead = () => {
-    if (!newName.trim()) { notify('اكتب اسم العميل أولًا'); return; }
-    const initials = newName.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('');
-    setLeads((old) => [{ id: Date.now(), name: newName.trim(), initials, interest: newInterest.trim() || 'لم يحدد الاهتمام بعد', stage: 'عميل جديد', date: 'الآن', phone: 'لم يضف رقم بعد' }, ...old]);
-    setNewName(''); setNewInterest(''); setAddOpen(false); setActive('clients'); notify('أُضيف العميل إلى البيانات التجريبية');
-  };
-  const jumpToPreview = () => document.getElementById('workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  const currentLabel = tabs.find((tab) => tab.id === active)?.label ?? 'الرئيسية';
-  const chosenHome = homes.find((home) => home.id === selectedProperty);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactMessage, setContactMessage] = useState('');
+  const [onlySaved, setOnlySaved] = useState(false);
 
-  return <main dir="rtl" className="aq-shell min-h-screen overflow-x-clip text-[#202c24]">
-    <header className="aq-header sticky top-0 z-40 border-b border-[#e8e5dd] bg-[#f8f7f2]/95 backdrop-blur-xl">
-      <div className="mx-auto flex h-[72px] max-w-[1480px] items-center justify-between gap-4 px-4 sm:px-7 lg:px-12">
-        <a href="#home" className="flex shrink-0 items-center gap-3"><span className="aq-brand-mark"><Home size={20} strokeWidth={1.8}/></span><span><span className="block text-[19px] font-semibold tracking-[-.055em] text-[#24372b]">aqarflow<span className="text-[#7b9877]">.</span></span><span className="mt-1 block text-[8px] font-bold tracking-[.19em] text-[#8c9388]">REAL ESTATE STUDIO</span></span></a>
-        <nav className="hidden items-center gap-8 text-[12px] font-semibold text-[#6e786e] md:flex"><a href="#workspace" className="hover:text-[#344f3c]">مساحة العمل</a><a href="#properties" className="hover:text-[#344f3c]">العقارات</a><a href="#approach" className="hover:text-[#344f3c]">كيف يساعدك</a></nav>
-        <button onClick={jumpToPreview} className="aq-primary-btn !min-h-10 !px-4">استكشف النظام <ArrowLeft size={15}/></button>
+  const results = useMemo(() => {
+    const found = listings.filter(item =>
+      (deal === 'الكل' || item.deal === deal) &&
+      (kind === 'كل الأنواع' || item.type === kind) &&
+      (district === 'كل المناطق' || item.area === district) &&
+      (!onlySaved || saved.includes(item.id)) &&
+      (item.title + ' ' + item.area + ' ' + item.type + ' ' + item.address).toLowerCase().includes(search.trim().toLowerCase())
+    );
+    if (sort === 'low') found.sort((a,b)=>a.price-b.price);
+    if (sort === 'high') found.sort((a,b)=>b.price-a.price);
+    return found;
+  }, [deal, kind, district, onlySaved, saved, search, sort]);
+
+  const showToast = (s:string) => { setToast(s); window.setTimeout(()=>setToast(''),2600); };
+  const toggleSave = (id:number) => setSaved(old => old.includes(id) ? old.filter(x=>x!==id) : [...old,id]);
+  const openListing = (item:Listing) => { setSelected(item); setPhotoIndex(0); setContactOpen(false); };
+  const resetFilters = () => { setDeal('الكل');setKind('كل الأنواع');setDistrict('كل المناطق');setSearch('');setOnlySaved(false);setSort('recommended'); };
+
+  return <main dir="rtl" className="market-shell">
+    <div className="market-topline"><div className="market-container market-topline-inner"><span><MapPin size={13}/> عدن، اليمن</span><span>منصة عرض عقاري — تجربة تفاعلية</span><a href="#listings">اكتشف العقارات <ArrowDownUp size={13}/></a></div></div>
+    <header className="market-header">
+      <div className="market-container market-header-inner">
+        <a className="market-brand" href="#top"><span className="market-brand-icon"><Building2 size={21}/></span><span><b>AQAR<span>FLOW</span></b><small>REAL ESTATE MARKETPLACE</small></span></a>
+        <nav className={'market-nav '+(mobileMenu?'open':'')}><a href="#listings" onClick={()=>setMobileMenu(false)}>تصفح العقارات</a><a href="#how" onClick={()=>setMobileMenu(false)}>كيف تعمل المنصة</a><button onClick={()=>{setOnlySaved(!onlySaved);document.getElementById('listings')?.scrollIntoView({behavior:'smooth'});setMobileMenu(false)}}><Heart size={15}/> المحفوظات <span className="saved-count">{saved.length}</span></button></nav>
+        <div className="market-header-actions"><button className="market-alert-button" onClick={()=>showToast('هذه معاينة محلية؛ لا توجد تنبيهات مرتبطة بحساب')} aria-label="التنبيهات"><Bell size={18}/></button><a href="#listings" className="market-header-cta">تصفح الآن <ArrowLeft size={15}/></a><button className="market-menu-button" onClick={()=>setMobileMenu(!mobileMenu)} aria-label="فتح القائمة">{mobileMenu?<X size={20}/>:<Menu size={20}/>}</button></div>
       </div>
     </header>
 
-    <section id="home" className="aq-editorial-hero relative overflow-hidden">
-      <div className="mx-auto grid max-w-[1480px] items-center gap-10 px-4 pb-12 pt-12 sm:px-7 sm:pb-16 sm:pt-16 lg:grid-cols-[.88fr_1.12fr] lg:gap-16 lg:px-12 lg:py-20">
-        <div className="relative z-10 max-w-[600px]">
-          <div className="aq-kicker"><span/> مساحة عمل صُممت للعقار، لا للجداول فقط</div>
-          <h1 className="mt-6 text-[2.8rem] font-semibold leading-[1.19] tracking-[-.06em] sm:text-6xl lg:text-[5rem]">كل صفقة تبدأ<br/><span className="aq-serif">بصورة أوضح.</span></h1>
-          <p className="mt-6 max-w-[480px] text-[14px] leading-8 text-[#667267] sm:text-[15px]">العقارات، العملاء، والمواعيد في تجربة واحدة مرتبة. شاهد ما يحتاج انتباهك، وتابع كل فرصة بخطوة واضحة — من أول رسالة إلى إغلاق الصفقة.</p>
-          <div className="mt-8 flex flex-col gap-3 min-[410px]:flex-row"><button onClick={jumpToPreview} className="aq-primary-btn">ادخل مساحة العمل <ArrowLeft size={16}/></button><a href="#properties" className="aq-secondary-btn">اكتشف العقارات <ArrowDownLeft size={15}/></a></div>
-          <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-[#dedfd5] pt-5 text-[11px] font-medium text-[#717b70]"><span className="flex items-center gap-2"><span className="aq-check"><Check size={11}/></span> واجهة عربية متجاوبة</span><span className="flex items-center gap-2"><span className="aq-check"><Check size={11}/></span> تجربة فورية دون تسجيل</span><span className="text-[#9a9f95]">* البيانات المعروضة تجريبية</span></div>
-        </div>
-        <div className="aq-hero-collage min-w-0">
-          <div className="aq-collage-main"><Photo src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=90" alt="مساحة سكنية معاصرة بإضاءة طبيعية" className="h-[330px] sm:h-[420px] lg:h-[510px]"/><div className="aq-collage-caption"><span className="text-[10px] uppercase tracking-[.18em] text-white/75">AqarFlow / 01</span><p className="mt-2 text-xl font-medium text-white sm:text-2xl">من العرض إلى القرار.</p></div></div>
-          <div className="aq-floating-note"><span className="aq-note-icon"><TrendingUp size={17}/></span><div><p className="text-[11px] font-bold text-[#2b3c30]">فرص تحتاج متابعة</p><p className="mt-1 text-[10px] text-[#7b8579]">٣ عملاء · بيانات تجريبية</p></div><ArrowUpLeft size={15} className="ms-auto text-[#81947c]"/></div>
-          <div className="aq-collage-small"><Photo src="https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=700&q=85" alt="تفاصيل داخلية راقية" className="h-[150px] sm:h-[190px]"/><span>مساحات تستحق أن تُعرض جيدًا</span></div>
-        </div>
-      </div>
-      <div className="aq-hero-footer"><div className="mx-auto flex max-w-[1480px] flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-7 lg:px-12"><p className="text-[10px] font-semibold tracking-wide text-[#7e877b]">مساحة واحدة لكل ما يحرك عملك العقاري</p><div className="flex flex-wrap gap-5 text-[10px] font-semibold text-[#778174]"><span>01 / إدارة العقارات</span><span>02 / متابعة العملاء</span><span>03 / إتمام الصفقات</span></div></div></div>
-    </section>
-
-    <section id="workspace" className="scroll-mt-20 bg-[#f1f0e9] px-4 py-14 sm:px-7 sm:py-20 lg:px-12 lg:py-24">
-      <div className="mx-auto max-w-[1480px]">
-        <div className="mb-8 flex flex-col justify-between gap-5 sm:mb-10 sm:flex-row sm:items-end"><div><div className="aq-kicker"><span/> جرّب بنفسك</div><h2 className="mt-4 text-3xl font-semibold tracking-[-.05em] text-[#26382b] sm:text-4xl">مساحة العمل <span className="aq-serif">من الداخل.</span></h2><p className="mt-3 max-w-xl text-[13px] leading-7 text-[#737c70]">تنقّل بين الأقسام، ابحث عن العملاء، وافتح العقارات. هذه معاينة تفاعلية ببيانات تجريبية وليست مرتبطة بقاعدة بيانات.</p></div><div className="flex items-center gap-2 text-[10px] font-semibold text-[#7b8579]"><span className="h-2 w-2 rounded-full bg-[#7c987b]"/> وضع المعاينة <span className="mx-1 text-[#c0c2b8]">/</span> لا يتطلب حسابًا</div></div>
-        <div className="aq-workspace overflow-hidden rounded-[22px] border border-[#dedfd5] bg-[#fbfaf7] shadow-[0_25px_80px_rgba(39,54,40,.08)] sm:rounded-[28px]">
-          <div className="flex items-center justify-between gap-3 border-b border-[#e9e7df] px-4 py-4 sm:px-7 sm:py-5"><div className="flex items-center gap-3"><span className="aq-mini-mark"><Home size={16}/></span><div><p className="text-[12px] font-bold text-[#2a3c2f] sm:text-sm">مكتبك العقاري</p><p className="mt-1 text-[9px] text-[#8b9287]">مساحة تجريبية · عدن، اليمن</p></div></div><div className="flex items-center gap-2"><span className="hidden rounded-full border border-[#dfe4d8] px-3 py-1.5 text-[9px] font-semibold text-[#76816f] sm:inline-flex">آخر تحديث: الآن</span><button aria-label="الإشعارات" onClick={() => setNoticeOpen(!noticeOpen)} className="aq-icon-btn relative"><Bell size={16}/><span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#c18c5c]"/></button><span className="aq-user-avatar">ع</span></div></div>
-          {noticeOpen && <div className="border-b border-[#e9e7df] bg-[#f1f3eb] px-5 py-3 text-[11px] leading-6 text-[#687664]"><b>تنبيهات اليوم:</b> موعد معاينة الساعة ١١:٣٠، وعميلان يحتاجان إلى متابعة. هذه بيانات توضيحية.</div>}
-          <div className="grid min-w-0 lg:grid-cols-[220px_minmax(0,1fr)]">
-            <aside className="border-b border-[#e9e7df] bg-[#f6f5ef] p-3 lg:border-b-0 lg:border-l lg:p-4"><p className="mb-2 hidden px-3 text-[9px] font-bold tracking-wide text-[#a0a497] lg:block">قائمة المكتب</p><div className="flex gap-1 overflow-x-auto lg:flex-col">{tabs.map(({id,label,icon:Icon})=><button key={id} onClick={() => setActive(id)} className={'aq-nav-item ' + (active === id ? 'is-active' : '')}><Icon size={15}/><span>{label}</span>{active===id && <span className="aq-nav-dot"/>}</button>)}</div><div className="mt-7 hidden rounded-2xl bg-[#293d2e] p-4 text-white lg:block"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#c8d9b7]"><Sparkles size={16}/></span><p className="mt-3 text-[11px] font-bold">فكرة للخطوة التالية</p><p className="mt-2 text-[10px] leading-5 text-white/65">ابدأ بمتابعة العملاء الذين اقترب موعد معاينتهم.</p><button onClick={() => setActive('assistant')} className="mt-3 flex items-center gap-1 text-[10px] font-bold text-[#d5e4c6]">افتح المساعد <ArrowLeft size={12}/></button></div></aside>
-            <div className="min-w-0 p-4 sm:p-6 lg:p-8">
-              <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><p className="text-[10px] text-[#92998d]">مكتبك / {currentLabel}</p><h3 className="mt-2 text-xl font-semibold tracking-[-.04em] text-[#293b2e] sm:text-2xl">{active === 'overview' ? 'صباح الخير، لنرتّب يومك.' : currentLabel}</h3><p className="mt-2 text-[11px] leading-6 text-[#7f887b]">{active === 'overview' ? 'هذه أهم الأرقام والمهام التي تستحق انتباهك.' : 'استكشف هذا القسم باستخدام البيانات التجريبية.'}</p></div><label className="relative flex items-center gap-2 self-start rounded-xl border border-[#e2e2d8] bg-white px-3 py-2.5 text-[10px] text-[#697566] sm:self-auto"><CalendarDays size={14}/><select aria-label="الفترة الزمنية" value={period} onChange={(e) => setPeriod(e.target.value)} className="max-w-[130px] appearance-none bg-transparent pe-5 font-semibold outline-none"><option>هذا الأسبوع</option><option>هذا الشهر</option><option>آخر ٩٠ يومًا</option></select><ChevronDown size={12} className="pointer-events-none absolute left-3"/></label></div>
-              {active === 'overview' && <><div className="grid grid-cols-2 gap-3 xl:grid-cols-4">{[{label:'عقارات في المحفظة',value:'١٢٨',change:'+ ٨ هذا الشهر',icon:Building2},{label:'عملاء قيد المتابعة',value:String(346 + Math.max(0,leads.length-seedLeads.length)),change:'٤ يحتاجون ردًا',icon:Users},{label:'مواعيد اليوم',value:'٠٨',change:'أقربها بعد ٣٠ دقيقة',icon:CalendarDays},{label:'قيمة الصفقات',value:'٢٫٤ م',change:'قيمة توضيحية',icon:Wallet}].map(({label,value,change,icon:Icon},i)=><div key={label} className="aq-metric"><div className="flex items-center justify-between gap-2"><span className="text-[10px] font-medium text-[#7d877b]">{label}</span><span className="aq-metric-icon"><Icon size={15}/></span></div><p className="mt-4 text-2xl font-semibold tracking-[-.05em] text-[#2a3b2e] sm:text-3xl">{value}</p><p className="mt-2 text-[9px] text-[#8c9588]">{change}</p></div>)}</div>
-                <div className="mt-5 grid min-w-0 gap-4 xl:grid-cols-[1.25fr_.75fr]"><div className="aq-panel min-w-0 p-4 sm:p-5"><div className="flex items-start justify-between gap-3"><div><h4 className="text-[12px] font-bold text-[#334437]">حركة العملاء</h4><p className="mt-1.5 text-[10px] text-[#939a8f]">تغيّر الاهتمام خلال {period} · بيانات تجريبية</p></div><span className="rounded-lg bg-[#e9eee4] px-2.5 py-1.5 text-[9px] font-bold text-[#607a5b]">+١٢٫٨٪</span></div><div className="mt-6 flex h-[120px] items-end gap-2 border-b border-[#eeece5] pb-1 sm:h-[150px] sm:gap-3">{[28,42,35,57,49,70,58,80,63,73,61,94].map((h,i)=><div key={i} className="flex h-full min-w-0 flex-1 items-end"><div style={{height:h+'%'}} className={'w-full rounded-t-md transition-all '+(i===11?'bg-[#45644a]':'bg-[#dce4d5] hover:bg-[#a9bba0]')}/></div>)}</div><div className="mt-3 flex justify-between text-[9px] text-[#a0a69c]"><span>بداية الفترة</span><span>منتصفها</span><span>اليوم</span></div></div>
-                  <div className="aq-panel p-4 sm:p-5"><div className="flex items-start justify-between"><div><h4 className="text-[12px] font-bold text-[#334437]">مسار الصفقات</h4><p className="mt-1.5 text-[10px] text-[#939a8f]">الفرص حسب المرحلة</p></div><TrendingUp size={16} className="text-[#73896d]"/></div><div className="mt-5 space-y-4">{[{name:'عميل جديد',n:34,w:'92%'},{name:'تواصل',n:22,w:'68%'},{name:'معاينة',n:14,w:'45%'},{name:'تفاوض',n:7,w:'25%'}].map((item)=><div key={item.name}><div className="mb-2 flex justify-between text-[10px]"><span className="text-[#788274]">{item.name}</span><b className="text-[#425542]">{item.n}</b></div><div className="h-1.5 overflow-hidden rounded-full bg-[#eff0e9]"><div className="h-full rounded-full bg-[#718a6a]" style={{width:item.w}}/></div></div>)}</div><button onClick={() => setActive('pipeline')} className="mt-5 flex items-center gap-1.5 text-[10px] font-bold text-[#526b4e]">عرض مسار الصفقات <ArrowLeft size={12}/></button></div></div>
-                <div className="mt-5 aq-panel overflow-hidden"><div className="flex items-center justify-between gap-3 border-b border-[#eeece5] px-4 py-4 sm:px-5"><div><h4 className="text-[12px] font-bold text-[#334437]">متابعات تحتاج انتباهك</h4><p className="mt-1 text-[10px] text-[#939a8f]">أحدث العملاء في مكتبك</p></div><button onClick={() => setActive('clients')} className="text-[10px] font-bold text-[#617b5b]">كل العملاء <ArrowLeft size={12} className="inline"/></button></div><div className="divide-y divide-[#f0eee8]">{leads.slice(0,3).map((lead,i)=><div key={lead.id} className="flex items-center gap-3 px-4 py-3.5 sm:px-5"><span className={'aq-lead-avatar lead-'+i%4}>{lead.initials}</span><div className="min-w-0 flex-1"><p className="truncate text-[11px] font-bold text-[#394a3a]">{lead.name}</p><p className="mt-1 truncate text-[10px] text-[#8b9387]">{lead.interest}</p></div><span className="hidden text-[9px] text-[#8a9387] sm:block">{lead.date}</span><span className="aq-stage">{lead.stage}</span><button onClick={() => notify('هذه معاينة فقط؛ لم يتم إرسال رسالة')} aria-label="التواصل مع العميل" className="aq-row-action"><MessageCircle size={14}/></button></div>)}</div></div>
-              </>}
-              {active === 'properties' && <><div className="mb-5 flex flex-col gap-3 sm:flex-row"><label className="aq-search flex-1"><Search size={15}/><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="ابحث باسم العقار أو المنطقة..." /></label><button onClick={() => notify('إضافة العقار ستكون متاحة بعد ربط قاعدة البيانات')} className="aq-primary-btn !min-h-11"><Plus size={15}/> أضف عقارًا</button></div><div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">{homes.filter(h=>(h.title+' '+h.area).includes(query)).map(home=><PropertyCard key={home.id} home={home} onSelect={setSelectedProperty}/>)}</div></>}
-              {active === 'clients' && <><div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center"><label className="aq-search flex-1"><Search size={15}/><input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="ابحث باسم العميل أو اهتمامه..." /></label><button onClick={()=>setAddOpen(true)} className="aq-primary-btn !min-h-11"><Plus size={15}/> عميل جديد</button></div><div className="mb-4 flex flex-wrap items-center gap-2"><Filter size={14} className="text-[#7e887a]"/>{stages.map(s=><button key={s} onClick={()=>setStage(s)} className={'aq-filter '+(stage===s?'is-selected':'')}>{s}</button>)}</div><div className="aq-panel overflow-hidden"><div className="divide-y divide-[#eeece5]">{filtered.map((lead,i)=><div key={lead.id} className="flex flex-wrap items-center gap-3 px-4 py-4 sm:flex-nowrap sm:px-5"><span className={'aq-lead-avatar lead-'+i%4}>{lead.initials}</span><div className="min-w-0 flex-1"><p className="text-[12px] font-bold text-[#344637]">{lead.name}</p><p className="mt-1.5 text-[10px] text-[#8b9387]">{lead.interest}</p></div><span className="aq-stage">{lead.stage}</span><span className="w-full text-[10px] text-[#92998e] sm:w-36">{lead.date}</span><button onClick={()=>notify('لم يتم الاتصال؛ هذه بيانات تجريبية')} className="aq-row-action" aria-label="اتصال"><Phone size={14}/></button></div>)}{filtered.length===0&&<div className="p-8 text-center text-[12px] text-[#8a9387]">لا توجد نتائج مطابقة. جرّب كلمة أخرى.</div>}</div></div></>}
-              {active === 'pipeline' && <div className="grid gap-3 lg:grid-cols-4">{stages.slice(1).map((s,i)=><div key={s} className="aq-pipeline-col"><div className="mb-4 flex items-center justify-between"><h4 className="text-[11px] font-bold text-[#435343]">{s}</h4><span className="aq-count">{leads.filter(l=>l.stage===s).length}</span></div>{leads.filter(l=>l.stage===s).map(l=><div key={l.id} className="aq-panel mb-3 p-4"><p className="text-[11px] font-bold text-[#3a4b3a]">{l.name}</p><p className="mt-2 text-[10px] leading-5 text-[#899184]">{l.interest}</p><div className="mt-4 flex items-center justify-between border-t border-[#efede6] pt-3"><span className="text-[9px] text-[#959c91]">{l.date}</span><button onClick={()=>{setLeads(old=>old.map(x=>x.id===l.id?{...x,stage:stages[Math.min(stages.indexOf(x.stage)+1,stages.length-1)]}:x));notify('تم تحديث المرحلة في المعاينة');}} className="text-[9px] font-bold text-[#5d7858]">المرحلة التالية <ArrowLeft size={11} className="inline"/></button></div></div>)}</div>)}</div>}
-              {active === 'calendar' && <div className="aq-panel overflow-hidden"><div className="border-b border-[#eeece5] p-5"><h4 className="text-[13px] font-bold text-[#344637]">مواعيد اليوم</h4><p className="mt-1.5 text-[10px] text-[#8b9387]">جدول توضيحي قابل للتجربة</p></div>{[{time:'١١:٣٠ ص',title:'معاينة شقة بإطلالة بحرية',client:'محمد العريقي',color:'green'},{time:'١٢:٤٥ م',title:'مكالمة متابعة',client:'سارة حسين',color:'sand'},{time:'٣:٠٠ م',title:'مراجعة عرض سعر',client:'عمر منصور',color:'green'}].map((event,i)=><div key={event.time} className="flex gap-4 border-b border-[#f0eee8] p-5 last:border-0"><div className="w-20 shrink-0 text-[10px] font-bold text-[#7b8678]">{event.time}</div><div className={'w-1 rounded-full '+(event.color==='green'?'bg-[#8aa083]':'bg-[#c6a276]')}/><div className="flex-1"><p className="text-[12px] font-bold text-[#394a3a]">{event.title}</p><p className="mt-1.5 text-[10px] text-[#8b9387]">{event.client}</p></div><button onClick={()=>notify('تم وضع علامة إنجاز على الموعد التجريبي')} className="aq-row-action" aria-label="إنجاز الموعد"><Check size={14}/></button></div>)}</div>}
-              {active === 'assistant' && <div className="aq-assistant p-5 sm:p-8"><span className="aq-assistant-mark"><Sparkles size={19}/></span><p className="mt-5 text-[10px] font-bold tracking-[.12em] text-[#d5e0cc]">AQARFLOW INTELLIGENCE</p><h4 className="mt-3 text-2xl font-semibold tracking-[-.04em] text-white sm:text-3xl">خطوتك التالية، أوضح.</h4><p className="mt-3 max-w-xl text-[12px] leading-7 text-white/70">اكتب سؤالًا عن متابعة العملاء أو ترتيب العمل. هذه واجهة تجريبية؛ لا يوجد اتصال فعلي بنموذج ذكاء اصطناعي حتى الآن.</p><form onSubmit={e=>{e.preventDefault();notify(query.trim()?'تم تسجيل السؤال في المعاينة فقط':'اكتب سؤالك أولًا');}} className="mt-6 flex flex-col gap-2 sm:flex-row"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="مثال: من أحتاج أن أتابعه اليوم؟" className="min-h-12 flex-1 rounded-xl border border-white/15 bg-white/10 px-4 text-[12px] text-white outline-none placeholder:text-white/45 focus:border-white/40"/><button className="aq-assistant-send">جرّب السؤال <ArrowLeft size={14}/></button></form><div className="mt-5 flex flex-wrap gap-2">{['رتّب أولويات اليوم','من يحتاج متابعة؟','اقترح خطوة لإتمام صفقة'].map(s=><button key={s} onClick={()=>setQuery(s)} className="aq-suggestion">{s}</button>)}</div></div>}
-            </div>
+    <section id="top" className="market-hero">
+      <div className="market-hero-image"><img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=2000&q=90" alt="تصميم داخلي سكني معاصر"/><div className="market-hero-overlay"/></div>
+      <div className="market-container market-hero-content">
+        <div className="market-hero-copy"><span className="market-eyebrow"><span/> اعثر على مكانك القادم</span><h1>العقار المناسب<br/>يبدأ <em>من هنا.</em></h1><p>تصفّح خيارات السكن والاستثمار، قارن التفاصيل، وافتح أي عقار لترى صوره ومواصفاته ومعلومات التواصل في صفحة واحدة.</p><div className="market-hero-trust"><span><Check size={14}/> بحث واضح</span><span><Check size={14}/> تفاصيل قابلة للاستعراض</span><span><Check size={14}/> تصميم يناسب هاتفك</span></div></div>
+        <div className="market-search-box">
+          <div className="market-search-tabs">{(['الكل','بيع','إيجار'] as DealFilter[]).map(v=><button key={v} className={deal===v?'active':''} onClick={()=>setDeal(v)}>{v==='الكل'?'كل العقارات':v==='بيع'?'شراء عقار':'استئجار عقار'}</button>)}</div>
+          <div className="market-search-fields">
+            <label className="market-search-input"><Search size={18}/><span><small>ماذا تبحث عنه؟</small><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="اسم العقار أو المنطقة"/></span></label>
+            <label className="market-search-select"><MapPin size={18}/><span><small>المنطقة</small><select value={district} onChange={e=>setDistrict(e.target.value)}><option>كل المناطق</option><option>خور مكسر</option><option>عدن الجديدة</option><option>المنصورة</option><option>كريتر</option><option>الشيخ عثمان</option><option>المعلا</option></select></span><ChevronDown size={14}/></label>
+            <label className="market-search-select"><Building2 size={18}/><span><small>نوع العقار</small><select value={kind} onChange={e=>setKind(e.target.value)}><option>كل الأنواع</option><option>شقة</option><option>فيلا</option><option>منزل</option><option>تجاري</option></select></span><ChevronDown size={14}/></label>
+            <button className="market-search-submit" onClick={()=>document.getElementById('listings')?.scrollIntoView({behavior:'smooth'})}><Search size={17}/> ابحث عن عقار</button>
           </div>
+          <div className="market-search-bottom"><span><ShieldCheck size={14}/> بيانات العرض التجريبية — تحقّق قبل التواصل أو الدفع</span><button onClick={resetFilters}>إعادة ضبط البحث</button></div>
         </div>
-        <p className="mt-4 text-[10px] leading-6 text-[#8b9387]">تنبيه: الأرقام والأسماء والأسعار داخل المعاينة افتراضية. لا يتم حفظ البيانات، أو إرسال الرسائل، أو تنفيذ اتصالات حقيقية.</p>
+      </div>
+      <div className="market-hero-bottom"><div className="market-container"><span>عقارات متنوعة</span><span className="market-hero-line"/><span>بيع وإيجار</span><span className="market-hero-line"/><span>عدن ومناطقها</span></div></div>
+    </section>
+
+    <section id="listings" className="market-listings-section">
+      <div className="market-container">
+        <div className="market-section-heading"><div><span className="market-section-kicker">اكتشف مساحتك</span><h2>{onlySaved?'العقارات المحفوظة':'عقارات تستحق أن تراها'}<span>.</span></h2><p>صور وتفاصيل ومواصفات — افتح أي بطاقة لعرض العقار بصورة أوسع.</p></div><div className="market-view-tools"><button className="market-filter-toggle" onClick={()=>setFiltersOpen(!filtersOpen)}><SlidersHorizontal size={16}/> الفلاتر <ChevronDown size={14}/></button><label className="market-sort"><ArrowDownUp size={15}/><select value={sort} onChange={e=>setSort(e.target.value)}><option value="recommended">ترتيب مقترح</option><option value="low">السعر: الأقل أولًا</option><option value="high">السعر: الأعلى أولًا</option></select></label></div></div>
+        {filtersOpen&&<div className="market-extra-filters"><label>نوع الصفقة<select value={deal} onChange={e=>setDeal(e.target.value as DealFilter)}><option>الكل</option><option>بيع</option><option>إيجار</option></select></label><label>المنطقة<select value={district} onChange={e=>setDistrict(e.target.value)}><option>كل المناطق</option><option>خور مكسر</option><option>عدن الجديدة</option><option>المنصورة</option><option>كريتر</option><option>الشيخ عثمان</option><option>المعلا</option></select></label><label>نوع العقار<select value={kind} onChange={e=>setKind(e.target.value)}><option>كل الأنواع</option><option>شقة</option><option>فيلا</option><option>منزل</option><option>تجاري</option></select></label><button onClick={resetFilters}>مسح جميع الفلاتر</button></div>}
+        <div className="market-results-line"><span>يعرض <b>{results.length}</b> من العقارات في المعاينة</span><button onClick={()=>setOnlySaved(!onlySaved)} className={onlySaved?'saved-filter-active':''}><Heart size={14} fill={onlySaved?'currentColor':'none'}/> {onlySaved?'عرض جميع العقارات':'المحفوظات ('+saved.length+')'}</button></div>
+        {results.length ? <div className="market-listing-grid">{results.map(item=><ListingCard key={item.id} item={item} saved={saved.includes(item.id)} onSave={toggleSave} onOpen={openListing}/>)}</div> : <div className="market-empty"><Search size={28}/><h3>لم نعثر على عقار بهذه المواصفات</h3><p>غيّر كلمات البحث أو أزل بعض الفلاتر لتظهر نتائج أخرى.</p><button onClick={resetFilters}>عرض كل العقارات</button></div>}
+        <div className="market-demo-note"><ShieldCheck size={17}/><p><b>شفافية المعاينة:</b> العقارات والأسعار والعناوين وأرقام التواصل في هذه النسخة بيانات توضيحية وليست إعلانات حقيقية موثقة. الصور صور عقارية مرجعية من Unsplash وليست بالضرورة للعقار المذكور. يلزم ربط مصدر بيانات موثوق قبل النشر للعامة.</p></div>
       </div>
     </section>
 
-    <section id="properties" className="bg-[#fbfaf7] px-4 py-14 sm:px-7 sm:py-20 lg:px-12 lg:py-24"><div className="mx-auto max-w-[1480px]"><div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><div className="aq-kicker"><span/> واجهة العقارات</div><h2 className="mt-4 text-3xl font-semibold tracking-[-.05em] text-[#293b2e] sm:text-4xl">اعرض كل عقار <span className="aq-serif">كما يستحق.</span></h2><p className="mt-3 text-[12px] leading-7 text-[#778073]">صور واضحة، تفاصيل سريعة، ومعلومات تساعد فريقك على اتخاذ الخطوة التالية.</p></div><button onClick={()=>{setActive('properties');jumpToPreview();}} className="aq-text-link">استعرض العقارات داخل النظام <ArrowLeft size={14}/></button></div><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{homes.map(home=><PropertyCard key={home.id} home={home} onSelect={setSelectedProperty}/>)}</div></div></section>
+    <section id="how" className="market-how"><div className="market-container market-how-inner"><div><span className="market-section-kicker">خطوات واضحة</span><h2>من البحث إلى<br/><em>المعاينة.</em></h2><p>تجربة بسيطة تساعدك على استكشاف العقار قبل التواصل مع المكتب.</p></div><div className="market-how-steps"><article><span>01</span><Search size={21}/><h3>ابحث وحدد</h3><p>اختر البيع أو الإيجار، المنطقة، ونوع العقار.</p></article><article><span>02</span><Grid2X2 size={21}/><h3>قارن التفاصيل</h3><p>شاهد السعر والمساحة والغرف والصور المتاحة.</p></article><article><span>03</span><Phone size={21}/><h3>راجع معلومات التواصل</h3><p>افتح بطاقة العقار واطلب التواصل من داخل المعاينة.</p></article></div></div></section>
+    <footer className="market-footer"><div className="market-container market-footer-inner"><a className="market-brand market-brand-light" href="#top"><span className="market-brand-icon"><Building2 size={21}/></span><span><b>AQAR<span>FLOW</span></b><small>REAL ESTATE MARKETPLACE</small></span></a><p>AqarFlow AI · معاينة تفاعلية ببيانات تجريبية</p><a href="#top">العودة للأعلى <ArrowUpLeft size={14}/></a></div></footer>
 
-    <section id="approach" className="bg-[#e9ece3] px-4 py-14 sm:px-7 sm:py-20 lg:px-12 lg:py-24"><div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[.8fr_1.2fr] lg:gap-20"><div><div className="aq-kicker"><span/> مصمم لسير العمل الحقيقي</div><h2 className="mt-4 text-3xl font-semibold leading-tight tracking-[-.05em] text-[#293b2e] sm:text-4xl">أقل فوضى.<br/><span className="aq-serif">متابعة أكثر وضوحًا.</span></h2><p className="mt-4 max-w-md text-[13px] leading-8 text-[#717c6f]">ليس الهدف أن ترى أرقامًا أكثر؛ بل أن تعرف ما الذي حدث، وما الذي يحتاج إلى اهتمامك، وما الخطوة التالية لكل فرصة.</p></div><div className="grid gap-3 sm:grid-cols-3">{[{n:'01',title:'رتّب محفظتك',body:'اجمع تفاصيل العقارات والصور والحالة في مكان واحد.'},{n:'02',title:'افهم عملاءك',body:'احتفظ باهتمامات العملاء ومراحل التواصل بوضوح.'},{n:'03',title:'تابع كل فرصة',body:'اربط المتابعات بالمواعيد والخطوة القادمة.'}].map(item=><div key={item.n} className="aq-step-card"><span className="text-[10px] font-bold tracking-[.15em] text-[#87977e]">{item.n} /</span><h3 className="mt-8 text-[15px] font-semibold text-[#344637]">{item.title}</h3><p className="mt-3 text-[11px] leading-7 text-[#7b8578]">{item.body}</p></div>)}</div></div></section>
-
-    <footer className="bg-[#293d2e] px-4 py-8 text-white sm:px-7 lg:px-12"><div className="mx-auto flex max-w-[1480px] flex-col justify-between gap-4 sm:flex-row sm:items-center"><a href="#home" className="flex items-center gap-3"><span className="aq-brand-mark !bg-white/10 !text-[#e1ead7]"><Home size={18}/></span><span className="text-[16px] font-semibold tracking-tight">aqarflow<span className="text-[#a9c09b]">.</span></span></a><p className="text-[10px] leading-6 text-white/55">AqarFlow AI · مساحة عمل عقارية ذكية · نسخة معاينة تجريبية</p><button onClick={jumpToPreview} className="flex items-center gap-2 text-[11px] font-bold text-[#d7e4cc]">العودة إلى النظام <ArrowUpLeft size={14}/></button></div></footer>
-
-    {chosenHome && <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#1f2b22]/55 p-0 backdrop-blur-sm sm:items-center sm:p-5" onClick={()=>setSelectedProperty(null)}><div role="dialog" aria-modal="true" className="aq-modal w-full max-w-xl overflow-hidden rounded-t-[24px] bg-[#fbfaf7] shadow-2xl sm:rounded-[24px]" onClick={e=>e.stopPropagation()}><Photo src={chosenHome.image} alt={chosenHome.title} className="h-[220px] sm:h-[280px]"/><div className="p-5 sm:p-7"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-semibold text-[#82907c]">{chosenHome.area}</p><h3 className="mt-2 text-2xl font-semibold text-[#293b2e]">{chosenHome.title}</h3></div><button onClick={()=>setSelectedProperty(null)} className="aq-row-action" aria-label="إغلاق"><X size={16}/></button></div><p className="mt-4 text-[13px] text-[#4f6250]">{chosenHome.price} ر.س <span className="mx-2 text-[#c3c6bb]">/</span> {chosenHome.size} <span className="mx-2 text-[#c3c6bb]">/</span> {chosenHome.beds}</p><p className="mt-4 text-[11px] leading-7 text-[#7a8577]">تفاصيل توضيحية للعقار في وضع المعاينة. سيتم ربط الصور والبيانات الفعلية عند توصيل قاعدة البيانات.</p><button onClick={()=>{setSelectedProperty(null);notify('تم حفظ اهتمامك في المعاينة فقط');}} className="aq-primary-btn mt-6 w-full">إضافة إلى قائمة الاهتمام <ArrowLeft size={15}/></button></div></div></div>}
-    {addOpen && <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#1f2b22]/50 p-0 backdrop-blur-sm sm:items-center sm:p-5" onClick={()=>setAddOpen(false)}><div role="dialog" aria-modal="true" className="aq-modal w-full max-w-md rounded-t-[24px] bg-[#fbfaf7] p-5 shadow-2xl sm:rounded-[24px] sm:p-7" onClick={e=>e.stopPropagation()}><div className="flex items-start justify-between"><div><h3 className="text-xl font-semibold text-[#2d4031]">إضافة عميل</h3><p className="mt-2 text-[11px] text-[#858e80]">سيظهر في هذه المعاينة فقط.</p></div><button onClick={()=>setAddOpen(false)} className="aq-row-action" aria-label="إغلاق"><X size={16}/></button></div><form className="mt-6 space-y-4" onSubmit={e=>{e.preventDefault();addLead();}}><label className="block"><span className="mb-2 block text-[11px] font-bold text-[#4d5d4b]">اسم العميل *</span><input autoFocus value={newName} onChange={e=>setNewName(e.target.value)} placeholder="مثال: أحمد سالم" className="aq-form-input"/></label><label className="block"><span className="mb-2 block text-[11px] font-bold text-[#4d5d4b]">العقار أو الاهتمام</span><input value={newInterest} onChange={e=>setNewInterest(e.target.value)} placeholder="مثال: شقة في خور مكسر" className="aq-form-input"/></label><div className="flex gap-2 pt-1"><button type="submit" className="aq-primary-btn flex-1">إضافة العميل</button><button type="button" onClick={()=>setAddOpen(false)} className="aq-secondary-btn">إلغاء</button></div></form></div></div>}
-    {toast && <div role="status" className="fixed bottom-4 left-4 right-4 z-[80] mx-auto flex max-w-sm items-center gap-2 rounded-xl bg-[#293d2e] px-4 py-3 text-[11px] font-bold text-white shadow-xl sm:left-6 sm:right-auto"><Check size={15} className="shrink-0 text-[#d5e4c6]"/>{toast}</div>}
+    {selected && <div className="market-modal-backdrop" onClick={()=>setSelected(null)}>
+      <section className="market-detail-modal" role="dialog" aria-modal="true" aria-label={'تفاصيل '+selected.title} onClick={e=>e.stopPropagation()}>
+        <div className="market-detail-top"><div><span className="market-detail-kicker">معاينة العقار · رقم {selected.id}</span><h2>{selected.title}</h2><p><MapPin size={15}/>{selected.address}</p></div><button className="market-close" onClick={()=>setSelected(null)} aria-label="إغلاق التفاصيل"><X size={20}/></button></div>
+        <div className="market-gallery"><img src={selected.gallery[photoIndex]} alt={selected.title+' — صورة '+(photoIndex+1)}/><span className="market-gallery-counter">{photoIndex+1} / {selected.gallery.length}</span><button className="market-gallery-prev" onClick={()=>setPhotoIndex(i=>(i+selected.gallery.length-1)%selected.gallery.length)} aria-label="الصورة السابقة"><ChevronRight size={20}/></button><button className="market-gallery-next" onClick={()=>setPhotoIndex(i=>(i+1)%selected.gallery.length)} aria-label="الصورة التالية"><ChevronLeft size={20}/></button><div className="market-gallery-thumbs">{selected.gallery.map((src,i)=><button key={src} className={i===photoIndex?'active':''} onClick={()=>setPhotoIndex(i)}><img src={src} alt={'مصغرة '+(i+1)}/></button>)}</div></div>
+        <div className="market-detail-content"><div className="market-detail-main"><div className="market-detail-price"><span>{selected.deal==='بيع'?'سعر البيع':'الإيجار الشهري'}</span><strong>{money(selected.price,selected.currency)}</strong><span className="market-detail-type">{selected.deal==='بيع'?'للبيع':'للإيجار'} · {selected.type}</span></div><div className="market-detail-specs"><div><BedDouble size={18}/><b>{selected.beds||'—'}</b><span>غرف نوم</span></div><div><Bath size={18}/><b>{selected.baths}</b><span>حمامات</span></div><div><Maximize size={18}/><b>{selected.size}</b><span>متر مربع</span></div><div><Compass size={18}/><b>{selected.area}</b><span>المنطقة</span></div></div><div className="market-detail-section"><h3>عن العقار</h3><p>{selected.description}</p></div><div className="market-detail-section"><h3>المزايا والتفاصيل</h3><div className="market-features">{selected.features.map(feature=><span key={feature}><Check size={14}/>{feature}</span>)}</div></div><div className="market-detail-section"><h3>الموقع</h3><div className="market-location-card"><div className="market-map-art"><div className="map-road road-one"/><div className="map-road road-two"/><div className="map-block block-one"/><div className="map-block block-two"/><div className="map-block block-three"/><div className="map-block block-four"/><span className="map-pin"><MapPin size={19}/></span><span className="map-caption">موقع توضيحي</span></div><p><MapPin size={15}/>{selected.address}</p><small>الخريطة توضيحية وليست موقعًا جغرافيًا دقيقًا.</small></div></div></div>
+          <aside className="market-detail-sidebar"><div className="market-agent-card"><span className="market-agent-avatar"><Building2 size={21}/></span><div><b>{selected.agent}</b><span>معلومات مكتب تجريبية</span></div><span className="market-agent-verified"><ShieldCheck size={15}/> تجريبي</span><p>تمت إضافة هذا المكتب لشرح شكل معلومات التواصل داخل صفحة العقار.</p><button className="market-contact-main" onClick={()=>setContactOpen(!contactOpen)}><Phone size={16}/>{contactOpen?'إخفاء نموذج التواصل':'اطلب التواصل'}</button>{contactOpen&&<form className="market-contact-form" onSubmit={e=>{e.preventDefault();showToast('لم يتم إرسال الطلب؛ نموذج المعاينة لا يتصل بخدمة خارجية');setContactOpen(false)}}><label>اسمك<input required value={contactName} onChange={e=>setContactName(e.target.value)} placeholder="الاسم الكامل"/></label><label>رقم الهاتف<input required value={contactPhone} onChange={e=>setContactPhone(e.target.value)} placeholder="رقم للتواصل" inputMode="tel"/></label><label>رسالتك<textarea value={contactMessage} onChange={e=>setContactMessage(e.target.value)} placeholder="أرغب في معرفة المزيد عن العقار"/></label><button type="submit">إرسال طلب تجريبي</button><small>لن تُرسل البيانات إلى أي جهة.</small></form>}<button className="market-contact-secondary" onClick={()=>{toggleSave(selected.id);showToast(saved.includes(selected.id)?'أزيل العقار من المحفوظات':'حُفظ العقار في هذه المعاينة')}}><Heart size={16} fill={saved.includes(selected.id)?'currentColor':'none'}/>{saved.includes(selected.id)?'محفوظ لديك':'احفظ العقار'}</button><button className="market-contact-secondary" onClick={()=>showToast('مشاركة الرابط غير متصلة في نسخة المعاينة')}><Share2 size={16}/> مشاركة العقار</button><div className="market-agent-phone"><Phone size={14}/><span>{selected.phone}</span></div><small className="market-demo-warning">رقم تجريبي لا تتصل به. السعر والصور والتفاصيل تحتاج تحققًا.</small></div><div className="market-safe-card"><ShieldCheck size={18}/><b>قبل اتخاذ القرار</b><p>تحقق من ملكية العقار، وموقعه، والسعر، وهوية الوسيط بنفسك. بيانات هذه المعاينة غير موثقة.</p></div></aside></div>
+        <div className="market-detail-bottom"><span><CalendarDays size={14}/> نُشر في البيانات التجريبية: {selected.published}</span><button onClick={()=>setSelected(null)}>العودة إلى النتائج <ArrowLeft size={15}/></button></div>
+      </section>
+    </div>}
+    {toast&&<div className="market-toast" role="status"><Check size={16}/>{toast}</div>}
   </main>;
 }
