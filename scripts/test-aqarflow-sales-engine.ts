@@ -10,7 +10,7 @@ import {
   sanitizeVerifiedProperties,
   validateSalesDraft,
 } from "../lib/aqarflow/sales-engine.ts";
-import { rankPropertyCandidates, selectNearBudgetAlternative } from "../lib/aqarflow/ranked-inventory.ts";
+import { rankPropertyCandidates, selectNearBudgetAlternative, selectPropertiesForSalesReply } from "../lib/aqarflow/ranked-inventory.ts";
 
 const prior = {
   intent: "buy" as const,
@@ -330,6 +330,18 @@ const nearBudgetCandidates = [
 ];
 const nearBudgetRanked = rankPropertyCandidates(nearBudgetProfile, nearBudgetCandidates);
 assert.equal(selectNearBudgetAlternative(nearBudgetProfile, nearBudgetRanked)?.id, "near-215", "an unspecified budget may receive one confirmed alternative up to 10% above the target when no exact match exists");
+const noExactSelection = selectPropertiesForSalesReply(nearBudgetProfile, nearBudgetRanked);
+assert.deepEqual(noExactSelection.properties.map((property) => property.id), ["near-215"], "the near-budget mode should select only the closest eligible alternative");
+assert.equal(noExactSelection.nearBudgetAlternativeMode, true);
+const withExactSelection = selectPropertiesForSalesReply(
+  { ...nearBudgetProfile, budgetFlexibility: "slight" },
+  rankPropertyCandidates({ ...nearBudgetProfile, budgetFlexibility: "slight" }, [
+    { ...nearBudgetCandidates[0], id: "within-200", title: "Within budget", price: 200 },
+    nearBudgetCandidates[0],
+  ]),
+);
+assert.deepEqual(withExactSelection.properties.map((property) => property.id), ["within-200"], "an exact in-budget property must win over a more expensive option even when slight flexibility is allowed");
+assert.equal(withExactSelection.nearBudgetAlternativeMode, false);
 assert.equal(
   selectNearBudgetAlternative({ ...nearBudgetProfile, budgetFlexibility: "hard" }, nearBudgetRanked),
   null,
