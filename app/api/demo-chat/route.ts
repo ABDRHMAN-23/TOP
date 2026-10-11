@@ -51,7 +51,7 @@ function tooManyRequests(key: string, now = Date.now()): boolean {
 
 function cleanText(value: unknown, max: number): string {
   return typeof value === 'string'
-    ? value.replace(/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F]/g, '').trim().slice(0, max)
+    ? value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, max)
     : '';
 }
 
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
     'رسالة العميل الحالية:',
     message,
     'اكتب الرد التالي الذي سيظهر للعميل فقط داخل الخاصية reply.',
-  ].join('\\n\\n');
+  ].join('\n\n');
 
   const apiKey = runtimeEnv('GEMINI_API_KEY');
   const model = runtimeEnv('AQARFLOW_GEMINI_MODEL') || runtimeEnv('GEMINI_MODEL') || 'gemini-3.5-flash-lite';
