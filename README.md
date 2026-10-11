@@ -4,6 +4,16 @@ AqarFlow AI is a real-estate sales workspace intended to help real-estate office
 
 The product's intended differentiator is **sales intelligence**, not a public property marketplace: understand the customer's needs, respect hard budget and deal-breaker constraints, compare verified listings, handle objections without pressure, and preserve the office's reputation.
 
+## New Arabic-first web experience
+
+- `app/page.tsx`: the public landing page now sells the actual differentiator — sales intelligence for real-estate offices — rather than publishing a fake public property marketplace.
+- The homepage includes an interactive local scenario demo for budget, price objections, competitor comparison, and unavailable listings. It is explicitly labeled as illustrative and does not send real WhatsApp messages or query an office's actual inventory.
+- `app/login/page.tsx`: Arabic AqarFlow-branded sign-in design. The currently implemented authentication methods remain email magic link and configured Google/Apple providers; WhatsApp OTP is not implemented by this UI change.
+- `app/dashboard/page.tsx`: Arabic office workspace overview with inventory count (when available) and links to the sales assistant, inbox, CRM, operations, analytics, and WhatsApp setup.
+- `app/layout.tsx` and `app/globals.css`: product-aligned metadata and responsive design system for landing, login, and workspace views.
+
+The UI can be reviewed through pull request #5. It is not live in production until the PR is reviewed/merged and the deployment finishes successfully.
+
 ## Current code areas
 
 - `lib/aqarflow/sales-engine.ts`: grounded sales prompt construction, verified-property matching, and bounded response validation.
