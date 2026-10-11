@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { buildSalesPlaybookGuidance, classifySalesMoment } from "../lib/aqarflow/sales-playbook.ts";
+import { getSalesKnowledgeCards, listSalesKnowledgeCardIds } from "../lib/aqarflow/sales-knowledge.ts";
 
 type Scenario = {
   id: string;
@@ -82,5 +83,25 @@ assert.ok(urgent.avoid.some((line) => line.includes("لا تَعِد")), "urgent
 const rejection = buildSalesPlaybookGuidance({ customerMessage: "لا، هذا العقار لا يناسبني." });
 assert.equal(rejection.moment, "property_rejection");
 assert.ok(rejection.avoid.some((line) => line.includes("العقار المرفوض")), "rejected listing must not be pushed again");
+
+const knowledgeIds = listSalesKnowledgeCardIds();
+assert.ok(knowledgeIds.length >= 15, "sales knowledge library should cover at least 15 operational principles");
+assert.ok(new Set(knowledgeIds).size === knowledgeIds.length, "knowledge card IDs must be unique");
+assert.ok(
+  getSalesKnowledgeCards("price_objection").some((card) => card.id === "price-objection"),
+  "price objections should load the relevant diagnostic sales principle",
+);
+assert.ok(
+  getSalesKnowledgeCards("stop_contact").some((card) => card.id === "opt-out"),
+  "opt-out must load the stop-contact principle",
+);
+assert.ok(
+  getSalesKnowledgeCards("competitor_comparison").some((card) => card.id === "competitor"),
+  "competitor comparisons should load evidence-first competitive guidance",
+);
+assert.ok(
+  getSalesKnowledgeCards("human_handoff").some((card) => card.id === "human-handoff"),
+  "human requests should load handoff guidance",
+);
 
 console.log(`AqarFlow sales-playbook tests passed: ${bank.scenarios.length} scenarios across ${categories.size} categories.`);
