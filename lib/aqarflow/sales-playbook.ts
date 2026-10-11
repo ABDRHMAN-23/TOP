@@ -10,8 +10,10 @@ export type SalesMoment =
   | "human_handoff"
   | "abusive_customer"
   | "price_objection"
-  | "competitor_comparison"
+  | "(?:مكتب ثاني|المكتب الثاني|مكتب اخر|مكتب غيركم|لقيت.{0,25}ارخص|وجدت.{0,25}ارخص|عند غيركم|عرض منافس|منافسكم|مكتب منافس|another office|found.{0,25}cheaper|competitor|other agent)_comparison"
   | "hesitation"
+  | "property_rejection"
+  | "urgent_timeline"
   | "trust_concern"
   | "viewing_intent"
   | "direct_price_question"
@@ -67,25 +69,27 @@ export function classifySalesMoment(message: string): SalesMoment {
   ) return "competitor_comparison";
 
   if (
-    /(?:غالي(?:ة|ين)?|اغلى|سعره مرتفع|السعر مرتفع|مبالغ فيه|ما يستاهل|فوق ميزانيتي|خارج ميزانيتي|too expensive|too much|overpriced|above my budget)/i.test(text)
+    /(?:غالي(?:ة|ين)?|اغلى|سعره مرتفع|السعر مرتفع|مبالغ فيه|ما يستاهل|فوق ميزانيتي|خارج ميزانيتي|ميزانيتي.{0,30}حد نهائي|لا اقدر ازيد|ما اقدر ازيد|اقدر ازيد|ممكن ازيد|تنزلوا? من السعر|خصم|تخفيض|discount|lower the price|too expensive|too much|overpriced|above my budget)/i.test(text)
   ) return "price_objection";
 
   if (
-    /(?:بفكر|افكر|خليني افكر|بشوف|يمكن بعدين|مش متأكد|مو متأكد|متردد|احتاج وقت|سأفكر|ليس الان|not sure|think about it|maybe later|need some time)/i.test(text)
+    /(?:بفكر|افكر|خليني افكر|بشوف|يمكن بعدين|مش متأكد|مو متأكد|متردد|احتاج وقت|سأفكر|ليس الان|ما اعرف اذا|ما ادري اذا|not sure|think about it|maybe later|need some time)/i.test(text)
   ) return "hesitation";
 
   if (
-    /(?:نصب|احتيال|اثق فيكم|كيف اضمن|كيف اتاكد|موثوق|موثوقين|وثائق الملكية|صك الملكية|الوضع القانوني|scam|fraud|can i trust|prove it|legal status|ownership documents)/i.test(text)
+    /(?:نصب|احتيال|اثق فيكم|كيف اضمن|كيف اتاكد|موثوق|موثوقين|وثائق الملكية|صك الملكية|الوضع القانوني|مضمون|مضمونة|نسبة الربح|عائد الاستثمار|رقم العميل|رقم هاتف العميل|بيانات عميل|خصوصية|رقم المالك|بيانات المالك|scam|fraud|can i trust|prove it|legal status|ownership documents|guaranteed return)/i.test(text)
   ) return "trust_concern";
 
   if (
-    /(?:معاينة|اشوف العقار|اشوف الشقة|زيارة العقار|موعد للزيارة|احجز موعد|اريد ازور|ابي اشوفه|ابغى اشوفها|viewing|visit the property|book a visit|see the apartment)/i.test(text)
+    /(?:معاينة|اعاين|اشوف العقار|اشوف الشقة|زيارة العقار|موعد للزيارة|احجز موعد|اريد ازور|ممكن.{0,12}ازور|ازور.{0,15}(?:اليوم|غدا|يوم)|ابي اشوفه|ابغى اشوفها|viewing|visit the property|book a visit|see the apartment)/i.test(text)
   ) return "viewing_intent";
 
   if (
-    /(?:كم (?:السعر|الايجار)|بكم|السعر كم|كم ايجار|كم الايجار|ما سعر|ما هو السعر|what is the price|how much (?:is|does)|how much for)/i.test(text)
+    /(?:كم (?:السعر|الايجار)|بكم|السعر كم|كم ايجار|كم الايجار|ما سعر|ما هو السعر|السعر.{0,20}(?:يشمل|نهائي|شامل|رسوم|خدمات)|(?:يشمل|شاملة).{0,20}السعر|what is the price|how much (?:is|does)|how much for)/i.test(text)
   ) return "direct_price_question";
 
+  if (/(?:لا يناسبني|ما يناسبني|مش مناسب لي|مش هذا اللي اريده|لا اريد هذا العقار|not right for me|not interested in this property)/i.test(text)) return "property_rejection";
+  if (/(?:اليوم.{0,15}(?:ضروري|لازم|مستعجل)|خلال (?:يومين|ثلاثة ايام|يوم واحد)|خلال ثلاثة ايام|مستعجل|ضروري جدا|بأسرع وقت|في اسرع وقت|urgent|within (?:one|two|three) days)/i.test(text)) return "urgent_timeline";
   return "general_discovery";
 }
 
@@ -157,6 +161,29 @@ const GUIDANCE: Record<SalesMoment, Omit<SalesPlaybookGuidance, "moment">> = {
     avoid: [
       "لا تستخدم ضغط الوقت أو الندرة المصطنعة.",
       "لا تجعل العميل يشعر بالذنب بسبب التأجيل.",
+    ],
+  },
+  property_rejection: {
+    objective: "احترام رفض هذا العقار وتعلّم ما الذي ينبغي تغييره في البحث إذا كان العميل راغبًا بالاستمرار.",
+    do: [
+      "تقبل الرفض دون جدال، ويمكنك الاعتذار باختصار إذا كان الاقتراح غير مناسب.",
+      "حدّث تفضيلات العميل، ثم اقترح بديلًا مختلفًا فقط إذا كان ذلك مناسبًا للسياق.",
+    ],
+    avoid: [
+      "لا تعاود بيع العقار المرفوض أو تحاول إثبات أن العميل مخطئ.",
+      "لا تعتبر رفض عقار واحد موافقة على توسيع الميزانية أو تغيير شرط أساسي.",
+    ],
+  },
+  urgent_timeline: {
+    objective: "تقليل وقت الوصول إلى خيار قابل للتنفيذ دون إعطاء وعود غير مؤكدة.",
+    do: [
+      "اختصر الرسالة وابدأ بالخطوة العملية التالية.",
+      "تحقق من حالة التوافر وإمكانية المعاينة والتوقيت قبل تقديم وعد.",
+      "إذا لم يتوفر خيار مؤكد، اذكر ذلك بوضوح ووجّه الحالة إلى موظف عند الحاجة.",
+    ],
+    avoid: [
+      "لا تَعِد بالتسليم أو الانتقال أو المعاينة خلال مدة لم يؤكدها المكتب.",
+      "لا تخفف شروط التحقق بسبب استعجال العميل.",
     ],
   },
   trust_concern: {
