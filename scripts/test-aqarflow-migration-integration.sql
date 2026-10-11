@@ -327,4 +327,57 @@ BEGIN
   END IF;
 END $analytics_check$;
 
+-- Level 5: per-contact opt-out and webhook quota RPC remain isolated to service_role.
+DO $auto_reply_privilege_check$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='aqarflow_crm_contacts'
+      AND column_name='ai_auto_reply_opted_out' AND is_nullable='NO'
+  ) THEN
+    RAISE EXCEPTION 'Per-contact auto-reply opt-out column is missing';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='aqarflow_crm_conversations'
+      AND column_name='buyer_profile' AND column_default LIKE '%{}%'
+  ) THEN
+    RAISE EXCEPTION 'Persistent structured buyer profile column is missing';
+  END IF;
+  IF has_function_privilege('authenticated','public.aqarflow_reserve_webhook_ai_request(uuid)','EXECUTE')
+     OR has_function_privilege('anon','public.aqarflow_reserve_webhook_ai_request(uuid)','EXECUTE')
+     OR NOT has_function_privilege('service_role','public.aqarflow_reserve_webhook_ai_request(uuid)','EXECUTE') THEN
+    RAISE EXCEPTION 'Webhook quota reservation is not service-role only';
+  END IF;
+  IF has_function_privilege('authenticated','public.aqarflow_record_webhook_ai_usage(uuid,uuid,text,integer,integer,integer,boolean,text)','EXECUTE')
+     OR has_function_privilege('anon','public.aqarflow_record_webhook_ai_usage(uuid,uuid,text,integer,integer,integer,boolean,text)','EXECUTE')
+     OR NOT has_function_privilege('service_role','public.aqarflow_record_webhook_ai_usage(uuid,uuid,text,integer,integer,integer,boolean,text)','EXECUTE') THEN
+    RAISE EXCEPTION 'Webhook usage recording is not service-role only';
+  END IF;
+END $auto_reply_privilege_check$;
+
+SET ROLE service_role;
+DO $auto_reply_rpc_check$
+DECLARE
+  request_id uuid;
+  updated boolean;
+BEGIN
+  request_id := public.aqarflow_reserve_webhook_ai_request('00000000-0000-4000-8000-000000000001');
+  IF request_id IS NULL THEN
+    RAISE EXCEPTION 'A new workspace should receive an AI quota reservation';
+  END IF;
+  updated := public.aqarflow_record_webhook_ai_usage(
+    '00000000-0000-4000-8000-000000000001', request_id, 'test-model', 12, 3, 5, true, 'success'
+  );
+  IF NOT updated THEN
+    RAISE EXCEPTION 'Service-role usage recording did not update its own reservation';
+  END IF;
+  IF public.aqarflow_record_webhook_ai_usage(
+    '00000000-0000-4000-8000-000000000002', request_id, 'test-model', 12, 3, 5, true, 'success'
+  ) THEN
+    RAISE EXCEPTION 'Webhook usage recording accepted a reservation belonging to another workspace';
+  END IF;
+END $auto_reply_rpc_check$;
+RESET ROLE;
+
 SELECT 'AqarFlow migration/RLS integration assertions passed.' AS result;
