@@ -107,6 +107,27 @@ assert.equal(matches[0].property.id, "fit", "eligible, matching properties shoul
 assert.equal(matches.find((match) => match.property.id === "over-budget")?.eligible, false, "known budget violations must be excluded");
 assert.ok(matches.find((match) => match.property.id === "unknown-currency")?.unknowns.includes("budget_comparison_unavailable"), "unknown currency must not be treated as a budget match");
 
+const hardBudgetMatch = matchVerifiedProperties(
+  { intent: "rent", budgetMax: 200, currency: "USD" },
+  [
+    { id: "strict-at-cap", title: "At cap", purpose: "rent", price: 200, currency: "USD" },
+    { id: "strict-over-cap", title: "Over cap", purpose: "rent", price: 215, currency: "USD" },
+  ],
+);
+assert.equal(hardBudgetMatch.find((m) => m.property.id === "strict-at-cap")?.eligible, true);
+assert.equal(hardBudgetMatch.find((m) => m.property.id === "strict-over-cap")?.eligible, false, "budget must be strict unless flexibility is explicit");
+
+const slightBudgetMatch = matchVerifiedProperties(
+  { intent: "rent", budgetMax: 200, currency: "USD", budgetFlexibility: "slight" },
+  [
+    { id: "slight-over", title: "Slight over", purpose: "rent", price: 215, currency: "USD" },
+    { id: "too-far-over", title: "Too far over", purpose: "rent", price: 221, currency: "USD" },
+  ],
+);
+assert.equal(slightBudgetMatch.find((m) => m.property.id === "slight-over")?.eligible, true, "explicit slight flexibility may include an option up to 10% over the target");
+assert.ok(slightBudgetMatch.find((m) => m.property.id === "slight-over")?.unknowns.includes("disclose_price_above_stated_budget"), "the reply must be reminded to disclose the overage");
+assert.equal(slightBudgetMatch.find((m) => m.property.id === "too-far-over")?.eligible, false, "slight flexibility must remain bounded at 10%");
+
 const availabilityMatches = matchVerifiedProperties(
   { intent: "buy" },
   [
