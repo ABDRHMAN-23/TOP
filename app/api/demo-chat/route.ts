@@ -75,7 +75,7 @@ export async function POST(request: Request) {
   }
 
   const input = raw as Record<string, unknown>;
-  const message = cleanText(input.message, MAX_MESSAGE_CHARS);
+  const message = cleanText(input.message, 2000);
   if (!message) return NextResponse.json({ error: 'اكتب رسالتك أولًا.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
   if (message.length > MAX_MESSAGE_CHARS) return NextResponse.json({ error: 'اختصر رسالتك قليلًا ثم أعد الإرسال.' }, { status: 413, headers: { 'Cache-Control': 'no-store' } });
 
