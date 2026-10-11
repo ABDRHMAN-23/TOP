@@ -132,7 +132,7 @@ export default function HomePage() {
     setMessageInput('');
     setExtraMessages((current) => [...current, { from: 'customer', text, time: 'الآن' }]);
 
-    const history = [...extraMessages, { from: 'customer' as const, text, time: 'الآن' }].slice(-10).map((message) => ({
+    const history = extraMessages.slice(-10).map((message) => ({
       role: message.from === 'office' ? 'assistant' : 'user',
       content: message.text,
     }));
