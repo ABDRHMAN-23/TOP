@@ -26,9 +26,6 @@ const CUSTOMER_SERVICE_WINDOW_MS = 24 * 60 * 60 * 1000;
  * WhatsApp credentials, claim an idempotency key, and verify the service window.
  */
 export function decideAutomaticReply(input: AutomaticReplyInput): AutomaticReplyDecision {
-  if (!input.enabled) return { action: "skip", reason: "auto_reply_disabled" };
-  if (input.integrationStatus !== "active") return { action: "skip", reason: "integration_not_active" };
-  if (input.contactOptedOut) return { action: "skip", reason: "contact_opted_out" };
   if (input.eventKind !== "inbound_message") return { action: "skip", reason: "not_inbound_message" };
   if (input.messageType !== "text") return { action: "skip", reason: "unsupported_message_type" };
   if (typeof input.messageText !== "string" || !input.messageText.trim()) {
@@ -36,13 +33,7 @@ export function decideAutomaticReply(input: AutomaticReplyInput): AutomaticReply
   }
   if (!input.senderPhoneNumber) return { action: "skip", reason: "missing_sender" };
 
-  const receivedAt = input.providerTimestamp ? Date.parse(input.providerTimestamp) : Number.NaN;
-  const now = input.nowMs ?? Date.now();
-  if (!Number.isFinite(receivedAt)) return { action: "skip", reason: "timestamp_unverified" };
-  if (receivedAt > now + 60_000) return { action: "skip", reason: "timestamp_in_future" };
-  if (now - receivedAt >= CUSTOMER_SERVICE_WINDOW_MS) return { action: "skip", reason: "outside_service_window" };
-  if (now < receivedAt) return { action: "skip", reason: "timestamp_in_future" };
-
+  // Honor a contact's explicit opt-out or human request even if AI automation is disabled.
   const moment = classifySalesMoment(input.messageText);
   if (moment === "stop_contact") {
     return { action: "opt_out", reason: "customer_requested_no_contact" };
@@ -50,5 +41,15 @@ export function decideAutomaticReply(input: AutomaticReplyInput): AutomaticReply
   if (moment === "human_handoff") {
     return { action: "handoff", reason: "customer_requested_human" };
   }
+
+  if (input.contactOptedOut) return { action: "skip", reason: "contact_opted_out" };
+  if (!input.enabled) return { action: "skip", reason: "auto_reply_disabled" };
+  if (input.integrationStatus !== "active") return { action: "skip", reason: "integration_not_active" };
+
+  const receivedAt = input.providerTimestamp ? Date.parse(input.providerTimestamp) : Number.NaN;
+  const now = input.nowMs ?? Date.now();
+  if (!Number.isFinite(receivedAt)) return { action: "skip", reason: "timestamp_unverified" };
+  if (receivedAt > now) return { action: "skip", reason: "timestamp_in_future" };
+  if (now - receivedAt >= CUSTOMER_SERVICE_WINDOW_MS) return { action: "skip", reason: "outside_service_window" };
   return { action: "send", reason: "eligible_text_inbound" };
 }
