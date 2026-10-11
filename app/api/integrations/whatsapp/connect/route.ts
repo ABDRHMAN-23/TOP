@@ -141,6 +141,7 @@ export async function POST(request: Request) {
         token_key_version: encrypted.keyVersion,
         token_expires_at: tokenExpiresAt,
         status: 'active',
+        auto_reply_enabled: false,
         last_verified_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -209,8 +210,8 @@ export async function PATCH(request: Request) {
     if (integration.token_expires_at && Date.parse(integration.token_expires_at) <= Date.now() + 60_000) {
       return NextResponse.json({ error: 'WhatsApp authorization has expired or is expiring; reconnect before enabling automatic replies.' }, { status: 409, headers: { 'Cache-Control': 'no-store' } });
     }
-    if (!runtimeEnv('GEMINI_API_KEY') || !runtimeEnv('META_TOKEN_ENCRYPTION_KEY')) {
-      return NextResponse.json({ error: 'AI or WhatsApp token encryption is not configured on the server.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+    if (!runtimeEnv('GEMINI_API_KEY') || !runtimeEnv('META_TOKEN_ENCRYPTION_KEY') || !runtimeEnv('META_APP_SECRET') || !runtimeEnv('META_WEBHOOK_VERIFY_TOKEN')) {
+      return NextResponse.json({ error: 'AI, webhook verification, or WhatsApp token encryption is not configured on the server.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
     }
   }
 
