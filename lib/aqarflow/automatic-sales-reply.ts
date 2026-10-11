@@ -243,22 +243,32 @@ export async function handleWhatsAppAutomaticReply(
   const selected = ranked.filter((match) => match.eligible).slice(0, 5).map((match) => match.property);
   let draft: SalesDraft | null = null;
   let reservationId: string | null = null;
-  let usageModel = "deterministic-no-match";
   let inputTokens: number | null = 0;
   let outputTokens: number | null = 0;
   const generationStartedAt = Date.now();
 
+  // Apply one workspace-level quota to every automatic reply, including deterministic
+  // no-match responses. Otherwise an empty inventory could generate unlimited outbound
+  // messages without consuming the server-side safety quota.
+  const { data: reserved, error: reserveError } = await admin.rpc("aqarflow_reserve_webhook_ai_request", {
+    p_owner_user_id: integration.owner_user_id,
+  });
+  if (reserveError || typeof reserved !== "string" || !reserved) {
+    return setHandoff(admin, integration.owner_user_id, input.conversationId, "ai_quota_unavailable");
+  }
+  reservationId = reserved;
+
   if (!selected.length) {
     draft = validateSalesDraft(buildNoMatchSalesDraft(candidates.length, buyerProfile), []);
-  } else {
-    const { data: reserved, error: reserveError } = await admin.rpc("aqarflow_reserve_webhook_ai_request", {
-      p_owner_user_id: integration.owner_user_id,
+    await recordUsage(admin, integration.owner_user_id, reservationId, {
+      model: "deterministic-no-match",
+      latencyMs: Date.now() - generationStartedAt,
+      inputTokens: 0,
+      outputTokens: 0,
+      resultValidated: Boolean(draft),
+      outcome: draft ? "success" : "invalid_output",
     });
-    if (reserveError || typeof reserved !== "string" || !reserved) {
-      return setHandoff(admin, integration.owner_user_id, input.conversationId, "ai_quota_unavailable");
-    }
-    reservationId = reserved;
-    usageModel = model;
+  } else {
 
     const { data: history, error: historyError } = await admin.from("aqarflow_crm_messages")
       .select("direction,message_text,provider_message_id,created_at")
