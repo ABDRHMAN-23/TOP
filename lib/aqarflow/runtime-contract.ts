@@ -61,6 +61,7 @@ export function normalizeBuyerProfile(value: unknown): BuyerProfile {
   const areas = cleanList(raw.preferredAreas,8,80); if (areas.length) p.preferredAreas = areas;
   const min = finiteNumber(raw.budgetMin); if (min !== null) p.budgetMin = min;
   const max = finiteNumber(raw.budgetMax); if (max !== null) p.budgetMax = max;
+  if (["hard","slight","flexible"].includes(String(raw.budgetFlexibility))) p.budgetFlexibility = raw.budgetFlexibility as BuyerProfile["budgetFlexibility"];
   const currency = cleanText(raw.currency,8).toUpperCase(); if (/^[A-Z]{3,8}$/.test(currency)) p.currency = currency;
   const beds = finiteNumber(raw.bedroomsMin,100); if (beds !== null && Number.isInteger(beds)) p.bedroomsMin = beds;
   const must = cleanList(raw.mustHaves,8,100); if (must.length) p.mustHaves = must;
@@ -71,12 +72,61 @@ export function normalizeBuyerProfile(value: unknown): BuyerProfile {
   return p;
 }
 export function inferBasicBuyerProfileHints(message: string): BuyerProfile {
-  const normalized = message.replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
+  const normalized = message
+    .normalize("NFKC")
+    .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[\u064B-\u065F\u0670]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ى/g, "ي")
+    .toLocaleLowerCase();
   const hints: BuyerProfile = {};
-  if (/(للإيجار|للايجار|إيجار|ايجار|استئجار|\brent(?:al)?\b|\blease\b|\bto rent\b)/i.test(normalized)) hints.intent = 'rent';
-  else if (/(للبيع|شراء|أشتري|اشتري|تملّك|تملك|\bbuy\b|\bpurchase\b|\bfor sale\b)/i.test(normalized)) hints.intent = 'buy';
-  const match = normalized.match(/(?:^|\s)(\d{1,2})\s*(?:غرف(?:ة)?(?:\s*نوم)?|غرف نوم|bedrooms?|beds?)/i);
-  if (match) { const n = Number(match[1]); if (Number.isInteger(n) && n >= 0 && n <= 20) hints.bedroomsMin = n; }
+
+  if (/(للإيجار|للايجار|إيجار|ايجار|استئجار|\\brent(?:al)?\\b|\\blease\\b|\\bto rent\\b)/i.test(normalized)) hints.intent = "rent";
+  else if (/(للبيع|شراء|اشتري|تملك|\\bbuy\\b|\\bpurchase\\b|\\bfor sale\\b)/i.test(normalized)) hints.intent = "buy";
+
+  const bedroomMatch = normalized.match(/(?:^|\\s)(\\d{1,2})\\s*(?:غرف(?:ة)?(?:\\s*نوم)?|غرف نوم|bedrooms?|beds?)/i);
+  if (bedroomMatch) {
+    const bedrooms = Number(bedroomMatch[1]);
+    if (Number.isInteger(bedrooms) && bedrooms >= 0 && bedrooms <= 20) hints.bedroomsMin = bedrooms;
+  }
+
+  // Only infer a money amount when a currency is explicitly named; a bare "200"
+  // might be a room count, area, ID, or another quantity.
+  const hasUSD = /(?:\\busd\\b|us\\$|\\$|دولار)/i.test(normalized);
+  const hasSAR = /(?:\\bsar\\b|ريال سعودي)/i.test(normalized);
+  const hasYER = /(?:\\byer\\b|ريال يمني)/i.test(normalized);
+  const currency = hasUSD ? "USD" : hasSAR ? "SAR" : hasYER ? "YER" : null;
+  if (currency) {
+    const amount = String.raw`(\\d{1,3}(?:[,٬]\\d{3})*(?:\\.\\d+)?)`;
+    const pattern = currency === "USD"
+      ? new RegExp(String.raw`(?:\\$\\s*${amount}|${amount}\\s*(?:usd|us\\$|دولار(?:ات)?))`, "gi")
+      : currency === "SAR"
+        ? new RegExp(String.raw`(?:${amount}\\s*(?:sar|ريال سعودي)|(?:sar|ريال سعودي)\\s*${amount})`, "gi")
+        : new RegExp(String.raw`(?:${amount}\\s*(?:yer|ريال يمني)|(?:yer|ريال يمني)\\s*${amount})`, "gi");
+    const amounts: number[] = [];
+    for (const match of normalized.matchAll(pattern)) {
+      const candidate = match.slice(1).find(value => typeof value === "string" && value.trim()) || "";
+      const parsed = Number(candidate.replace(/[，,٬]/g, ""));
+      if (Number.isFinite(parsed) && parsed > 0 && parsed <= 1_000_000_000_000) amounts.push(parsed);
+      if (amounts.length >= 4) break;
+    }
+    if (amounts.length) {
+      hints.currency = currency;
+      if (amounts.length >= 2 && /(?:بين|من|الى|إلى|to|between|and)/i.test(normalized)) {
+        hints.budgetMin = Math.min(...amounts);
+        hints.budgetMax = Math.max(...amounts);
+      } else {
+        hints.budgetMax = amounts[amounts.length - 1];
+      }
+    }
+  }
+
+  const firmBudget = /(?:حد نهائي|بحد اقصى|ما اقدر ازيد|لا اقدر ازيد|ما استطيع ازيد|لا استطيع ازيد|ما اقدر اتجاوز|لا اتجاوز|ميزانيتي.{0,35}نهائي|cannot increase|can't increase|firm budget|hard limit|maximum budget)/i.test(normalized);
+  const flexibleBudget = /(?:اقدر ازيد.{0,25}(?:قليل|شوي|قليلا)|ممكن ازيد|ممكن نزيد|قابل للتفاوض|قابلة للتفاوض|عندي مرونة|مرن|مرنة|flexible budget|can increase a little|some flexibility)/i.test(normalized);
+  if (firmBudget) hints.budgetFlexibility = "hard";
+  else if (flexibleBudget) hints.budgetFlexibility = "slight";
+
   return hints;
 }
 export function parseAqarFlowSalesRequest(value: unknown): AqarFlowSalesRequestResult {
