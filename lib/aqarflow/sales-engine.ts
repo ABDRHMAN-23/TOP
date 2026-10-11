@@ -6,7 +6,7 @@
  * can later integrate it with a verified workspace-scoped property query.
  */
 
-import { buildSalesPlaybookGuidance } from "./sales-playbook.ts";
+import { buildSalesPlaybookGuidance, resolveBudgetFlexibility } from "./sales-playbook.ts";
 
 export type BuyerProfile = {
   intent?: "buy" | "rent" | "invest" | "unknown";
@@ -440,7 +440,7 @@ export function buildPersonalizedSalesPrompt(input: {
       preferred_areas: uniqueClean(profile.preferredAreas),
       budget_min: finiteOrNull(profile.budgetMin),
       budget_max: finiteOrNull(profile.budgetMax),
-      budget_flexibility: profile.budgetFlexibility || "unspecified",
+      budget_flexibility: resolveBudgetFlexibility(message, profile.budgetFlexibility) || "unspecified",
     near_budget_alternative_mode: Boolean(input.nearBudgetAlternativeMode),
       currency: cleanText(profile.currency, 8).toUpperCase() || null,
       bedrooms_min: finiteOrNull(profile.bedroomsMin),
