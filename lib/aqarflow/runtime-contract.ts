@@ -89,6 +89,18 @@ export function inferBasicBuyerProfileHints(message: string): BuyerProfile {
   if (bedroomMatch) {
     const bedrooms = Number(bedroomMatch[1]);
     if (Number.isInteger(bedrooms) && bedrooms >= 0 && bedrooms <= 20) hints.bedroomsMin = bedrooms;
+  } else {
+    // Arabic customers commonly write room counts as words ("غرفتين", "ثلاث غرف").
+    const bedroomWordRules: Array<[RegExp, number]> = [
+      [/(?:غرفتين|غرفتان|غرفتي\s+نوم)(?:\s+نوم)?/i, 2],
+      [/(?:ثلاث|ثلاثة)\s+غرف(?:\s+نوم)?/i, 3],
+      [/(?:اربع|اربعة)\s+غرف(?:\s+نوم)?/i, 4],
+      [/(?:خمس|خمسة)\s+غرف(?:\s+نوم)?/i, 5],
+      [/(?:ست|ستة)\s+غرف(?:\s+نوم)?/i, 6],
+      [/(?:غرفة واحدة|غرفة نوم واحدة|غرفة نوم|غرفة)/i, 1],
+    ];
+    const matchedBedroomWord = bedroomWordRules.find(([pattern]) => pattern.test(normalized));
+    if (matchedBedroomWord) hints.bedroomsMin = matchedBedroomWord[1];
   }
 
   // Only infer a money amount when a currency is explicitly named; a bare "200"
