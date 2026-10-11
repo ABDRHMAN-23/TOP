@@ -305,7 +305,9 @@ const demoConversations: Record<string, ChatMessage[]> = {
       "time": "12:23 م"
     }
   ]
-};\n\nconst features = [
+};
+
+const features = [
   { icon: Target, title: 'يفهم ما وراء السؤال', body: 'يميز بين سؤال عن السعر، واعتراض، وتردد، ومقارنة، وطلب جاهز للمعاينة. لا يستخدم الرد نفسه مع الجميع.' },
   { icon: MessageSquare, title: 'يتقن فن الاعتراضات', body: 'يتعامل مع «غالي»، و«سأفكر»، و«وجدت أرخص» عبر فهم السبب واختيار الخطوة المناسبة، لا عبر المجادلة.' },
   { icon: Home, title: 'يبحث عن البديل المناسب', body: 'إذا لم يتوفر العقار، يرجع إلى مخزون المكتب ويبحث عن خيارات قريبة مع احترام الميزانية والشروط الأساسية.' },
@@ -326,8 +328,23 @@ export default function HomePage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeScenario, setActiveScenario] = useState('expensive');
   const [messageInput, setMessageInput] = useState('');
-  const [extraMessages, setExtraMessages] = useState<ChatMessage[]>(demoConversations.expensive);\n  const transcriptRef = useRef<HTMLDivElement | null>(null);
-  const [isSending, setIsSending] = useState(false);\n\n  useEffect(() => {\n    const transcript = transcriptRef.current;\n    if (transcript) transcript.scrollTop = transcript.scrollHeight;\n  }, [extraMessages, isSending]);
+  const [extraMessages, setExtraMessages] = useState<ChatMessage[]>(demoConversations.expensive);
+  const transcriptRef = useRef<HTMLDivElement | null>(null);
+  const [isSending, setIsSending] = useState(false);
+
+  const previousScenarioRef = useRef(activeScenario);
+  useEffect(() => {
+    const transcript = transcriptRef.current;
+    if (!transcript) return;
+    if (previousScenarioRef.current !== activeScenario) {
+      previousScenarioRef.current = activeScenario;
+      transcript.scrollTop = 0;
+      return;
+    }
+    if (isSending || extraMessages[extraMessages.length - 1]?.time === 'الآن') {
+      transcript.scrollTop = transcript.scrollHeight;
+    }
+  }, [activeScenario, extraMessages, isSending]);
   const [sendError, setSendError] = useState('');
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
 
@@ -494,11 +511,11 @@ export default function HomePage() {
             <p>اكتب سؤالك بطريقتك، وستحصل على رد طبيعي يتفاعل مع كلامك وسياق المحادثة. هذه تجربة عامة لا تتصل بمخزون مكتبك أو بواتساب.</p>
           </div>
           <div className="af-demo-layout">
-            <div className="af-demo-chat">
-              <div className="af-demo-chat-head">
-                <div className="af-office-avatar af-office-avatar-small"><Home size={17} /></div>
-                <div><b>محادثة مع مكتب عقاري</b><span><i /> متاح للتجربة</span></div>
-                <span className="af-demo-menu-dot">•••</span>
+            <div className="af-demo-chat af-whatsapp-demo">
+              <div className="af-demo-chat-head af-whatsapp-head">
+                <div className="af-whatsapp-avatar"><Home size={18} /></div>
+                <div><b>مكتب النخبة العقاري</b><span><i /> متصل الآن · معاينة توضيحية</span></div>
+                <div className="af-whatsapp-actions"><MessageCircle size={18} /><span className="af-demo-menu-dot">⋮</span></div>
               </div>
               <div className="af-scenario-pills" role="group" aria-label="اختر موقف المحادثة">
                 {Object.entries(demoScenarios).map(([key, item]) => (
