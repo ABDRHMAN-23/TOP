@@ -42,6 +42,46 @@ export function selectNearBudgetAlternative(
   return alternatives[0]?.property || null;
 }
 
+
+export type RankedReplySelection = {
+  properties: VerifiedProperty[];
+  nearBudgetAlternativeMode: boolean;
+};
+
+/**
+ * Prefer confirmed in-budget matches. Unknown price/currency is not treated as a
+ * budget match. If no exact match exists, a single permitted near-budget option
+ * can be returned for transparent, optional consideration.
+ */
+export function selectPropertiesForSalesReply(
+  buyer: BuyerProfile | null | undefined,
+  ranked: PropertyMatch[],
+  limit = 5,
+): RankedReplySelection {
+  const profile = buyer || {};
+  const hasBudget = profile.budgetMin != null || profile.budgetMax != null;
+  let viable = ranked.filter((match) =>
+    match.eligible && !(hasBudget && match.unknowns.includes("budget_comparison_unavailable"))
+  );
+
+  if (profile.budgetMax != null && profile.currency) {
+    const withinBudget = viable.filter((match) => match.matchedSignals.includes("within_budget"));
+    if (withinBudget.length) viable = withinBudget;
+  }
+
+  if (viable.length) {
+    return {
+      properties: viable.slice(0, Math.max(1, Math.min(limit, 5))).map((match) => match.property),
+      nearBudgetAlternativeMode: false,
+    };
+  }
+
+  const alternative = selectNearBudgetAlternative(profile, ranked);
+  return alternative
+    ? { properties: [alternative], nearBudgetAlternativeMode: true }
+    : { properties: [], nearBudgetAlternativeMode: false };
+}
+
 export function rankPropertyCandidates(buyer: BuyerProfile | null | undefined, rawCandidates: unknown): PropertyMatch[] {
   if (!Array.isArray(rawCandidates)) return [];
   const candidates: unknown[] = [];
