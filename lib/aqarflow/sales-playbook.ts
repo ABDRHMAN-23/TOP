@@ -242,16 +242,22 @@ export function buildSalesPlaybookGuidance(input: SalesPlaybookInput): SalesPlay
   const avoidRules = [...base.avoid];
 
   if (typeof input.buyerProfile?.budgetMax === "number") {
-    const flexibility = input.buyerProfile.budgetFlexibility || "hard";
+    const flexibility = input.buyerProfile.budgetFlexibility;
+    const currency = input.buyerProfile.currency || "بوحدة غير محددة";
     if (flexibility === "hard") {
       doRules.push(
-        `الميزانية الحدّية الصريحة هي ${input.buyerProfile.budgetMax} ${input.buyerProfile.currency || "بوحدة غير محددة"}؛ تعامل معها كحد صارم ولا تعرض سعرًا أعلى.`,
+        `العميل أكد أن ${input.buyerProfile.budgetMax} ${currency} حد صارم؛ لا تعرض أي عقار أعلى من هذا الحد.`,
       );
-    } else {
+    } else if (flexibility === "slight" || flexibility === "flexible") {
       const rate = flexibility === "slight" ? 10 : 20;
       const ceiling = Math.round(input.buyerProfile.budgetMax * (1 + rate / 100) * 100) / 100;
       doRules.push(
-        `ذكر العميل مرونة صريحة في الميزانية المرجعية ${input.buyerProfile.budgetMax} ${input.buyerProfile.currency || "بوحدة غير محددة"}؛ يمكن النظر فقط في بديل قريب لا يتجاوز ${ceiling} ${input.buyerProfile.currency || "بوحدة غير محددة"} (مرونة ${rate}٪ كحد أقصى)، ويجب توضيح أنه أعلى من الميزانية المرجعية وشرح الفائدة الموثقة دون ضغط. لا تفترض مرونة أخرى.`,
+        `ذكر العميل مرونة صريحة في الميزانية المرجعية ${input.buyerProfile.budgetMax} ${currency}؛ يمكن النظر فقط في بديل قريب لا يتجاوز ${ceiling} ${currency} (مرونة ${rate}٪ كحد أقصى)، ويجب توضيح السعر والزيادة بدقة دون ضغط. لا تفترض مرونة أخرى.`,
+      );
+    } else {
+      const ceiling = Math.round(input.buyerProfile.budgetMax * 1.1 * 100) / 100;
+      doRules.push(
+        `ميزانية العميل المرجعية ${input.buyerProfile.budgetMax} ${currency}. أعطِ الأولوية للعقارات المطابقة داخل الميزانية. إذا لم يوجد أي خيار مناسب داخلها، ولم يقل العميل إنها حد صارم، يمكن عرض عقار واحد فقط قريب من الميزانية بسعر لا يتجاوز ${ceiling} ${currency} كاقتراح اختياري—not as a match within budget. وضّح السعر الحقيقي والزيادة على الميزانية صراحةً، واسأل بأدب هل يرغب في الاطلاع على تفاصيله. لا تضغط عليه ولا تكرر الخيار إذا رفضه. إذا صرّح بأن الميزانية نهائية، تعامل معها كحد صارم.`,
       );
     }
   }
