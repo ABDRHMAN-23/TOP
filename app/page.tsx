@@ -80,7 +80,7 @@ const faqs = [
   { q: 'ماذا يحدث إذا لم يتوفر العقار المطلوب؟', a: 'يبحث النظام في الخيارات المسجلة عن بديل يناسب الشروط. ولا يقترح سعرًا أعلى من الميزانية الصريحة إلا ضمن مرونة أعلن عنها العميل، وبحدود واضحة. إذا لم يتوفر بديل مناسب، يقول ذلك بصراحة.' },
   { q: 'هل يستطيع منح خصومات أو حجز معاينة وحده؟', a: 'لا ينبغي له ذلك إلا عبر صلاحيات ومسارات متصلة فعلًا. لا يؤكد خصمًا أو موعدًا قبل التأكد من النظام أو موافقة المسؤول.' },
   { q: 'هل الرد التلقائي على واتساب يعمل بمجرد التسجيل؟', a: 'يحتاج إلى ربط واتساب للأعمال وإعداداته واختباره. تفعيل الرد التلقائي يجب أن يكون اختياريًا، مع احترام إيقاف التواصل والتصعيد إلى موظف.' },
-  { q: 'هل هذه المحادثة المعروضة حقيقية؟', a: 'هذه معاينة تفاعلية توضيحية بمواقف وبيانات تجريبية. لا ترسل رسائل ولا تتصل بعقارات مكتبك. عند إعداد المكتب، تكون الردود مبنية على بياناته الفعلية.' },
+  { q: 'هل هذه المحادثة المعروضة حقيقية؟', a: 'هذه معاينة عامة بردود مباشرة، ولا تتصل بمخزون عقاري حقيقي أو بواتساب. عند إعداد المكتب، تُربط الإجابات ببيانات العقارات الفعلية.' },
 ];
 
 export default function HomePage() {
@@ -88,6 +88,8 @@ export default function HomePage() {
   const [activeScenario, setActiveScenario] = useState('budget');
   const [messageInput, setMessageInput] = useState('');
   const [extraMessages, setExtraMessages] = useState<ChatMessage[]>([]);
+  const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState('');
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
 
   const scenario = demoScenarios[activeScenario];
@@ -96,25 +98,41 @@ export default function HomePage() {
     setActiveScenario(key);
     setExtraMessages([]);
     setMessageInput('');
+    setSendError('');
   }
 
-  function sendDemoMessage(event: FormEvent<HTMLFormElement>) {
+  async function sendDemoMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const text = messageInput.trim();
-    if (!text) return;
-    const normalized = text.toLowerCase();
-    let reply = 'فهمت عليك. خلّيني أتأكد من احتياجك قبل ما أقترح عليك خيارًا. أهم شيء عندك الآن السعر، أو الموقع، أو مواصفات العقار؟';
-    if (/غالي|سعر|ميزاني|دولار|ريال|خصم/.test(normalized)) reply = 'أتفهمك، والأهم نلقى خيارًا يناسب ميزانيتك فعلًا. هل المبلغ الذي حددته حد نهائي، أم عندك مساحة بسيطة إذا كان الفرق يقابله شيء مهم بالنسبة لك؟';
-    else if (/أرخص|ارخص|منافس|مكتب ثاني|مكتب آخر/.test(normalized)) reply = 'من حقك تقارن. خلّينا نقارن المعلومات المتاحة عن الموقع والمواصفات والسعر النهائي، من غير ما نفترض أن أي خيار أفضل قبل ما نتأكد.';
-    else if (/ما عندكم|غير متوفر|مش موجود|ما لقيت/.test(normalized)) reply = 'إذا ما ظهر خيار يطابق الشروط، أبحث في البدائل القريبة مع الحفاظ على الشروط الأساسية. أي شرط عندك ممكن يكون مرنًا: المنطقة أم المساحة؟';
-    else if (/موظف|مسؤول|شخص حقيقي/.test(normalized)) reply = 'أكيد، أرفع طلبك إلى مسؤول المكتب حتى يتابع معك مباشرة.';
-    else if (/لا ترسل|لا تتواصل|وقف الرسائل|احذف رقمي/.test(normalized)) reply = 'وصل طلبك، وسنحترم رغبتك في إيقاف الرسائل.';
-    setExtraMessages((current) => [
-      ...current,
-      { from: 'customer', text, time: 'الآن' },
-      { from: 'office', text: reply, time: 'الآن' },
-    ]);
+    if (!text || isSending) return;
+
+    setIsSending(true);
+    setSendError('');
     setMessageInput('');
+    setExtraMessages((current) => [...current, { from: 'customer', text, time: 'الآن' }]);
+
+    const history = extraMessages.slice(-10).map((message) => ({
+      role: message.from === 'office' ? 'assistant' : 'user',
+      content: message.text,
+    }));
+
+    try {
+      const response = await fetch('/api/demo-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history, scenario: activeScenario }),
+      });
+      const payload: unknown = await response.json().catch(() => null);
+      const data = payload && typeof payload === 'object' ? payload as { reply?: unknown; error?: unknown } : {};
+      if (!response.ok || typeof data.reply !== 'string' || !data.reply.trim()) {
+        throw new Error(typeof data.error === 'string' ? data.error : 'تعذر الرد الآن. حاول مرة أخرى.');
+      }
+      setExtraMessages((current) => [...current, { from: 'office', text: data.reply as string, time: 'الآن' }]);
+    } catch (error) {
+      setSendError(error instanceof Error ? error.message : 'تعذر الرد الآن. حاول مرة أخرى.');
+    } finally {
+      setIsSending(false);
+    }
   }
 
   return (
@@ -129,9 +147,9 @@ export default function HomePage() {
 
       <header className="af-header">
         <div className="af-wrap af-header-inner">
-          <a className="af-brand" href="#top" aria-label="AqarFlow AI — الرئيسية">
+          <a className="af-brand" href="#top" aria-label="AqarFlow — الرئيسية">
             <span className="af-brand-mark"><MessagesSquare size={22} /></span>
-            <span className="af-brand-copy"><strong>AqarFlow<span> AI</span></strong><small>REAL ESTATE SALES INTELLIGENCE</small></span>
+            <span className="af-brand-copy"><strong>AqarFlow</strong><small>REAL ESTATE SALES SYSTEM</small></span>
           </a>
           <nav id="af-site-navigation" className={mobileOpen ? 'af-nav af-nav-open' : 'af-nav'}>
             <a href="#difference" onClick={() => setMobileOpen(false)}>لماذا AqarFlow؟</a>
@@ -154,11 +172,11 @@ export default function HomePage() {
         <div className="af-hero-orb af-hero-orb-two" />
         <div className="af-wrap af-hero-grid">
           <div className="af-hero-copy">
-            <div className="af-eyebrow"><span className="af-eyebrow-line" /> مساعد المبيعات العقارية من AqarFlow</div>
+            <div className="af-eyebrow"><span className="af-eyebrow-line" /> منظومة المبيعات العقارية</div>
             <h1>ليس مجرد ردّ.<br /><span>بل عقل يعرف كيف يبيع.</span></h1>
-            <p className="af-hero-lead">مساعد يتعامل مع العملاء بأدب وذكاء، يفهم اعتراضاتهم، ويقترح العقار المناسب من مخزون مكتبك — ويحافظ على هيبتك في كل محادثة.</p>
+            <p className="af-hero-lead">منظومة مبيعات تفهم دوافع العميل، وتعالج الاعتراضات، وتحوّل المحادثات إلى خطوات بيع واضحة — مع الحفاظ على سمعة مكتبك وهيبته.</p>
             <div className="af-hero-actions">
-              <a className="af-button af-button-primary" href="#demo">شاهد طريقة تفكيره <ArrowLeft size={17} /></a>
+              <a className="af-button af-button-primary" href="#demo">جرّب المحادثة بنفسك <ArrowLeft size={17} /></a>
               <a className="af-button af-button-ghost" href="#method"><span className="af-play-icon">↙</span> كيف يعمل؟</a>
             </div>
             <div className="af-hero-promises">
@@ -169,7 +187,7 @@ export default function HomePage() {
             <div className="af-hero-note"><ShieldCheck size={17} /><span>إقناع أخلاقي. معلومات دقيقة. سمعة أقوى للمكتب.</span></div>
           </div>
 
-          <div className="af-product-stage" aria-label="معاينة شكل مساعد المبيعات">
+          <div className="af-product-stage" aria-label="معاينة تجربة المبيعات">
             <div className="af-float-tag af-float-top"><span className="af-float-icon af-green"><CheckCheck size={17} /></span><span><b>يفهم الاعتراض</b><small>ولا يكرر الرد نفسه</small></span></div>
             <div className="af-chat-window">
               <div className="af-chat-window-header">
@@ -228,13 +246,13 @@ export default function HomePage() {
         <div className="af-wrap">
           <div className="af-demo-heading">
             <div><span className="af-kicker">جرّبه بنفسك</span><h2>نفس العميل، مواقف مختلفة.<br /><span>والرد يتغيّر بذكاء.</span></h2></div>
-            <p>اختر موقفًا وشاهد كيف تتغير استراتيجية المحادثة. هذه معاينة تفاعلية ببيانات تجريبية، وليست اتصالًا حيًا بواتساب أو بعقارات مكتبك.</p>
+            <p>اكتب سؤالك بطريقتك، وستتلقى ردًا مولّدًا مباشرة بأسلوب مبيعات عقارية طبيعي. هذه تجربة عامة لا تتصل بمخزون مكتبك أو بواتساب.</p>
           </div>
           <div className="af-demo-layout">
             <div className="af-demo-chat">
               <div className="af-demo-chat-head">
                 <div className="af-office-avatar af-office-avatar-small"><Home size={17} /></div>
-                <div><b>محادثة توضيحية</b><span><i /> مثال تفاعلي</span></div>
+                <div><b>محادثة مع مكتب عقاري</b><span><i /> متاح للتجربة</span></div>
                 <span className="af-demo-menu-dot">•••</span>
               </div>
               <div className="af-scenario-pills" role="group" aria-label="اختر موقف المحادثة">
@@ -243,11 +261,7 @@ export default function HomePage() {
                 ))}
               </div>
               <div className="af-demo-transcript" aria-live="polite">
-                {scenario.messages.map((message, index) => (
-                  <div className={message.from === 'customer' ? 'af-demo-message customer' : 'af-demo-message office'} key={activeScenario + '-' + index}>
-                    <p>{message.text}</p><small>{message.time} {message.from === 'office' ? <CheckCheck size={12} /> : null}</small>
-                  </div>
-                ))}
+                {extraMessages.length === 0 ? <div className="af-demo-message office"><p>أهلًا بك، تفضل. اسألني عن اللي تحتاجه، أو قل لي ميزانيتك والمنطقة المناسبة لك ونبدأ منها.</p><small>الآن <CheckCheck size={12} /></small></div> : null}
                 {extraMessages.map((message, index) => (
                   <div className={message.from === 'customer' ? 'af-demo-message customer' : 'af-demo-message office'} key={'extra-' + activeScenario + '-' + index}>
                     <p>{message.text}</p><small>{message.time} {message.from === 'office' ? <CheckCheck size={12} /> : null}</small>
@@ -255,13 +269,15 @@ export default function HomePage() {
                 ))}
               </div>
               <form className="af-demo-input-row" onSubmit={sendDemoMessage}>
-                <input value={messageInput} onChange={(event) => setMessageInput(event.target.value)} aria-label="اكتب رسالة لتجربة المعاينة" placeholder="اكتب اعتراضًا أو سؤالًا للتجربة..." maxLength={240} />
-                <button type="submit" aria-label="إرسال رسالة للمعاينة"><Send size={17} /></button>
+                <input value={messageInput} onChange={(event) => setMessageInput(event.target.value)} aria-label="اكتب رسالة لتجربة المعاينة" placeholder={isSending ? 'لحظة...' : 'اكتب سؤالك أو اعتراضك هنا...'} maxLength={700} disabled={isSending} />
+                <button type="submit" aria-label="إرسال رسالة للمعاينة" disabled={isSending || !messageInput.trim()}>{isSending ? <span className="af-demo-loading">…</span> : <Send size={17} />}</button>
               </form>
-              <p className="af-demo-disclaimer"><ShieldCheck size={13} /> لا يتم إرسال رسائل حقيقية أو حفظ بيانات من هذه التجربة.</p>
+              {isSending ? <p className="af-demo-status" role="status">لحظة، نرتّب لك الرد المناسب…</p> : null}
+              {sendError ? <p className="af-demo-error" role="alert">{sendError}</p> : null}
+              <p className="af-demo-disclaimer"><ShieldCheck size={13} /> المحادثة للتجربة فقط، ولا تُرسل رسائل حقيقية أو تُحفظ في حساب.</p>
             </div>
             <aside className="af-strategy-panel">
-              <div className="af-strategy-eyebrow"><span className="af-strategy-dot" /> كيف يختار الرد</div>
+              <div className="af-strategy-eyebrow"><span className="af-strategy-dot" /> أسلوب المبيعات</div>
               <h3>{scenario.title}</h3>
               <div className="af-strategy-item"><span className="af-strategy-icon"><Target size={17} /></span><div><small>هدف الرد</small><p>{scenario.objective}</p></div></div>
               <div className="af-strategy-item"><span className="af-strategy-icon"><BrainMini /></span><div><small>المبدأ المطبق</small><p>{scenario.principle}</p></div></div>
@@ -333,7 +349,7 @@ export default function HomePage() {
       <footer className="af-footer">
         <div className="af-wrap af-footer-main">
           <a className="af-brand af-brand-footer" href="#top"><span className="af-brand-mark"><MessagesSquare size={21} /></span><span className="af-brand-copy"><strong>AqarFlow<span> AI</span></strong><small>REAL ESTATE SALES INTELLIGENCE</small></span></a>
-          <p>عقل مبيعات عقاري يساعد مكتبك على البيع باحتراف — وبأخلاق.</p>
+          <p>مبيعات عقارية أكثر احترافًا، ومحادثات تبني الثقة وتقرّب العميل من القرار المناسب.</p>
           <div className="af-footer-links"><a href="#difference">المزايا</a><a href="#method">كيف يعمل</a><a href="#demo">المعاينة</a><a href="/login">دخول المكتب</a></div>
         </div>
         <div className="af-wrap af-footer-bottom"><span>© 2026 AqarFlow AI</span><span>الصدق أولًا. ثقة العميل دائمًا.</span></div>
