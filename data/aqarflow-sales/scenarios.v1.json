@@ -222,7 +222,7 @@
       "id": "PFACT-02",
       "category": "facts",
       "customerMessage": "هل يوجد مصعد وموقف سيارة؟",
-      "expectedMoment": "general_discovery",
+      "expectedMoment": "property_fact_question",
       "objective": "ذكر المؤكد فقط وتحديد المجهول بوضوح.",
       "mustNot": [
         "لا تفترض المرافق من الصور."
