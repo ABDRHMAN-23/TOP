@@ -133,7 +133,7 @@ export default function HomePage() {
             <span className="af-brand-mark"><MessagesSquare size={22} /></span>
             <span className="af-brand-copy"><strong>AqarFlow<span> AI</span></strong><small>REAL ESTATE SALES INTELLIGENCE</small></span>
           </a>
-          <nav className={mobileOpen ? 'af-nav af-nav-open' : 'af-nav'}>
+          <nav id="af-site-navigation" className={mobileOpen ? 'af-nav af-nav-open' : 'af-nav'}>
             <a href="#difference" onClick={() => setMobileOpen(false)}>لماذا AqarFlow؟</a>
             <a href="#method" onClick={() => setMobileOpen(false)}>كيف يعمل</a>
             <a href="#demo" onClick={() => setMobileOpen(false)}>جرّب المساعد</a>
@@ -142,7 +142,7 @@ export default function HomePage() {
           <div className="af-header-actions">
             <a className="af-login-link" href="/login">دخول المكتب</a>
             <a className="af-button af-button-dark af-header-cta" href="#demo">جرّب الآن <ArrowLeft size={16} /></a>
-            <button className="af-mobile-toggle" type="button" aria-label={mobileOpen ? 'إغلاق القائمة' : 'فتح القائمة'} onClick={() => setMobileOpen(!mobileOpen)}>
+            <button className="af-mobile-toggle" type="button" aria-label={mobileOpen ? 'إغلاق القائمة' : 'فتح القائمة'} aria-expanded={mobileOpen} aria-controls="af-site-navigation" onClick={() => setMobileOpen(!mobileOpen)}>
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
