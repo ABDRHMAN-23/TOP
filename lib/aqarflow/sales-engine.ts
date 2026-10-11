@@ -125,6 +125,47 @@ export function mergeBuyerProfile(
   return merged;
 }
 
+/**
+ * Merge extracted facts while respecting explicit customer corrections.
+ * Normal partial extraction should accumulate preferences; negating/replacing a
+ * previously mentioned requirement should remove the stale preference instead.
+ */
+export function mergeBuyerProfileForConversation(
+  previous: BuyerProfile | null | undefined,
+  extracted: Partial<BuyerProfile> | null | undefined,
+  customerMessage: string,
+): BuyerProfile {
+  const next = extracted || {};
+  const merged = mergeBuyerProfile(previous, next);
+  const message = customerMessage
+    .normalize("NFKC")
+    .toLocaleLowerCase()
+    .replace(/[\\u064B-\\u065F\\u0670]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/[ـ]/g, "")
+    .replace(/\\s+/g, " ")
+    .trim();
+
+  const explicitCorrection = /(?:بدل(?:ا)? من|بدلا من|بدل|غير المنطقة|غير الحي|غير الموقع|ما ابغى|ما ابغي|ما اريد|لا اريد|مش عايز|مش عاوز|لا احتاج|لا اريد|not|don't want|do not want|instead|rather than)/i.test(message);
+  const newAreas = uniqueClean(next.preferredAreas);
+  if (explicitCorrection && newAreas.length) merged.preferredAreas = newAreas;
+
+  const newlyRejected = new Set(uniqueClean(next.dealBreakers).map((value) => value.toLocaleLowerCase()));
+  if (newlyRejected.size) {
+    merged.mustHaves = uniqueClean(merged.mustHaves).filter((value) => !newlyRejected.has(value.toLocaleLowerCase()));
+    merged.dealBreakers = uniqueClean([...(merged.dealBreakers || []), ...newlyRejected]);
+  }
+
+  const newlyRequired = new Set(uniqueClean(next.mustHaves).map((value) => value.toLocaleLowerCase()));
+  if (newlyRequired.size) {
+    merged.dealBreakers = uniqueClean(merged.dealBreakers).filter((value) => !newlyRequired.has(value.toLocaleLowerCase()));
+    merged.mustHaves = uniqueClean([...(merged.mustHaves || []), ...newlyRequired]);
+  }
+
+  return merged;
+}
+
 /** Only retain bounded, explicitly supplied property facts. Never infer amenities. */
 export function sanitizeVerifiedProperties(properties: unknown): VerifiedProperty[] {
   if (!Array.isArray(properties)) return [];
