@@ -24,6 +24,7 @@ export type SalesPlaybookInput = {
   conversationSummary?: string | null;
   buyerProfile?: {
     budgetMax?: number | null;
+    budgetFlexibility?: "hard" | "slight" | "flexible";
     currency?: string | null;
     preferredTone?: string | null;
   } | null;
@@ -241,9 +242,18 @@ export function buildSalesPlaybookGuidance(input: SalesPlaybookInput): SalesPlay
   const avoidRules = [...base.avoid];
 
   if (typeof input.buyerProfile?.budgetMax === "number") {
-    doRules.push(
-      `الميزانية القصوى المعروفة هي ${input.buyerProfile.budgetMax} ${input.buyerProfile.currency || "بوحدة غير محددة"}؛ لا تعرض سعرًا أعلى على أنه مناسب، ولا تفترض استعداد العميل لزيادتها.`,
-    );
+    const flexibility = input.buyerProfile.budgetFlexibility || "hard";
+    if (flexibility === "hard") {
+      doRules.push(
+        `الميزانية الحدّية الصريحة هي ${input.buyerProfile.budgetMax} ${input.buyerProfile.currency || "بوحدة غير محددة"}؛ تعامل معها كحد صارم ولا تعرض سعرًا أعلى.`,
+      );
+    } else {
+      const rate = flexibility === "slight" ? 10 : 20;
+      const ceiling = Math.round(input.buyerProfile.budgetMax * (1 + rate / 100) * 100) / 100;
+      doRules.push(
+        `ذكر العميل مرونة صريحة في الميزانية المرجعية ${input.buyerProfile.budgetMax} ${input.buyerProfile.currency || "بوحدة غير محددة"}؛ يمكن النظر فقط في بديل قريب لا يتجاوز ${ceiling} ${input.buyerProfile.currency || "بوحدة غير محددة"} (مرونة ${rate}٪ كحد أقصى)، ويجب توضيح أنه أعلى من الميزانية المرجعية وشرح الفائدة الموثقة دون ضغط. لا تفترض مرونة أخرى.`,
+      );
+    }
   }
 
   if (moment !== "stop_contact") {
