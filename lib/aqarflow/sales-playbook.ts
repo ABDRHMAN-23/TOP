@@ -53,7 +53,7 @@ export function classifySalesMoment(message: string): SalesMoment {
   const text = normalizeArabic(message);
 
   if (
-    /(?:لا ترسل(?:وا)?(?: لي)?|وقف(?:وا)?(?: الرسائل| التواصل)?|لا تتواصل(?:وا)? معي|احذف(?:وا)? رقمي|الغاء الاشتراك|لا اريد رسائل|لا تراسلني|unsubscribe|stop (?:messaging|texting|contacting)|do not contact|don't contact me)/i.test(text)
+    /(?:لا ترسل(?:وا)?(?: لي)?|(?<![\u0621-\u064A])(?:وقف|توقف|اوقف)(?:وا|ي)?(?: عن)?(?: الرسائل| التواصل| المراسلة)?(?![\u0621-\u064A])|لا تتواصل(?:وا)? معي|احذف(?:وا)? رقمي|الغاء الاشتراك|لا اريد رسائل|لا تراسلني|unsubscribe|stop (?:messaging|texting|contacting)|do not contact|don't contact me)/i.test(text)
   ) return "stop_contact";
 
   if (
