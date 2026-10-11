@@ -88,7 +88,7 @@ export function classifySalesMoment(message: string): SalesMoment {
     /(?:كم (?:السعر|الايجار)|بكم|السعر كم|كم ايجار|كم الايجار|ما سعر|ما هو السعر|السعر.{0,20}(?:يشمل|نهائي|شامل|رسوم|خدمات)|(?:يشمل|شاملة).{0,20}السعر|what is the price|how much (?:is|does)|how much for)/i.test(text)
   ) return "direct_price_question";
 
-  if (/(?:لا يناسبني|ما يناسبني|مش مناسب لي|مش هذا اللي اريده|لا اريد هذا العقار|not right for me|not interested in this property)/i.test(text)) return "property_rejection";
+  if (/(?:مش هذا اللي اريده|لا اريد هذا العقار|لا اريد هذه الشقة|ما ابغى هذه الشقة|ما ابغى الشقة|هذه الشقة.{0,12}(?:ما تناسبني|لا تناسبني|مش مناسبة)|هذا العقار.{0,12}(?:ما يناسبني|لا يناسبني|مش مناسب)|هذا الخيار.{0,12}(?:ما يناسبني|لا يناسبني)|not right for me|not interested in this property)/i.test(text)) return "property_rejection";
   if (/(?:اليوم.{0,15}(?:ضروري|لازم|مستعجل)|خلال (?:يومين|ثلاثة ايام|يوم واحد)|خلال ثلاثة ايام|مستعجل|ضروري جدا|باسرع وقت|في اسرع وقت|urgent|within (?:one|two|three) days)/i.test(text)) return "urgent_timeline";
   return "general_discovery";
 }
