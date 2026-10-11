@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "purpose": "Reviewed seed scenarios for evaluation and later training-set development. Not a claim of fine-tuning or production readiness.",
+  "purpose": "Human-reviewable seed scenarios for evaluation and later training-set development. They are not proof of fine-tuning or production readiness.",
   "locale": [
     "ar",
     "ar-YE",
