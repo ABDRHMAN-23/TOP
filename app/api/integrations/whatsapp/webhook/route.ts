@@ -82,9 +82,14 @@ export async function POST(request:Request) {
       if(typeof row.provider_event_key==='string')claimedEventKeys.add(ownerUserId+':'+row.provider_event_key);
     }
   }
+  const acceptedKeysInBatch=new Set<string>();
   const acceptedEvents=processableEvents.filter(event=>{
     const integration=integrations.get(event.phoneNumberId);
-    return Boolean(integration&&claimedEventKeys.has(integration.owner_user_id+':'+event.eventKey));
+    if(!integration)return false;
+    const uniqueKey=integration.owner_user_id+':'+event.eventKey;
+    if(!claimedEventKeys.has(uniqueKey)||acceptedKeysInBatch.has(uniqueKey))return false;
+    acceptedKeysInBatch.add(uniqueKey);
+    return true;
   });
   if(acceptedEvents.length===0)return NextResponse.json({
     received:true,eventCount:0,duplicateEvents:processableEvents.length,
