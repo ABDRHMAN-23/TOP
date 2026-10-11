@@ -326,8 +326,8 @@ export default function HomePage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeScenario, setActiveScenario] = useState('expensive');
   const [messageInput, setMessageInput] = useState('');
-  const [extraMessages, setExtraMessages] = useState<ChatMessage[]>(demoConversations.expensive);\n  const transcriptRef = useRef<HTMLDivElement | null>(null);\n\n  useEffect(() => {\n    const transcript = transcriptRef.current;\n    if (transcript) transcript.scrollTop = transcript.scrollHeight;\n  }, [extraMessages, isSending]);
-  const [isSending, setIsSending] = useState(false);
+  const [extraMessages, setExtraMessages] = useState<ChatMessage[]>(demoConversations.expensive);\n  const transcriptRef = useRef<HTMLDivElement | null>(null);
+  const [isSending, setIsSending] = useState(false);\n\n  useEffect(() => {\n    const transcript = transcriptRef.current;\n    if (transcript) transcript.scrollTop = transcript.scrollHeight;\n  }, [extraMessages, isSending]);
   const [sendError, setSendError] = useState('');
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
 
