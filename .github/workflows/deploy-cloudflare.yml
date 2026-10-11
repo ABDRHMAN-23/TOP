@@ -28,8 +28,18 @@ jobs:
 
       - run: npm run build:cloudflare
 
+      - name: Detect whether a Gemini key is configured
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -n "$GEMINI_API_KEY" ]; then
+            echo "AQARFLOW_GEMINI_KEY_PRESENT=true" >> "$GITHUB_ENV"
+          else
+            echo "AQARFLOW_GEMINI_KEY_PRESENT=false" >> "$GITHUB_ENV"
+          fi
+
       - name: Sync optional Gemini key to the live Worker
-        if: ${{ secrets.GEMINI_API_KEY != '' }}
+        if: env.AQARFLOW_GEMINI_KEY_PRESENT == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -37,7 +47,7 @@ jobs:
         run: printf '%s' "$GEMINI_API_KEY" | npx wrangler secret put GEMINI_API_KEY --name aqarflow-ai1
 
       - name: Warn if Gemini key is not configured in GitHub Actions
-        if: ${{ secrets.GEMINI_API_KEY == '' }}
+        if: env.AQARFLOW_GEMINI_KEY_PRESENT == 'false'
         run: echo "::warning::GEMINI_API_KEY GitHub secret is missing; AqarFlow public demo chat will return unavailable until the secret is configured."
 
       - name: Deploy to Cloudflare Workers
