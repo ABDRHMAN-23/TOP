@@ -3,7 +3,6 @@ import { runtimeEnv } from "@/lib/runtime-env";
 import {
   buildPersonalizedSalesPrompt,
   mergeBuyerProfile,
-  matchVerifiedProperties,
   validateSalesDraft,
   type BuyerProfile,
   type SalesDraft,
@@ -13,10 +12,6 @@ import { generateGeminiJson, GeminiRuntimeError } from "@/lib/aqarflow/gemini-ru
 import { rankPropertyCandidates } from "@/lib/aqarflow/ranked-inventory";
 import { buildNoMatchSalesDraft, inferBasicBuyerProfileHints, normalizeBuyerProfile } from "@/lib/aqarflow/runtime-contract";
 import { decideAutomaticReply } from "@/lib/aqarflow/automatic-reply-policy";
-import {
-  classifySalesMoment,
-  type SalesMoment,
-} from "@/lib/aqarflow/sales-playbook";
 import {
   decryptMetaAccessToken,
   sendMetaWhatsAppText,
@@ -299,6 +294,8 @@ export async function handleWhatsAppAutomaticReply(
   if (policy.action === "skip") {
     return { action: "skipped", reason: policy.reason };
   }
+  const recipientPhoneNumber = event.senderPhoneNumber;
+  if (!recipientPhoneNumber) return { action: "skipped", reason: "missing_sender" };
 
   const { data: conversation, error: conversationError } = await admin.from("aqarflow_crm_conversations")
     .select("buyer_profile,handoff_required")
@@ -479,7 +476,7 @@ export async function handleWhatsAppAutomaticReply(
     idempotency_key: idempotencyKey,
     request_hash: requestHash,
     phone_number_id: integration.phone_number_id,
-    recipient_phone_number: event.senderPhoneNumber,
+    recipient_phone_number: recipientPhoneNumber,
     status: "pending",
   });
   if (claimError) {
@@ -504,7 +501,7 @@ export async function handleWhatsAppAutomaticReply(
       graphApiVersion: integration.graph_api_version,
       phoneNumberId: integration.phone_number_id,
       accessToken: token,
-      to: event.senderPhoneNumber,
+      to: recipientPhoneNumber,
       text: draft.replyDraft,
     });
   } catch (error) {
