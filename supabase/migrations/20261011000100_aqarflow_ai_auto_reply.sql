@@ -78,7 +78,7 @@ begin
   end if;
 
   update public.aqarflow_ai_usage
-  set model = pg_catalog.left(pg_catalog.coalesce(pg_catalog.nullif(p_model, ''), 'unselected'), 100),
+  set model = pg_catalog.left(coalesce(nullif(p_model, ''), 'unselected'), 100),
       latency_ms = p_latency_ms,
       input_tokens = p_input_tokens,
       output_tokens = p_output_tokens,
