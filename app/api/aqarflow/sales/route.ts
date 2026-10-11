@@ -79,7 +79,7 @@ export async function POST(req:Request) {
   const ranked=rankPropertyCandidates(buyerProfile,candidates);
   const selected=ranked.filter(m=>m.eligible).slice(0,5).map(m=>m.property);
   if(selected.length===0) {
-    const validated=validateSalesDraft(buildNoMatchSalesDraft(candidates.length),[]);
+    const validated=validateSalesDraft(buildNoMatchSalesDraft(candidates.length,buyerProfile),[]);
     const latencyMs=Math.max(0,Date.now()-rankingStartedAt);
     if(!validated) {
       await recordUsage(supabase,reservationId,{model:'deterministic-no-match',latencyMs,inputTokens:0,outputTokens:0,resultValidated:false,outcome:'invalid_output'});
