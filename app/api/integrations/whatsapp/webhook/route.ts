@@ -5,6 +5,7 @@ import { parseMetaWhatsAppWebhook, verifyMetaWebhookChallenge, verifyMetaWebhook
 import { readBoundedUtf8Body } from '@/lib/aqarflow/whatsapp-http';
 import { handleWhatsAppAutomaticReply, type AutoReplyIntegration } from '@/lib/aqarflow/automatic-sales-reply';
 import { classifySalesMoment } from '@/lib/aqarflow/sales-playbook';
+import { selectLatestInboundEventKeys } from '@/lib/aqarflow/automatic-reply-policy';
 
 export const dynamic='force-dynamic';
 export async function GET(request:Request) {
@@ -92,6 +93,13 @@ export async function POST(request:Request) {
     acceptedKeysInBatch.add(uniqueKey);
     return true;
   });
+  const latestInboundAutoReplyKeys=selectLatestInboundEventKeys(acceptedEvents.map(event=>({
+    ownerId:integrations.get(event.phoneNumberId)?.owner_user_id||'',
+    eventKey:event.eventKey,
+    kind:event.kind,
+    senderPhoneNumber:event.senderPhoneNumber,
+    providerTimestamp:event.providerTimestamp,
+  })));
   // Pre-scan the full webhook batch so a later opt-out or human request suppresses
   // replies to earlier messages from the same sender in this same provider delivery.
   const batchOptOutSenders=new Set<string>();
@@ -200,6 +208,13 @@ export async function POST(request:Request) {
       const senderKey=integration.owner_user_id+':'+event.senderPhoneNumber;
       const currentMoment=classifySalesMoment(event.messageText||'');
       if(batchHandoffSenders.has(senderKey)&&currentMoment!=='human_handoff'&&currentMoment!=='stop_contact'){
+        continue;
+      }
+      // Persist every inbound message in the CRM, but respond only to the newest
+      // message from this sender in the same Meta batch. Control messages (opt-out
+      // and human handoff) still run even when an ordinary message follows them.
+      if(!latestInboundAutoReplyKeys.has(senderKey+':'+event.eventKey)
+        &&currentMoment!=='human_handoff'&&currentMoment!=='stop_contact'){
         continue;
       }
       const replyResult=await handleWhatsAppAutomaticReply(admin,{
