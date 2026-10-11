@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   buildPersonalizedSalesPrompt,
   buildVerifiedFactTokens,
+  buildAllowedSalesContextNumbers,
   findUnsupportedNumericClaims,
   matchVerifiedProperties,
   mergeBuyerProfile,
@@ -9,6 +10,7 @@ import {
   sanitizeVerifiedProperties,
   validateSalesDraft,
 } from "../lib/aqarflow/sales-engine.ts";
+import { rankPropertyCandidates, selectNearBudgetAlternative } from "../lib/aqarflow/ranked-inventory.ts";
 
 const prior = {
   intent: "buy" as const,
@@ -319,5 +321,35 @@ assert.equal(validateSalesDraft({
   askOneQuestion: "هل تريد صورًا؟ وهل تريد معاينة؟",
   handoffRequired: false,
 }, properties), null, "multiple explicit questions must be rejected");
+
+const nowVerified = new Date().toISOString();
+const nearBudgetProfile = { intent: "rent" as const, propertyType: "شقة", preferredAreas: ["المنصورة"], budgetMax: 200, currency: "USD" };
+const nearBudgetCandidates = [
+  { id: "near-215", title: "Near budget flat", propertyType: "شقة", purpose: "rent", price: 215, currency: "USD", bedrooms: 2, locationLabel: "المنصورة", availability: "available" as const, factsLastVerifiedAt: nowVerified, verifiedFeatures: [] },
+  { id: "over-225", title: "Too expensive flat", propertyType: "شقة", purpose: "rent", price: 225, currency: "USD", bedrooms: 2, locationLabel: "المنصورة", availability: "available" as const, factsLastVerifiedAt: nowVerified, verifiedFeatures: [] },
+];
+const nearBudgetRanked = rankPropertyCandidates(nearBudgetProfile, nearBudgetCandidates);
+assert.equal(selectNearBudgetAlternative(nearBudgetProfile, nearBudgetRanked)?.id, "near-215", "an unspecified budget may receive one confirmed alternative up to 10% above the target when no exact match exists");
+assert.equal(
+  selectNearBudgetAlternative({ ...nearBudgetProfile, budgetFlexibility: "hard" }, nearBudgetRanked),
+  null,
+  "an explicitly hard budget must never receive an above-budget alternative",
+);
+const staleNearBudget = rankPropertyCandidates(nearBudgetProfile, [
+  { id: "stale", title: "Stale flat", propertyType: "شقة", purpose: "rent", price: 215, currency: "USD", bedrooms: 2, locationLabel: "المنصورة", availability: "available", factsLastVerifiedAt: "2020-01-01T00:00:00.000Z", verifiedFeatures: [] },
+]);
+assert.equal(selectNearBudgetAlternative(nearBudgetProfile, staleNearBudget), null, "a near-budget fallback must have freshly verified availability");
+
+const allowedContextNumbers = buildAllowedSalesContextNumbers(nearBudgetProfile, [nearBudgetCandidates[0]]);
+assert.ok(allowedContextNumbers.includes(200) && allowedContextNumbers.includes(15), "budget and exact overage may be referenced as explicit buyer context");
+const nearBudgetDraft = validateSalesDraft({
+  replyDraft: "لدي خيار متاح بسعر 215 دولارًا، أعلى من ميزانيتك بـ15 دولارًا. هل أرسل لك التفاصيل؟",
+  factsUsed: ["near-215: price=215 USD", "near-215: availability=available"],
+  unknowns: [],
+  nextBestAction: "ask_one_question",
+  askOneQuestion: "هل أرسل لك التفاصيل؟",
+  handoffRequired: false,
+}, [nearBudgetCandidates[0]], allowedContextNumbers);
+assert.ok(nearBudgetDraft, "validator should allow a truthful exact price and disclosed overage for a near-budget alternative");
 
 console.log("AqarFlow sales-engine tests passed.");
