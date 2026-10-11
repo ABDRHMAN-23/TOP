@@ -1,6 +1,6 @@
 # AqarFlow automatic reply — guarded rollout plan
 
-This phase adds a fail-closed decision policy for webhook-based WhatsApp auto replies and supporting schema/quota functions. It deliberately does **not** turn automatic replies on by default. Every integration remains disabled until its owner explicitly enables it.
+This phase adds a fail-closed policy and webhook-connected sales orchestrator for WhatsApp auto replies, plus supporting schema/quota functions. It deliberately does **not** turn automatic replies on by default. Each connection stays disabled after creation or reauthorization until its owner explicitly enables it from WhatsApp settings.
 
 ## Policy
 
@@ -22,4 +22,4 @@ npm run test:aqarflow:migration
 npm run test:aqarflow:whatsapp-cloud
 ```
 
-Passing the policy unit test is not proof of a working WhatsApp auto-reply. The webhook still needs to invoke the policy, execute the workspace-scoped sales generation, persist the CRM response, send through WhatsApp Cloud API, and be tested end-to-end with a real configured Meta app before this feature can be considered live.
+Passing the policy unit test is not proof of a working WhatsApp auto-reply. The feature branch now invokes the policy from the signed inbound webhook, runs workspace-scoped sales generation, validates the draft, claims an outbound idempotency key, and calls WhatsApp Cloud API. It still requires successful CI on the latest commit and an end-to-end test against a real configured Meta app and test recipient before any production use. Do not enable it on a live number until those checks pass.
