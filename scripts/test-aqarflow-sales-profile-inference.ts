@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { inferInventoryHints } from "../lib/aqarflow/sales-profile-inference.ts";
+import { inferBasicBuyerProfileHints } from "../lib/aqarflow/runtime-contract.ts";
 import { mergeBuyerProfileForConversation } from "../lib/aqarflow/sales-engine.ts";
 
 const noInventory = inferInventoryHints(
@@ -11,6 +12,9 @@ assert.equal(noInventory.propertyType, "شقة", "explicit property type should 
 assert.ok(noInventory.preferredAreas?.includes("المنصورة"), "explicit area should be kept even with empty inventory");
 assert.equal(noInventory.budgetMax, 200, "explicit budget should be retained");
 assert.equal(noInventory.currency, "USD");
+assert.equal(inferBasicBuyerProfileHints("ميزانيتي 200 دولار حد نهائي وما أقدر أزيد").budgetFlexibility, "hard");
+assert.equal(inferBasicBuyerProfileHints("أقدر أزيد قليلًا إذا الموقع ممتاز").budgetFlexibility, "slight");
+assert.equal(inferBasicBuyerProfileHints("ميزانيتي مرنة وأستطيع النظر في خيارات أعلى").budgetFlexibility, "flexible");
 
 const changedPreference = inferInventoryHints("لا أريد المنصورة، أريد فيلا في خور مكسر", []);
 assert.equal(changedPreference.propertyType, "فيلا");
