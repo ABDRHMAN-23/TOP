@@ -149,7 +149,10 @@ export function mergeBuyerProfileForConversation(
 
   const explicitCorrection = /(?:بدل(?:ا)? من|بدلا من|بدل|غير المنطقة|غير الحي|غير الموقع|ما ابغى|ما ابغي|ما اريد|لا اريد|مش عايز|مش عاوز|لا احتاج|لا اريد|not|don't want|do not want|instead|rather than)/i.test(message);
   const newAreas = uniqueClean(next.preferredAreas);
-  if (explicitCorrection && newAreas.length) merged.preferredAreas = newAreas;
+  if (explicitCorrection && Array.isArray(next.preferredAreas)) {
+    if (newAreas.length) merged.preferredAreas = newAreas;
+    else delete merged.preferredAreas;
+  }
 
   const rejectedValues = uniqueClean(next.dealBreakers);
   const rejectedKeys = new Set(rejectedValues.map((value) => value.toLocaleLowerCase()));
