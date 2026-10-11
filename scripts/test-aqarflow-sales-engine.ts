@@ -333,6 +333,35 @@ assert.equal(selectNearBudgetAlternative(nearBudgetProfile, nearBudgetRanked)?.i
 const noExactSelection = selectPropertiesForSalesReply(nearBudgetProfile, nearBudgetRanked);
 assert.deepEqual(noExactSelection.properties.map((property) => property.id), ["near-215"], "the near-budget mode should select only the closest eligible alternative");
 assert.equal(noExactSelection.nearBudgetAlternativeMode, true);
+
+const slightOverBudgetProfile = { ...nearBudgetProfile, budgetFlexibility: "slight" as const };
+const slightOverBudgetRanked = rankPropertyCandidates(slightOverBudgetProfile, [
+  { ...nearBudgetCandidates[0], id: "slight-215", price: 215 },
+  { ...nearBudgetCandidates[0], id: "slight-218", price: 218 },
+  { ...nearBudgetCandidates[0], id: "slight-225", price: 225 },
+]);
+const slightOverBudgetSelection = selectPropertiesForSalesReply(slightOverBudgetProfile, slightOverBudgetRanked);
+assert.deepEqual(
+  slightOverBudgetSelection.properties.map((property) => property.id),
+  ["slight-215"],
+  "when no in-budget option exists, slight flexibility should select only the closest allowed over-budget option",
+);
+assert.equal(slightOverBudgetSelection.nearBudgetAlternativeMode, true, "slight-flexibility fallback must be explicitly marked as near-budget");
+
+const flexibleOverBudgetProfile = { ...nearBudgetProfile, budgetFlexibility: "flexible" as const };
+const flexibleOverBudgetRanked = rankPropertyCandidates(flexibleOverBudgetProfile, [
+  { ...nearBudgetCandidates[0], id: "flex-215", price: 215 },
+  { ...nearBudgetCandidates[0], id: "flex-230", price: 230 },
+  { ...nearBudgetCandidates[0], id: "flex-241", price: 241 },
+]);
+const flexibleOverBudgetSelection = selectPropertiesForSalesReply(flexibleOverBudgetProfile, flexibleOverBudgetRanked);
+assert.deepEqual(
+  flexibleOverBudgetSelection.properties.map((property) => property.id),
+  ["flex-215"],
+  "even with broader explicit flexibility, present one closest alternative rather than a list of higher-priced listings",
+);
+assert.equal(flexibleOverBudgetSelection.nearBudgetAlternativeMode, true);
+
 const withExactSelection = selectPropertiesForSalesReply(
   { ...nearBudgetProfile, budgetFlexibility: "slight" },
   rankPropertyCandidates({ ...nearBudgetProfile, budgetFlexibility: "slight" }, [
