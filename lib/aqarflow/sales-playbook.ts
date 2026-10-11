@@ -110,7 +110,7 @@ export function classifySalesMoment(message: string): SalesMoment {
   return "general_discovery";
 }
 
-const GUIDANCE: Record<SalesMoment, Omit<SalesPlaybookGuidance, "moment">> = {
+const GUIDANCE: Record<SalesMoment, Omit<SalesPlaybookGuidance, "moment" | "knowledgeCards">> = {
   stop_contact: {
     objective: "احترام طلب إيقاف التواصل فورًا، وعدم مواصلة التسويق أو طلب تبرير.",
     do: [
