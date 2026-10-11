@@ -117,6 +117,8 @@ assert.ok(whatsappWebhook.includes("classifySalesMoment(event.messageText||'')")
 assert.ok(whatsappConnectRoute.includes("export async function PATCH(request: Request)"));
 assert.ok(whatsappConnectRoute.includes("requireOwnerAccount()"));
 assert.ok(whatsappConnectRoute.includes("body.value.autoReplyEnabled"));
+assert.ok(whatsappConnectRoute.includes("phone_registered_at"), "auto replies must require persisted Meta phone registration");
+assert.ok(whatsappRegisterRoute.includes("phone_registered_at: registeredAt"), "successful Meta registration must persist before enabling automatic replies");
 assert.ok(whatsappConnectRoute.includes("auto_reply_enabled: false"));
 assert.ok(automaticReply.includes("aqarflow_reserve_webhook_ai_request"));
 assert.ok(automaticReply.includes("aqarflow_record_webhook_ai_usage"));
