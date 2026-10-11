@@ -258,7 +258,7 @@ export function inferInventoryHints(message: string, rows: InventoryHintRow[]): 
     if (!normalizedFeature || !normalizedMessage.includes(normalizedFeature)) continue;
     const featureIndex = normalizedMessage.indexOf(normalizedFeature);
     const prefix = normalizedMessage.slice(Math.max(0, featureIndex - 28), featureIndex);
-    if (/(?:بدون|ما ابغي|ما ابغى|ما اريد|لا اريد|مش عايز|مش عاوز|without|don't want|do not want)\\s*$/.test(prefix)) {
+    if (/(?:بدون|ما ابغي|ما ابغى|ما اريد|لا اريد|مش عايز|مش عاوز|without|don't want|do not want)\s*$/.test(prefix)) {
       dealBreakers.push(feature);
     } else if (/(?:لازم|ضروري|اهم شيء|مهم عندي|احتاج|اريد|ابغى|ابي|must have|need|want|require)/i.test(normalizedMessage)) {
       mustHaves.push(feature);
