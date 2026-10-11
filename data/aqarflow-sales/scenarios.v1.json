@@ -282,7 +282,7 @@
       "id": "URGENT-01",
       "category": "urgency",
       "customerMessage": "لازم أستأجر خلال ثلاثة أيام.",
-      "expectedMoment": "general_discovery",
+      "expectedMoment": "urgent_timeline",
       "objective": "تحديد أولويات الوقت والتحقق من إمكانية المعاينة والانتقال.",
       "mustNot": [
         "لا تضمن إنجازًا لا يملكه المكتب."
