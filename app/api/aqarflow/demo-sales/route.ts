@@ -136,10 +136,13 @@ export async function POST(request: Request) {
   }
   const customerMessage = decoded.customerMessage.trim().slice(0, MAX_MESSAGE_CHARS);
 
-  // Cloudflare supplies cf-connecting-ip. The forwarded-for fallback is intended for
-  // local/test hosting only; production must sit behind the configured Cloudflare edge.
-  const ip = request.headers.get("cf-connecting-ip")?.trim()
-    || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  // Trust Cloudflare's authenticated edge header in production. Only local/test
+  // environments may use X-Forwarded-For, which is client-spoofable on a public edge.
+  const cloudflareIp = request.headers.get("cf-connecting-ip")?.trim();
+  const developmentForwardedIp = process.env.NODE_ENV !== "production"
+    ? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    : undefined;
+  const ip = cloudflareIp || developmentForwardedIp;
   if (!ip || ip.length > 128) {
     return NextResponse.json({ error: "المعاينة الحية غير مهيأة على هذه القناة." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
