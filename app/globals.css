@@ -938,7 +938,3 @@ img{max-width:100%}
 .af-demo-input-row button:disabled{opacity:.5;cursor:not-allowed}
 .af-demo-loading{display:inline-block;font-size:24px;line-height:1;transform:translateY(-3px)}
 
-
-/* AqarFlow demo: one focused conversation, no visible strategy panel */
-.af-demo-layout-single{grid-template-columns:minmax(0,760px);justify-content:center}
-.af-demo-layout-single .af-demo-chat{width:100%;min-width:0}
