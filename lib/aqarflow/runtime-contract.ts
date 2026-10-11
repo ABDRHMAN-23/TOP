@@ -85,7 +85,8 @@ export function inferBasicBuyerProfileHints(message: string): BuyerProfile {
   if (/(للإيجار|للايجار|إيجار|ايجار|استئجار|\brent(?:al)?\b|\blease\b|\bto rent\b)/i.test(normalized)) hints.intent = "rent";
   else if (/(للبيع|شراء|اشتري|تملك|\bbuy\b|\bpurchase\b|\bfor sale\b)/i.test(normalized)) hints.intent = "buy";
 
-  const bedroomMatch = normalized.match(/(?:^|\s)(\d{1,2})\s*(?:غرف(?:ة)?(?:\s*نوم)?|غرف نوم|bedrooms?|beds?)/i);
+  const bedroomMatches = Array.from(normalized.matchAll(/(?:^|\s)(\d{1,2})\s*(?:غرف(?:ة)?(?:\s*نوم)?|غرف نوم|bedrooms?|beds?)/gi));
+  const bedroomMatch = bedroomMatches[bedroomMatches.length - 1];
   if (bedroomMatch) {
     const bedrooms = Number(bedroomMatch[1]);
     if (Number.isInteger(bedrooms) && bedrooms >= 0 && bedrooms <= 20) hints.bedroomsMin = bedrooms;
@@ -99,8 +100,11 @@ export function inferBasicBuyerProfileHints(message: string): BuyerProfile {
       [/(?:ست|ستة)\s+غرف(?:\s+نوم)?/i, 6],
       [/(?:غرفة واحدة|غرفة نوم واحدة|غرفة نوم|غرفة)/i, 1],
     ];
-    const matchedBedroomWord = bedroomWordRules.find(([pattern]) => pattern.test(normalized));
-    if (matchedBedroomWord) hints.bedroomsMin = matchedBedroomWord[1];
+    const wordMatches = bedroomWordRules.flatMap(([pattern, count]) => {
+      const match = pattern.exec(normalized);
+      return match ? [{ count, index: match.index, length: match[0].length }] : [];
+    }).sort((left, right) => right.index - left.index || right.length - left.length);
+    if (wordMatches[0]) hints.bedroomsMin = wordMatches[0].count;
   }
 
   // Only infer a money amount when a currency is explicitly named; a bare "200"
