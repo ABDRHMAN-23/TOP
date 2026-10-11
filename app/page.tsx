@@ -80,7 +80,7 @@ const faqs = [
   { q: 'ماذا يحدث إذا لم يتوفر العقار المطلوب؟', a: 'يبحث النظام في الخيارات المسجلة عن بديل يناسب الشروط. ولا يقترح سعرًا أعلى من الميزانية الصريحة إلا ضمن مرونة أعلن عنها العميل، وبحدود واضحة. إذا لم يتوفر بديل مناسب، يقول ذلك بصراحة.' },
   { q: 'هل يستطيع منح خصومات أو حجز معاينة وحده؟', a: 'لا ينبغي له ذلك إلا عبر صلاحيات ومسارات متصلة فعلًا. لا يؤكد خصمًا أو موعدًا قبل التأكد من النظام أو موافقة المسؤول.' },
   { q: 'هل الرد التلقائي على واتساب يعمل بمجرد التسجيل؟', a: 'يحتاج إلى ربط واتساب للأعمال وإعداداته واختباره. تفعيل الرد التلقائي يجب أن يكون اختياريًا، مع احترام إيقاف التواصل والتصعيد إلى موظف.' },
-  { q: 'هل هذه المحادثة المعروضة حقيقية؟', a: 'هذه معاينة عامة بردود مباشرة، ولا تتصل بمخزون عقاري حقيقي أو بواتساب. عند إعداد المكتب، تُربط الإجابات ببيانات العقارات الفعلية.' },
+  { q: 'هل المعاينة ترد على رسائلي فعلًا؟', a: 'نعم، الرسائل التي تكتبها تُرسل إلى خدمة الرد المباشر لتوليد إجابة جديدة بحسب كلامك وسياق المحادثة. التجربة ليست مرتبطة بمخزون عقاري حقيقي أو بواتساب، وعند إعداد المكتب تُربط الردود ببيانات عقاراته.' }
 ];
 
 export default function HomePage() {
@@ -173,7 +173,7 @@ export default function HomePage() {
         <div className="af-wrap af-hero-grid">
           <div className="af-hero-copy">
             <div className="af-eyebrow"><span className="af-eyebrow-line" /> منظومة المبيعات العقارية</div>
-            <h1>ليس مجرد ردّ.<br /><span>بل عقل يعرف كيف يبيع.</span></h1>
+            <h1>كل محادثة لها فرصة.<br /><span>حوّلها إلى خطوة بيع.</span></h1>
             <p className="af-hero-lead">منظومة مبيعات تفهم دوافع العميل، وتعالج الاعتراضات، وتحوّل المحادثات إلى خطوات بيع واضحة — مع الحفاظ على سمعة مكتبك وهيبته.</p>
             <div className="af-hero-actions">
               <a className="af-button af-button-primary" href="#demo">جرّب المحادثة بنفسك <ArrowLeft size={17} /></a>
@@ -246,7 +246,7 @@ export default function HomePage() {
         <div className="af-wrap">
           <div className="af-demo-heading">
             <div><span className="af-kicker">جرّبه بنفسك</span><h2>نفس العميل، مواقف مختلفة.<br /><span>والرد يتغيّر بذكاء.</span></h2></div>
-            <p>اكتب سؤالك بطريقتك، وستتلقى ردًا مولّدًا مباشرة بأسلوب مبيعات عقارية طبيعي. هذه تجربة عامة لا تتصل بمخزون مكتبك أو بواتساب.</p>
+            <p>اكتب سؤالك بطريقتك، وستحصل على رد طبيعي يتفاعل مع كلامك وسياق المحادثة. هذه تجربة عامة لا تتصل بمخزون مكتبك أو بواتساب.</p>
           </div>
           <div className="af-demo-layout">
             <div className="af-demo-chat">
@@ -257,7 +257,7 @@ export default function HomePage() {
               </div>
               <div className="af-scenario-pills" role="group" aria-label="اختر موقف المحادثة">
                 {Object.entries(demoScenarios).map(([key, item]) => (
-                  <button type="button" key={key} className={activeScenario === key ? 'af-scenario-pill active' : 'af-scenario-pill'} onClick={() => chooseScenario(key)}>{item.label}</button>
+                  <button type="button" key={key} disabled={isSending} className={activeScenario === key ? 'af-scenario-pill active' : 'af-scenario-pill'} onClick={() => chooseScenario(key)}>{item.label}</button>
                 ))}
               </div>
               <div className="af-demo-transcript" aria-live="polite">
@@ -282,7 +282,7 @@ export default function HomePage() {
               <div className="af-strategy-item"><span className="af-strategy-icon"><Target size={17} /></span><div><small>هدف الرد</small><p>{scenario.objective}</p></div></div>
               <div className="af-strategy-item"><span className="af-strategy-icon"><BrainMini /></span><div><small>المبدأ المطبق</small><p>{scenario.principle}</p></div></div>
               <div className="af-strategy-boundary"><ShieldCheck size={17} /><p>يبقى السعر والتوفر والمواصفات مرتبطًا ببيانات المكتب الفعلية. لا يصنع المساعد عرضًا من خياله.</p></div>
-              <button className="af-button af-button-dark af-strategy-reset" type="button" onClick={() => chooseScenario('budget')}>إعادة المثال الأساسي <ArrowLeft size={15} /></button>
+              <button className="af-button af-button-dark af-strategy-reset" type="button" disabled={isSending} onClick={() => chooseScenario('budget')}>إعادة المثال الأساسي <ArrowLeft size={15} /></button>
             </aside>
           </div>
         </div>
