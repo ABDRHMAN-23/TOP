@@ -20,6 +20,38 @@ export type AutomaticReplyDecision =
 
 const CUSTOMER_SERVICE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
+export type InboundBatchCandidate = {
+  ownerId: string;
+  eventKey: string;
+  kind: "inbound_message" | "delivery_status";
+  senderPhoneNumber: string | null;
+  providerTimestamp: string | null;
+};
+
+/**
+ * Select the latest inbound event per owner/contact inside one provider batch.
+ * Unknown timestamps deliberately prefer the later payload entry; the eventual
+ * reply policy still rejects an event whose timestamp cannot be verified.
+ */
+export function selectLatestInboundEventKeys(events: readonly InboundBatchCandidate[]): Set<string> {
+  const latest = new Map<string, { eventKey: string; timestamp: number; index: number }>();
+  events.forEach((event, index) => {
+    if (event.kind !== "inbound_message" || !event.ownerId || !event.senderPhoneNumber) return;
+    const senderKey = event.ownerId + ":" + event.senderPhoneNumber;
+    const parsed = event.providerTimestamp ? Date.parse(event.providerTimestamp) : Number.NaN;
+    const timestamp = Number.isFinite(parsed) ? parsed : Number.NaN;
+    const prior = latest.get(senderKey);
+    if (!prior
+      || !Number.isFinite(timestamp)
+      || !Number.isFinite(prior.timestamp)
+      || timestamp > prior.timestamp
+      || (timestamp === prior.timestamp && index > prior.index)) {
+      latest.set(senderKey, { eventKey: event.eventKey, timestamp, index });
+    }
+  });
+  return new Set([...latest.entries()].map(([senderKey, value]) => senderKey + ":" + value.eventKey));
+}
+
 /**
  * Fail-closed gate for automatic replies. It intentionally does not generate or
  * send a message; the caller must still ground and validate the reply, check
