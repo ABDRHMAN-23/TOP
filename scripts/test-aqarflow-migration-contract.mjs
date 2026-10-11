@@ -7,6 +7,7 @@ const automationComponent=readFileSync(new URL('../components/aqarflow/AqarFlowA
 const scheduledWorker=readFileSync(new URL('../worker.ts',import.meta.url),'utf8');
 const sql=readFileSync(new URL('../supabase/migrations/20261010000200_aqarflow_ai_runtime.sql',import.meta.url),'utf8');
 const autoReplyMigration=readFileSync(new URL('../supabase/migrations/20261011000100_aqarflow_ai_auto_reply.sql',import.meta.url),'utf8');
+const publicDemoMigration=readFileSync(new URL('../supabase/migrations/20261011000200_aqarflow_public_demo.sql',import.meta.url),'utf8');
 const whatsappMigration=readFileSync(new URL('../supabase/migrations/20261010000300_aqarflow_whatsapp_tech_provider.sql',import.meta.url),'utf8');
 const route=readFileSync(new URL('../app/api/aqarflow/sales/route.ts',import.meta.url),'utf8');
 const ranked=readFileSync(new URL('../lib/aqarflow/ranked-inventory.ts',import.meta.url),'utf8');
@@ -35,6 +36,13 @@ const operationsComponent=readFileSync(new URL('../components/aqarflow/AqarFlowO
 const wrangler=readFileSync(new URL('../wrangler.jsonc',import.meta.url),'utf8');
 const props=readFileSync(new URL('../app/api/aqarflow/properties/route.ts',import.meta.url),'utf8');
 assert.match(autoReplyMigration,/ai_auto_reply_opted_out boolean not null default false/i);
+assert.match(publicDemoMigration,/create table if not exists public\\.aqarflow_public_demo_rate_limits/i);
+assert.match(publicDemoMigration,/create or replace function public\\.aqarflow_consume_public_demo_quota/i);
+assert.match(publicDemoMigration,/revoke all on function public\\.aqarflow_consume_public_demo_quota\\(text\\) from public, anon, authenticated/i);
+assert.match(publicDemoMigration,/grant execute on function public\\.aqarflow_consume_public_demo_quota\\(text\\) to service_role/i);
+assert.match(publicDemoMigration,/hour_count integer not null default 0 check \\(hour_count between 0 and 6\\)/i);
+assert.match(publicDemoMigration,/day_count integer not null default 0 check \\(day_count between 0 and 25\\)/i);
+assert.match(publicDemoMigration,/enable row level security/i);
 assert.ok(autoReplyMigration.includes("add column if not exists processing_started_at timestamptz"));
 assert.ok(autoReplyMigration.includes("aqarflow_whatsapp_events_lease_idx"));
 assert.ok(autoReplyMigration.includes("buyer_profile jsonb not null default '{}'::jsonb"));
