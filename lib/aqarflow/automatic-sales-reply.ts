@@ -421,7 +421,7 @@ export async function handleWhatsAppAutomaticReply(
   // Recheck mutable consent and delivery state after claiming the idempotency key,
   // immediately before talking to Meta. A customer may opt out or the owner may
   // disable automation while Gemini is generating the draft.
-  const [latestContactResult, latestIntegrationResult, latestSendConversationResult] = await Promise.all([
+  const [latestContactResult, latestIntegrationResult, latestSendConversationResult, latestInboundResult] = await Promise.all([
     admin.from("aqarflow_crm_contacts")
       .select("ai_auto_reply_opted_out")
       .eq("owner_user_id", integration.owner_user_id).eq("id", input.contactId).maybeSingle(),
@@ -431,10 +431,21 @@ export async function handleWhatsAppAutomaticReply(
     admin.from("aqarflow_crm_conversations")
       .select("status,handoff_required")
       .eq("owner_user_id", integration.owner_user_id).eq("id", input.conversationId).maybeSingle(),
+    admin.from("aqarflow_whatsapp_events")
+      .select("provider_event_key,provider_timestamp,received_at")
+      .eq("owner_user_id", integration.owner_user_id)
+      .eq("phone_number_id", integration.phone_number_id)
+      .eq("sender_phone_number", recipientPhoneNumber)
+      .eq("event_kind", "inbound_message")
+      .order("provider_timestamp", { ascending: false, nullsFirst: false })
+      .order("received_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
   if (latestContactResult.error || !latestContactResult.data
     || latestIntegrationResult.error || !latestIntegrationResult.data
-    || latestSendConversationResult.error || !latestSendConversationResult.data) {
+    || latestSendConversationResult.error || !latestSendConversationResult.data
+    || latestInboundResult.error || !latestInboundResult.data) {
     await admin.from("aqarflow_whatsapp_outbound_requests")
       .update({ status: "failed", failure_code: "pre_send_state_recheck_failed" })
       .eq("owner_user_id", integration.owner_user_id).eq("idempotency_key", idempotencyKey);
@@ -442,6 +453,20 @@ export async function handleWhatsAppAutomaticReply(
     return setHandoff(admin, integration.owner_user_id, input.conversationId, "pre_send_state_recheck_failed");
   }
   const latestIntegration = latestIntegrationResult.data;
+  const currentProviderAt = event.providerTimestamp ? Date.parse(event.providerTimestamp) : Number.NaN;
+  const latestProviderAt = latestInboundResult.data.provider_timestamp
+    ? Date.parse(latestInboundResult.data.provider_timestamp)
+    : Number.NaN;
+  if (latestInboundResult.data.provider_event_key !== event.eventKey
+    && Number.isFinite(currentProviderAt)
+    && Number.isFinite(latestProviderAt)
+    && latestProviderAt >= currentProviderAt) {
+    await admin.from("aqarflow_whatsapp_outbound_requests")
+      .update({ status: "failed", failure_code: "superseded_by_newer_inbound" })
+      .eq("owner_user_id", integration.owner_user_id).eq("idempotency_key", idempotencyKey);
+    await saveIncomingDraft(admin, integration.owner_user_id, event, draft);
+    return { action: "skipped", reason: "superseded_by_newer_inbound" };
+  }
   if (latestContactResult.data.ai_auto_reply_opted_out) {
     await admin.from("aqarflow_whatsapp_outbound_requests")
       .update({ status: "failed", failure_code: "blocked_contact_opted_out" })
