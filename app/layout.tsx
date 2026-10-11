@@ -5,16 +5,16 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 export const metadata: Metadata = {
-  title: { default: 'AqarFlow AI — منصة المبيعات العقارية الذكية', template: '%s | AqarFlow AI' },
-  description: 'واجهة AqarFlow AI لإدارة العملاء المحتملين والعقارات ومتابعات المبيعات والتقارير في مكان واحد.',
+  title: { default: 'AqarFlow — اكتشف العقارات للبيع والإيجار', template: '%s | AqarFlow AI' },
+  description: 'تصفح عقارات للبيع والإيجار في عدن. قارن الأسعار والمساحات والصور وافتح تفاصيل كل عقار في تجربة تفاعلية.',
   applicationName: 'AqarFlow AI',
-  keywords: ['AqarFlow AI', 'إدارة العقارات', 'CRM عقاري', 'المبيعات العقارية', 'إدارة العملاء المحتملين'],
+  keywords: ['AqarFlow', 'عقارات عدن', 'عقارات للبيع', 'عقارات للإيجار', 'شقق وفلل'],
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     siteName: 'AqarFlow AI',
     title: 'AqarFlow AI — منصة المبيعات العقارية الذكية',
-    description: 'واجهة موحّدة لإدارة العقارات والعملاء ومتابعات المبيعات.',
+    description: 'اكتشف عقارات للبيع والإيجار، وتصفح الصور والمواصفات ومعلومات التواصل.',
     url: '/',
   },
   twitter: {
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     description: 'واجهة موحّدة لإدارة العقارات والعملاء ومتابعات المبيعات.',
   },
   robots: { index: true, follow: true },
-  other: { 'mobile-web-app-capable': 'yes', 'theme-color': '#344f3c' },
+  other: { 'mobile-web-app-capable': 'yes', 'theme-color': '#13212e' },
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
