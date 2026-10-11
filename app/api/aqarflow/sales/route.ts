@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { runtimeEnv } from '@/lib/runtime-env';
 import { readBoundedUtf8Body } from '@/lib/aqarflow/http-body';
-import { buildPersonalizedSalesPrompt, validateSalesDraft, mergeBuyerProfile, type VerifiedProperty } from '@/lib/aqarflow/sales-engine';
+import { buildPersonalizedSalesPrompt, validateSalesDraft, mergeBuyerProfile, buildAllowedSalesContextNumbers, type VerifiedProperty } from '@/lib/aqarflow/sales-engine';
 import { generateGeminiJson, GeminiRuntimeError } from '@/lib/aqarflow/gemini-runtime';
-import { rankPropertyCandidates } from '@/lib/aqarflow/ranked-inventory';
+import { rankPropertyCandidates, selectNearBudgetAlternative } from '@/lib/aqarflow/ranked-inventory';
 import { MAX_REQUEST_BODY_BYTES, MAX_REQUEST_BODY_CHARS, buildNoMatchSalesDraft, inferBasicBuyerProfileHints, parseAqarFlowSalesRequest } from '@/lib/aqarflow/runtime-contract';
 
 export const dynamic = 'force-dynamic';
@@ -77,7 +77,15 @@ export async function POST(req:Request) {
   const candidates=(rows||[]).map((r:unknown)=>mapProperty(r as PropertyRow));
   const buyerProfile=mergeBuyerProfile(parsed.value.buyerProfile,inferBasicBuyerProfileHints(parsed.value.customerMessage));
   const ranked=rankPropertyCandidates(buyerProfile,candidates);
-  const selected=ranked.filter(m=>m.eligible).slice(0,5).map(m=>m.property);
+  let selected=ranked.filter(m=>m.eligible).slice(0,5).map(m=>m.property);
+  let nearBudgetAlternativeMode=false;
+  if(selected.length===0) {
+    const nearBudgetAlternative=selectNearBudgetAlternative(buyerProfile,ranked);
+    if(nearBudgetAlternative) {
+      selected=[nearBudgetAlternative];
+      nearBudgetAlternativeMode=true;
+    }
+  }
   if(selected.length===0) {
     const validated=validateSalesDraft(buildNoMatchSalesDraft(candidates.length,buyerProfile),[]);
     const latencyMs=Math.max(0,Date.now()-rankingStartedAt);
@@ -95,7 +103,7 @@ export async function POST(req:Request) {
   }
   let promptPayload:Record<string,unknown>;
   try {
-    promptPayload=JSON.parse(buildPersonalizedSalesPrompt({customerMessage:parsed.value.customerMessage,conversationSummary:parsed.value.conversationSummary,buyerProfile,properties:selected})) as Record<string,unknown>;
+    promptPayload=JSON.parse(buildPersonalizedSalesPrompt({customerMessage:parsed.value.customerMessage,conversationSummary:parsed.value.conversationSummary,buyerProfile,properties:selected,nearBudgetAlternativeMode})) as Record<string,unknown>;
   } catch {
     await recordUsage(supabase,reservationId,{model,latencyMs:0,inputTokens:null,outputTokens:null,resultValidated:false,outcome:'invalid_output'});
     return safeError(500);
@@ -122,7 +130,7 @@ export async function POST(req:Request) {
     await recordUsage(supabase,reservationId,{model,latencyMs:Date.now()-startedAt,inputTokens:result.inputTokens,outputTokens:result.outputTokens,resultValidated:false,outcome:'invalid_output'});
     return NextResponse.json({error:'لم يتمكن المساعد من إنتاج رد قابل للتحقق.'},{status:502,headers:{'Cache-Control':'no-store'}});
   }
-  const validated=validateSalesDraft(decodedDraft,selected);
+  const validated=validateSalesDraft(decodedDraft,selected,buildAllowedSalesContextNumbers(buyerProfile,selected));
   const latencyMs=Date.now()-startedAt;
   await recordUsage(supabase,reservationId,{model,latencyMs,inputTokens:result.inputTokens,outputTokens:result.outputTokens,resultValidated:Boolean(validated),outcome:validated?'success':'invalid_output'});
   if(!validated)return NextResponse.json({error:'تم رفض الرد لأنه لم يجتز التحقق من الحقائق.'},{status:502,headers:{'Cache-Control':'no-store'}});
