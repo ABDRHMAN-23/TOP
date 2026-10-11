@@ -82,10 +82,10 @@ export function inferBasicBuyerProfileHints(message: string): BuyerProfile {
     .toLocaleLowerCase();
   const hints: BuyerProfile = {};
 
-  if (/(للإيجار|للايجار|إيجار|ايجار|استئجار|\\brent(?:al)?\\b|\\blease\\b|\\bto rent\\b)/i.test(normalized)) hints.intent = "rent";
-  else if (/(للبيع|شراء|اشتري|تملك|\\bbuy\\b|\\bpurchase\\b|\\bfor sale\\b)/i.test(normalized)) hints.intent = "buy";
+  if (/(للإيجار|للايجار|إيجار|ايجار|استئجار|\brent(?:al)?\b|\blease\b|\bto rent\b)/i.test(normalized)) hints.intent = "rent";
+  else if (/(للبيع|شراء|اشتري|تملك|\bbuy\b|\bpurchase\b|\bfor sale\b)/i.test(normalized)) hints.intent = "buy";
 
-  const bedroomMatch = normalized.match(/(?:^|\\s)(\\d{1,2})\\s*(?:غرف(?:ة)?(?:\\s*نوم)?|غرف نوم|bedrooms?|beds?)/i);
+  const bedroomMatch = normalized.match(/(?:^|\s)(\d{1,2})\s*(?:غرف(?:ة)?(?:\s*نوم)?|غرف نوم|bedrooms?|beds?)/i);
   if (bedroomMatch) {
     const bedrooms = Number(bedroomMatch[1]);
     if (Number.isInteger(bedrooms) && bedrooms >= 0 && bedrooms <= 20) hints.bedroomsMin = bedrooms;
@@ -93,17 +93,17 @@ export function inferBasicBuyerProfileHints(message: string): BuyerProfile {
 
   // Only infer a money amount when a currency is explicitly named; a bare "200"
   // might be a room count, area, ID, or another quantity.
-  const hasUSD = /(?:\\busd\\b|us\\$|\\$|دولار)/i.test(normalized);
-  const hasSAR = /(?:\\bsar\\b|ريال سعودي)/i.test(normalized);
-  const hasYER = /(?:\\byer\\b|ريال يمني)/i.test(normalized);
+  const hasUSD = /(?:\busd\b|us\$|\$|دولار)/i.test(normalized);
+  const hasSAR = /(?:\bsar\b|ريال سعودي)/i.test(normalized);
+  const hasYER = /(?:\byer\b|ريال يمني)/i.test(normalized);
   const currency = hasUSD ? "USD" : hasSAR ? "SAR" : hasYER ? "YER" : null;
   if (currency) {
-    const amount = String.raw`(\\d{1,3}(?:[,٬]\\d{3})*(?:\\.\\d+)?)`;
+    const amount = String.raw`(\d{1,3}(?:[,٬]\d{3})*(?:\.\d+)?)`;
     const pattern = currency === "USD"
-      ? new RegExp(String.raw`(?:\\$\\s*${amount}|${amount}\\s*(?:usd|us\\$|دولار(?:ات)?))`, "gi")
+      ? new RegExp(String.raw`(?:\$\s*${amount}|${amount}\s*(?:usd|us\$|دولار(?:ات)?))`, "gi")
       : currency === "SAR"
-        ? new RegExp(String.raw`(?:${amount}\\s*(?:sar|ريال سعودي)|(?:sar|ريال سعودي)\\s*${amount})`, "gi")
-        : new RegExp(String.raw`(?:${amount}\\s*(?:yer|ريال يمني)|(?:yer|ريال يمني)\\s*${amount})`, "gi");
+        ? new RegExp(String.raw`(?:${amount}\s*(?:sar|ريال سعودي)|(?:sar|ريال سعودي)\s*${amount})`, "gi")
+        : new RegExp(String.raw`(?:${amount}\s*(?:yer|ريال يمني)|(?:yer|ريال يمني)\s*${amount})`, "gi");
     const amounts: number[] = [];
     for (const match of normalized.matchAll(pattern)) {
       const candidate = match.slice(1).find(value => typeof value === "string" && value.trim()) || "";
