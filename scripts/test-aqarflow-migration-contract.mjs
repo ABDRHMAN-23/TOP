@@ -14,6 +14,7 @@ const body=readFileSync(new URL('../lib/aqarflow/http-body.ts',import.meta.url),
 const inbox=readFileSync(new URL('../app/api/aqarflow/inbox/route.ts',import.meta.url),'utf8');
 const crmContacts=readFileSync(new URL('../app/api/aqarflow/crm/contacts/route.ts',import.meta.url),'utf8');
 const whatsappWebhook=readFileSync(new URL('../app/api/integrations/whatsapp/webhook/route.ts',import.meta.url),'utf8');
+const automaticSalesReply=readFileSync(new URL('../lib/aqarflow/automatic-sales-reply.ts',import.meta.url),'utf8');
 const whatsappConnectRoute=readFileSync(new URL('../app/api/integrations/whatsapp/connect/route.ts',import.meta.url),'utf8');
 const automaticReply=readFileSync(new URL('../lib/aqarflow/automatic-sales-reply.ts',import.meta.url),'utf8');
 const automaticReplyPolicy=readFileSync(new URL('../lib/aqarflow/automatic-reply-policy.ts',import.meta.url),'utf8');
@@ -68,6 +69,9 @@ assert.match(route,/\.eq\('owner_user_id',workspaceOwnerId\)/);
 assert.match(route,/\.limit\(50\)/);
 assert.match(route,/rankPropertyCandidates\(buyerProfile,candidates\)/);
 assert.match(route,/if\(selected\.length===0\)/);
+assert.match(automaticSalesReply,/aqarflow_reserve_webhook_ai_request/);
+assert.ok(automaticSalesReply.indexOf("aqarflow_reserve_webhook_ai_request") < automaticSalesReply.indexOf("if (!selected.length)"), "automatic reply quota must be reserved before the deterministic no-match branch");
+assert.match(automaticSalesReply,/model: "deterministic-no-match"[\s\S]{0,400}recordUsage/);
 assert.ok(route.indexOf('if(selected.length===0)')<route.indexOf("runtimeEnv('GEMINI_API_KEY')"));
 assert.match(route,/validateSalesDraft\(/);
 assert.match(body,/reader\.cancel\(\)/);
