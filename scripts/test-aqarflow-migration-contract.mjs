@@ -71,7 +71,7 @@ assert.match(route,/rankPropertyCandidates\(buyerProfile,candidates\)/);
 assert.match(route,/if\(selected\.length===0\)/);
 assert.match(automaticSalesReply,/aqarflow_reserve_webhook_ai_request/);
 assert.ok(automaticSalesReply.indexOf("aqarflow_reserve_webhook_ai_request") < automaticSalesReply.indexOf("if (!selected.length)"), "automatic reply quota must be reserved before the deterministic no-match branch");
-assert.match(automaticSalesReply,/model: "deterministic-no-match"[\s\S]{0,400}recordUsage/);
+assert.match(automaticSalesReply,/await recordUsage\(admin, integration\.owner_user_id, reservationId, \{[\s\S]{0,400}model: "deterministic-no-match"/);
 assert.ok(route.indexOf('if(selected.length===0)')<route.indexOf("runtimeEnv('GEMINI_API_KEY')"));
 assert.match(route,/validateSalesDraft\(/);
 assert.match(body,/reader\.cancel\(\)/);
