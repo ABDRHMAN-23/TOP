@@ -5,16 +5,29 @@ export const MAX_CONVERSATION_SUMMARY_CHARS = 1000;
 export const MAX_REQUEST_BODY_CHARS = 12000;
 export const MAX_REQUEST_BODY_BYTES = 32000;
 
-export function buildNoMatchSalesDraft(activeCandidateCount: number): SalesDraft {
+export function buildNoMatchSalesDraft(activeCandidateCount: number, buyerProfile?: BuyerProfile | null): SalesDraft {
   const hasActiveCandidates = Number.isFinite(activeCandidateCount) && activeCandidateCount > 0;
+  const areas = Array.isArray(buyerProfile?.preferredAreas)
+    ? buyerProfile.preferredAreas.filter((v): v is string => typeof v === 'string' && v.trim()).slice(0, 2)
+    : [];
+  const propertyType = typeof buyerProfile?.propertyType === 'string' ? buyerProfile.propertyType.trim().slice(0, 60) : '';
+  const context = [
+    propertyType ? ` من نوع ${propertyType}` : '',
+    areas.length ? ` في ${areas.join(' أو ')}` : '',
+  ].join('');
+  const budgetGuard = buyerProfile?.budgetMax != null
+    ? ' مع الحفاظ على سقف الميزانية الذي حددته'
+    : '';
   return {
     replyDraft: hasActiveCandidates
-      ? 'لم أجد ضمن العقارات النشطة خيارًا يطابق الشروط المعروفة بالكامل، لذلك لن أقدّم عقارًا على أنه مناسب دون دليل. يمكننا توسيع البحث أو مراجعة أحد الشروط.'
-      : 'لا توجد عقارات نشطة مسجلة في المخزون حاليًا، لذلك لن أخمّن تفاصيل غير متوفرة. يمكن إضافة العقارات أولًا أو مراجعة طلب العميل.',
+      ? `راجعت الخيارات المسجلة${context}، لكن ما ظهر خيار أقدر أقول لك إنه يطابق شروطك بالكامل. ما أحب أضيّع وقتك بعقار ما يناسبك؛ نقدر نوسّع البحث إلى منطقة أخرى${budgetGuard} أو نراجع شرطًا مرنًا. أيهما تفضّل؟`
+      : 'حاليًا لا يظهر في المخزون المسجل خيار أقدر أطابقه مع طلبك بثقة، وما أحب أعطيك مواصفات أو وعودًا غير مؤكدة. ما أهم شرط لا تريد التنازل عنه حتى نحدد اتجاه البحث المناسب؟',
     factsUsed: [],
     unknowns: [hasActiveCandidates ? 'no_eligible_property_match' : 'active_inventory_empty'],
     nextBestAction: 'ask_one_question',
-    askOneQuestion: hasActiveCandidates ? 'هل تفضّل توسيع نطاق البحث أو تعديل أحد الشروط؟' : 'هل تريد إضافة العقارات إلى المخزون أولًا أم مراجعة شروط البحث؟',
+    askOneQuestion: hasActiveCandidates
+      ? `هل تقبل توسيع البحث إلى منطقة أخرى${budgetGuard}، أم تفضّل مراجعة شرط آخر؟`
+      : 'ما أهم شرط يجب الحفاظ عليه في البحث؟',
     handoffRequired: false,
   };
 }
