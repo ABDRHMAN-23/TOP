@@ -40,4 +40,20 @@ const excludedFeature = inferInventoryHints(
 );
 assert.ok(excludedFeature.dealBreakers?.includes("مسبح"), "explicitly rejected feature should become a deal-breaker");
 
+const noStockFeatures = inferInventoryHints("أريد شقة فيها موقف سيارة ومصعد", []);
+assert.ok(noStockFeatures.mustHaves?.includes("موقف سيارة"), "common feature should be remembered even with empty inventory");
+assert.ok(noStockFeatures.mustHaves?.includes("مصعد"), "multiple known feature preferences should be remembered");
+
+const translatedStockFeature = inferInventoryHints(
+  "أريد شقة فيها موقف سيارة",
+  [{ property_type: "Apartment", location_label: "Al Mansoura", verified_features: ["Parking"] }],
+);
+assert.ok(translatedStockFeature.mustHaves?.includes("Parking"), "preference should use the stored inventory label when aliases differ");
+
+const noStockDealBreaker = inferInventoryHints("أريد شقة بدون مسبح", []);
+assert.ok(noStockDealBreaker.dealBreakers?.includes("مسبح"), "common deal-breakers should be retained even if inventory is empty");
+
+const negativePropertyFeature = inferInventoryHints("لا أريد شقة فيها مسبح", []);
+assert.ok(negativePropertyFeature.dealBreakers?.includes("مسبح"), "negation across a property description should be recognized");
+
 console.log("AqarFlow buyer-profile inference tests passed.");
