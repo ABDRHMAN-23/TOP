@@ -2,10 +2,9 @@
 
 import { useState, type FormEvent } from 'react';
 import {
-  ArrowLeft, ArrowUpLeft, ArrowUpRight, BadgeCheck, BarChart3, Check,
-  CheckCheck, ChevronDown, CircleHelp, Clock3, Home, Menu, MessageCircle,
-  MessageSquare, MessagesSquare, Phone, Send, ShieldCheck, Sparkles, Target,
-  TrendingUp, Users, WalletCards, X, Zap,
+  ArrowLeft, ArrowUpRight, Check, CheckCheck, ChevronDown, Clock3, Home,
+  Menu, MessageCircle, MessageSquare, MessagesSquare, Send, ShieldCheck,
+  Sparkles, Target, TrendingUp, WalletCards, X, Zap,
 } from 'lucide-react';
 
 type ChatMessage = { from: 'customer' | 'office'; text: string; time: string };
