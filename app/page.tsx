@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react';
 import {
   ArrowLeft, ArrowUpLeft, ArrowUpRight, Check, CheckCheck, ChevronDown, Clock3, Home,
   Menu, MessageCircle, MessageSquare, MessagesSquare, Send, ShieldCheck,
-  Sparkles, Target, TrendingUp, WalletCards, X, Zap,
+  Target, TrendingUp, WalletCards, X, Zap,
 } from 'lucide-react';
 
 type ChatMessage = { from: 'customer' | 'office'; text: string; time: string };
@@ -348,11 +348,11 @@ export default function HomePage() {
 
       <footer className="af-footer">
         <div className="af-wrap af-footer-main">
-          <a className="af-brand af-brand-footer" href="#top"><span className="af-brand-mark"><MessagesSquare size={21} /></span><span className="af-brand-copy"><strong>AqarFlow<span> AI</span></strong><small>REAL ESTATE SALES INTELLIGENCE</small></span></a>
+          <a className="af-brand af-brand-footer" href="#top"><span className="af-brand-mark"><MessagesSquare size={21} /></span><span className="af-brand-copy"><strong>AqarFlow</strong><small>REAL ESTATE SALES INTELLIGENCE</small></span></a>
           <p>مبيعات عقارية أكثر احترافًا، ومحادثات تبني الثقة وتقرّب العميل من القرار المناسب.</p>
           <div className="af-footer-links"><a href="#difference">المزايا</a><a href="#method">كيف يعمل</a><a href="#demo">المعاينة</a><a href="/login">دخول المكتب</a></div>
         </div>
-        <div className="af-wrap af-footer-bottom"><span>© 2026 AqarFlow AI</span><span>الصدق أولًا. ثقة العميل دائمًا.</span></div>
+        <div className="af-wrap af-footer-bottom"><span>© 2026 AqarFlow</span><span>الصدق أولًا. ثقة العميل دائمًا.</span></div>
       </footer>
     </main>
   );
@@ -362,7 +362,7 @@ function CheckCircleMini() {
   return <span className="af-mini-check"><Check size={12} /></span>;
 }
 function BrainMini() {
-  return <Sparkles size={18} />;
+  return <MessagesSquare size={18} />;
 }
 function CalendarDaysMini() {
   return <Clock3 size={20} />;
