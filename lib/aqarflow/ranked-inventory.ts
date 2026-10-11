@@ -68,7 +68,30 @@ export function selectPropertiesForSalesReply(
 
   if (profile.budgetMax != null && profile.currency) {
     const withinBudget = viable.filter((match) => match.matchedSignals.includes("within_budget"));
-    if (withinBudget.length) viable = withinBudget;
+    if (withinBudget.length) {
+      return {
+        properties: withinBudget.slice(0, Math.max(1, Math.min(limit, 5))).map((match) => match.property),
+        nearBudgetAlternativeMode: false,
+      };
+    }
+
+    // When the customer explicitly allows a bounded overage, treat it as a
+    // transparent fallback—not permission to present a list of pricier options.
+    // Choose the closest confirmed option and let the prompt disclose the delta.
+    const overTarget = viable.filter((match) =>
+      match.matchedSignals.includes("above_target_budget_explicit_flexibility")
+      && match.property.price != null
+    );
+    if (overTarget.length) {
+      overTarget.sort((a, b) =>
+        (a.property.price! - profile.budgetMax!) - (b.property.price! - profile.budgetMax!)
+        || b.score - a.score
+      );
+      return {
+        properties: [overTarget[0].property],
+        nearBudgetAlternativeMode: true,
+      };
+    }
   }
 
   if (viable.length) {
