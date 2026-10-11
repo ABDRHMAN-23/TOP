@@ -31,7 +31,7 @@ const operationsComponent=readFileSync(new URL('../components/aqarflow/AqarFlowO
 const wrangler=readFileSync(new URL('../wrangler.jsonc',import.meta.url),'utf8');
 const props=readFileSync(new URL('../app/api/aqarflow/properties/route.ts',import.meta.url),'utf8');
 assert.match(autoReplyMigration,/ai_auto_reply_opted_out boolean not null default false/i);
-assert.match(autoReplyMigration,/buyer_profile jsonb not null default '\\{\\}'::jsonb/i);
+assert.ok(autoReplyMigration.includes("buyer_profile jsonb not null default '{}'::jsonb"));
 assert.match(autoReplyMigration,/create or replace function public\\.aqarflow_reserve_webhook_ai_request/i);
 assert.match(autoReplyMigration,/create or replace function public\\.aqarflow_record_webhook_ai_usage/i);
 assert.match(autoReplyMigration,/revoke all on function public\\.aqarflow_reserve_webhook_ai_request\\(uuid\\) from public, anon, authenticated/i);
