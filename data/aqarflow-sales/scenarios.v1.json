@@ -242,7 +242,7 @@
       "id": "ALT-02",
       "category": "alternatives",
       "customerMessage": "ما أبغى هذه الشقة، عندكم شيء مشابه؟",
-      "expectedMoment": "general_discovery",
+      "expectedMoment": "property_rejection",
       "objective": "بحث عن خيار آخر قريب بناء على أولويات العميل.",
       "mustNot": [
         "لا تعيد عرض العقار المرفوض دون سبب."
