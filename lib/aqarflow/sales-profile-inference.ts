@@ -64,6 +64,19 @@ const PROPERTY_FAMILY_LABELS: Record<string, string> = {
   commercial: "محل تجاري",
 };
 
+const COMMON_FEATURE_ALIASES: Array<{ label: string; aliases: string[] }> = [
+  { label: "موقف سيارة", aliases: ["موقف سيارة", "موقف للسيارة", "مواقف سيارات", "مواقف للسيارات", "parking", "car parking", "car park"] },
+  { label: "مصعد", aliases: ["مصعد", "أسانسير", "اسانسير", "elevator", "lift"] },
+  { label: "مسبح", aliases: ["مسبح", "حمام سباحة", "pool", "swimming pool"] },
+  { label: "مفروش", aliases: ["مفروش", "مفروشة", "مؤثث", "مؤثثة", "furnished"] },
+  { label: "مكيف", aliases: ["مكيف", "مكيفة", "تكييف", "air conditioning", "air-conditioned"] },
+  { label: "شرفة", aliases: ["شرفة", "بلكونة", "balcony"] },
+  { label: "حديقة", aliases: ["حديقة", "حوش", "garden", "yard"] },
+  { label: "حراسة", aliases: ["حراسة", "حارس", "أمن", "security", "guard"] },
+  { label: "مولد كهرباء", aliases: ["مولد كهرباء", "مولد", "generator"] },
+  { label: "خزان ماء", aliases: ["خزان ماء", "خزان مياه", "water tank"] },
+];
+
 export function inferInventoryHints(message: string, rows: InventoryHintRow[]): Partial<BuyerProfile> {
   const hints = inferBasicBuyerProfileHints(message);
   const normalizedMessage = normalizePhrase(message);
@@ -145,16 +158,52 @@ export function inferInventoryHints(message: string, rows: InventoryHintRow[]): 
     .filter((value) => typeof value === "string" && value.trim().length >= 3);
   const mustHaves: string[] = [];
   const dealBreakers: string[] = [];
+  const addFeaturePreference = (feature: string, mention: string, index: number) => {
+    const prefix = normalizedMessage.slice(Math.max(0, index - 56), index).split(/[,،;؛.!؟?]/).pop() || "";
+    const negative = /(?:بدون|بلا|من غير|without|don't want|do not want)\\s*$/.test(prefix)
+      || /(?:ما ابغي|ما ابغى|ما اريد|لا اريد|مش عايز|مش عاوز)(?:\\s+[^\\s,،;؛.!؟?]+){0,5}\\s*$/i.test(prefix);
+    if (negative) {
+      dealBreakers.push(feature);
+      return;
+    }
+    if (/(?:لازم|ضروري|اهم شيء|مهم عندي|احتاج|اريد|ابغى|ابي|must have|need|want|require)/i.test(normalizedMessage)) {
+      mustHaves.push(feature);
+    }
+  };
+
+  // Common feature aliases are understood even when the office currently has no
+  // listing containing that feature. Prefer the exact inventory label when one
+  // exists so the ranker can compare customer preferences against stored fields.
+  for (const group of COMMON_FEATURE_ALIASES) {
+    const mentions = group.aliases
+      .map((alias) => ({ alias, index: normalizedMessage.indexOf(normalizePhrase(alias)) }))
+      .filter((item) => item.index >= 0)
+      .sort((left, right) => left.index - right.index);
+    if (!mentions.length) continue;
+    const labelInInventory = knownFeatures.find((feature) => {
+      const candidate = normalizePhrase(feature);
+      return group.aliases.some((alias) => {
+        const normalizedAlias = normalizePhrase(alias);
+        return candidate === normalizedAlias
+          || candidate.includes(normalizedAlias)
+          || normalizedAlias.includes(candidate);
+      });
+    });
+    addFeaturePreference(labelInInventory || group.label, mentions[0].alias, mentions[0].index);
+  }
+
+  // Keep supporting office-specific feature labels without forcing them into a
+  // fixed catalogue, while avoiding duplicate extraction of the common aliases above.
   for (const feature of knownFeatures) {
     const normalizedFeature = normalizePhrase(feature);
     if (!normalizedFeature || !normalizedMessage.includes(normalizedFeature)) continue;
-    const featureIndex = normalizedMessage.indexOf(normalizedFeature);
-    const prefix = normalizedMessage.slice(Math.max(0, featureIndex - 28), featureIndex);
-    if (/(?:بدون|ما ابغي|ما ابغى|ما اريد|لا اريد|مش عايز|مش عاوز|without|don't want|do not want)\s*$/.test(prefix)) {
-      dealBreakers.push(feature);
-    } else if (/(?:لازم|ضروري|اهم شيء|مهم عندي|احتاج|اريد|ابغى|ابي|must have|need|want|require)/i.test(normalizedMessage)) {
-      mustHaves.push(feature);
-    }
+    if (COMMON_FEATURE_ALIASES.some((group) => group.aliases.some((alias) => {
+      const normalizedAlias = normalizePhrase(alias);
+      return normalizedFeature === normalizedAlias
+        || normalizedFeature.includes(normalizedAlias)
+        || normalizedAlias.includes(normalizedFeature);
+    }))) continue;
+    addFeaturePreference(feature, feature, normalizedMessage.indexOf(normalizedFeature));
   }
   if (mustHaves.length) hints.mustHaves = [...new Set(mustHaves)].slice(0, 8);
   if (dealBreakers.length) hints.dealBreakers = [...new Set(dealBreakers)].slice(0, 8);
