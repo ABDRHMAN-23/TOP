@@ -9,6 +9,38 @@ import {
 
 type ChatMessage = { from: 'customer' | 'office'; text: string; time: string };
 
+const demoScenarios: Record<string, {
+  label: string;
+  title: string;
+  objective: string;
+  principle: string;
+}> = {
+  budget: {
+    label: 'الميزانية محدودة',
+    title: 'فهم الحد الحقيقي للميزانية',
+    objective: 'حماية ميزانية العميل قبل اقتراح أي بديل.',
+    principle: 'يبدأ بفهم ما إذا كان المبلغ حدًا نهائيًا، ولا يعرض خيارًا أغلى على أنه مناسب.',
+  },
+  expensive: {
+    label: 'السعر غالٍ',
+    title: 'معالجة اعتراض السعر',
+    objective: 'فهم سبب الاعتراض قبل محاولة توضيح القيمة.',
+    principle: 'لا يجادل العميل ولا يدّعي أن السعر ممتاز. يحدد هل المشكلة في الميزانية أم في المقارنة.',
+  },
+  competitor: {
+    label: 'وجدت أرخص',
+    title: 'مقارنة عادلة مع المنافس',
+    objective: 'إبراز الفروق الحقيقية دون الإساءة لمكتب آخر.',
+    principle: 'المقارنة تعتمد على بيانات مؤكدة، وليس وعودًا أو كلامًا عامًا عن أن عروض المكتب أفضل.',
+  },
+  unavailable: {
+    label: 'العقار غير متوفر',
+    title: 'تحويل عدم التطابق إلى بدائل',
+    objective: 'مواصلة المساعدة دون اختلاق عقار أو الضغط لتغيير الشروط.',
+    principle: 'يحدد الشرط المرن الذي يسمح ببحث أفضل، ويحافظ على الشروط الأساسية والميزانية.',
+  },
+};
+
 const features = [
   { icon: Target, title: 'يفهم ما وراء السؤال', body: 'يميز بين سؤال عن السعر، واعتراض، وتردد، ومقارنة، وطلب جاهز للمعاينة. لا يستخدم الرد نفسه مع الجميع.' },
   { icon: MessageSquare, title: 'يتقن فن الاعتراضات', body: 'يتعامل مع «غالي»، و«سأفكر»، و«وجدت أرخص» عبر فهم السبب واختيار الخطوة المناسبة، لا عبر المجادلة.' },
@@ -28,11 +60,21 @@ const faqs = [
 
 export default function HomePage() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeScenario, setActiveScenario] = useState('budget');
   const [messageInput, setMessageInput] = useState('');
   const [extraMessages, setExtraMessages] = useState<ChatMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState('');
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
+
+  const scenario = demoScenarios[activeScenario];
+
+  function chooseScenario(key: string) {
+    setActiveScenario(key);
+    setExtraMessages([]);
+    setMessageInput('');
+    setSendError('');
+  }
 
   async function sendDemoMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,7 +95,7 @@ export default function HomePage() {
       const response = await fetch('/api/demo-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, history }),
+        body: JSON.stringify({ message: text, history, scenario: activeScenario }),
       });
       const payload: unknown = await response.json().catch(() => null);
       const data = payload && typeof payload === 'object' ? payload as { reply?: unknown; error?: unknown } : {};
@@ -131,9 +173,9 @@ export default function HomePage() {
               <div className="af-chat-context"><span>طلب إيجار</span><span>غرفتان</span><span>المنصورة</span></div>
               <div className="af-chat-messages">
                 <div className="af-bubble af-bubble-customer"><p>أبغى شقة غرفتين، وميزانيتي 200 دولار.</p><small>10:42</small></div>
-                <div className="af-bubble af-bubble-office"><p>تمام، نخلي ميزانيتك واضحة من البداية. المنصورة تحديدًا مهمة لك، أو يناسبك حي قريب إذا لقينا خيارًا بنفس السعر؟</p><small>10:42 <CheckCheck size={12} /></small></div>
+                <div className="af-bubble af-bubble-office"><p>تمام، خلّينا نبحث على هذا الأساس. هل المنصورة شرط أساسي، أو ممكن ننظر في حي قريب إذا لقينا خيارًا أنسب؟</p><small>10:42 <CheckCheck size={12} /></small></div>
                 <div className="af-bubble af-bubble-customer"><p>ممكن حي قريب، بس لا ترفعوا السعر.</p><small>10:43</small></div>
-                <div className="af-bubble af-bubble-office"><p>واضح، إذن نلتزم بالسعر وعدد الغرف. ما راح أعرض عليك خيارًا يتجاوز ميزانيتك.</p><small>10:43 <CheckCheck size={12} /></small></div>
+                <div className="af-bubble af-bubble-office"><p>أكيد، بخلي الميزانية وعدد الغرف أولويتين. إذا ما لقيت خيارًا مناسبًا ضمنها، بقول لك بصراحة.</p><small>10:43 <CheckCheck size={12} /></small></div>
               </div>
               <div className="af-chat-window-footer"><ShieldCheck size={14} /><span>الميزانية محفوظة كشرط أساسي</span><span className="af-mini-lock">●</span></div>
             </div>
@@ -178,20 +220,25 @@ export default function HomePage() {
       <section id="demo" className="af-section af-demo-section">
         <div className="af-wrap">
           <div className="af-demo-heading">
-            <div><span className="af-kicker">تحدث معنا</span><h2>ابدأ من أي سؤال.<br /><span>والحديث يأخذ مجراه.</span></h2></div>
-            <p>اكتب كما تتحدث عادةً؛ تحية، سؤال عن السعر، مقارنة أو اعتراض. المحادثة تتابع كلامك بدل اختيار رد من قائمة جاهزة.</p>
+            <div><span className="af-kicker">جرّبه بنفسك</span><h2>نفس العميل، مواقف مختلفة.<br /><span>والرد يناسب الموقف.</span></h2></div>
+            <p>اكتب سؤالك بطريقتك، وستحصل على رد طبيعي يتفاعل مع كلامك وسياق المحادثة. هذه تجربة عامة لا تتصل بمخزون مكتبك أو بواتساب.</p>
           </div>
-          <div className="af-demo-layout af-demo-layout-single">
+          <div className="af-demo-layout">
             <div className="af-demo-chat">
               <div className="af-demo-chat-head">
                 <div className="af-office-avatar af-office-avatar-small"><Home size={17} /></div>
                 <div><b>محادثة مع مكتب عقاري</b><span><i /> متاح للتجربة</span></div>
                 <span className="af-demo-menu-dot">•••</span>
               </div>
+              <div className="af-scenario-pills" role="group" aria-label="اختر موقف المحادثة">
+                {Object.entries(demoScenarios).map(([key, item]) => (
+                  <button type="button" key={key} disabled={isSending} className={activeScenario === key ? 'af-scenario-pill active' : 'af-scenario-pill'} onClick={() => chooseScenario(key)}>{item.label}</button>
+                ))}
+              </div>
               <div className="af-demo-transcript" aria-live="polite">
-                {extraMessages.length === 0 ? <div className="af-demo-message office"><p>مرحبًا، حيّاك الله. كيف أقدر أخدمك؟</p><small>الآن <CheckCheck size={12} /></small></div> : null}
+                {extraMessages.length === 0 ? <div className="af-demo-message office"><p>أهلًا بك، تفضل. اسألني عن اللي تحتاجه، أو قل لي ميزانيتك والمنطقة المناسبة لك ونبدأ منها.</p><small>الآن <CheckCheck size={12} /></small></div> : null}
                 {extraMessages.map((message, index) => (
-                  <div className={message.from === 'customer' ? 'af-demo-message customer' : 'af-demo-message office'} key={'extra-' + index}>
+                  <div className={message.from === 'customer' ? 'af-demo-message customer' : 'af-demo-message office'} key={'extra-' + activeScenario + '-' + index}>
                     <p>{message.text}</p><small>{message.time} {message.from === 'office' ? <CheckCheck size={12} /> : null}</small>
                   </div>
                 ))}
@@ -202,8 +249,16 @@ export default function HomePage() {
               </form>
               {isSending ? <p className="af-demo-status" role="status">لحظة، نرتّب لك الرد المناسب…</p> : null}
               {sendError ? <p className="af-demo-error" role="alert">{sendError}</p> : null}
-              <p className="af-demo-disclaimer"><ShieldCheck size={13} /> المحادثة للتجربة فقط؛ لا تتصل بمخزون عقارات أو بواتساب.</p>
+              <p className="af-demo-disclaimer"><ShieldCheck size={13} /> المحادثة للتجربة فقط، ولا تُرسل رسائل حقيقية أو تُحفظ في حساب.</p>
             </div>
+            <aside className="af-strategy-panel">
+              <div className="af-strategy-eyebrow"><span className="af-strategy-dot" /> أسلوب المبيعات</div>
+              <h3>{scenario.title}</h3>
+              <div className="af-strategy-item"><span className="af-strategy-icon"><Target size={17} /></span><div><small>هدف الرد</small><p>{scenario.objective}</p></div></div>
+              <div className="af-strategy-item"><span className="af-strategy-icon"><BrainMini /></span><div><small>المبدأ المطبق</small><p>{scenario.principle}</p></div></div>
+              <div className="af-strategy-boundary"><ShieldCheck size={17} /><p>تبقى الأسعار والمواصفات مرتبطة ببيانات المكتب الفعلية، ولا تُعرض معلومة غير مؤكدة على أنها حقيقة.</p></div>
+              <button className="af-button af-button-dark af-strategy-reset" type="button" disabled={isSending} onClick={() => chooseScenario('budget')}>إعادة المثال الأساسي <ArrowLeft size={15} /></button>
+            </aside>
           </div>
         </div>
       </section>
