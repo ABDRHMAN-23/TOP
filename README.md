@@ -12,6 +12,7 @@ The assistant is designed to understand a customer's priorities, match them to v
 - `lib/aqarflow/sales-knowledge.ts`: original context-selected knowledge cards for discovery, value framing, alternatives, negotiation, trust, privacy, and respectful communication.
 - `lib/aqarflow/ranked-inventory.ts`: ranks inventory, requires fresh verified availability for recommendations, prioritizes in-budget matches, and can select one guarded near-budget alternative.
 - `lib/aqarflow/automatic-sales-reply.ts`: guarded WhatsApp auto-reply flow, structured profile memory, quota checks, draft validation, consent/state rechecks, idempotent send, and CRM persistence.
+- `app/api/aqarflow/demo-sales/route.ts`: optional public live-preview endpoint that uses fictional sample inventory, the same prompt and fact validator, and a per-visitor quota; it never sends WhatsApp messages or reads office listings.
 - `app/api/integrations/whatsapp/webhook/route.ts`: Meta signature validation, idempotent webhook event processing, opt-out/handoff priority, and auto-reply dispatch.
 - `components/aqarflow/WhatsAppConnectionManager.tsx`: owner-controlled WhatsApp connection and per-number auto-reply toggle.
 - `data/aqarflow-sales/scenarios.v1.json`: 51 seed cases for classification/evaluation. These are not a 15,000-case reviewed corpus.
@@ -52,6 +53,12 @@ npm run test:aqarflow:auto-reply-policy
 npm run test:aqarflow:runtime
 npm run test:aqarflow:migration
 ```
+
+## Public preview
+
+The homepage includes preset example conversations and a custom-question demo. When configured, custom questions use the same sales engine against fictional sample inventory. The route does not read a real workspace, save the message as a customer record, or send WhatsApp messages.
+
+The live preview requires the normal server-side Gemini and Supabase configuration plus migration `20261011000200_aqarflow_public_demo.sql`. The rate limiter permits at most 6 live attempts per visitor in an hour and 25 per day, stores a salted visitor hash instead of the raw IP, and is callable only by `service_role`. `AQARFLOW_PUBLIC_DEMO_SALT` is optional but should be set to a strong server-side random secret in production. If configuration is missing, the preset examples remain available and the live endpoint returns a clear setup error.
 
 ## Readiness note
 
