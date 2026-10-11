@@ -88,6 +88,13 @@ assert.equal(classifySalesMoment("هل الشقة ما زالت متاحة؟"), 
 assert.equal(classifySalesMoment("هل أنت ذكاء اصطناعي أم موظف من المكتب؟"), "identity_question");
 assert.equal(classifySalesMoment("أنت إنسان حقيقي؟"), "identity_question");
 assert.equal(classifySalesMoment("Are you a real person or an AI assistant?"), "identity_question");
+assert.equal(classifySalesMoment("يا غبي، أنتم ما تفهمون شيئًا."), "abusive_customer");
+assert.equal(classifySalesMoment("You are stupid and useless."), "abusive_customer");
+const abuse = buildSalesPlaybookGuidance({ customerMessage: "يا غبي، أنتم ما تفهمون شيئًا." });
+assert.equal(abuse.moment, "abusive_customer");
+assert.ok(abuse.do.some((line) => line.includes("ابق هادئًا")), "abusive language must trigger calm, respectful de-escalation");
+assert.ok(abuse.avoid.some((line) => line.includes("لا ترد بالإهانة")), "the assistant must never retaliate against an abusive customer");
+assert.ok(abuse.avoid.some((line) => line.includes("لغة متملقة")), "professional politeness must not become exaggerated flattery");
 assert.equal(classifySalesMoment("أريد أتحدث مع موظف من المكتب، مش مع روبوت."), "human_handoff");
 assert.ok(
   getSalesKnowledgeCards("identity_question").some((card) => card.id === "transparent-identity"),
