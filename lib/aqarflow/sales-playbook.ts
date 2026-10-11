@@ -10,7 +10,7 @@ export type SalesMoment =
   | "human_handoff"
   | "abusive_customer"
   | "price_objection"
-  | "(?:مكتب ثاني|المكتب الثاني|مكتب اخر|مكتب غيركم|لقيت.{0,25}ارخص|وجدت.{0,25}ارخص|عند غيركم|عرض منافس|منافسكم|مكتب منافس|another office|found.{0,25}cheaper|competitor|other agent)_comparison"
+  | "competitor_comparison"
   | "hesitation"
   | "property_rejection"
   | "urgent_timeline"
@@ -57,7 +57,7 @@ export function classifySalesMoment(message: string): SalesMoment {
   ) return "stop_contact";
 
   if (
-    /(?:اريد|ابغى|ابي|ممكن|خلوني|حولوني|كلموني|اتكلم مع|اتحدث مع|اكلم)\s*(?:ان\s*)?(?:موظف|شخص|المسؤول|انسان|انسان حقيقي)|(?:موظف حقيقي|شخص حقيقي|خدمة العملاء|human agent|talk to (?:a person|someone|an agent)|real person)/i.test(text)
+    /(?:اريد|ابغى|ابي).{0,18}(?:موظف|شخص|المسؤول|انسان)|(?:حولوني|كلموني|اتكلم مع|اتحدث مع|اكلم).{0,18}(?:موظف|شخص|المسؤول|انسان)|(?:موظف حقيقي|شخص حقيقي|خدمة العملاء|human agent|talk to (?:a person|someone|an agent)|real person)/i.test(text)
   ) return "human_handoff";
 
   if (
@@ -65,7 +65,7 @@ export function classifySalesMoment(message: string): SalesMoment {
   ) return "abusive_customer";
 
   if (
-    /(?:مكتب ثاني|مكتب اخر|مكتب غيركم|لقيت.{0,25}ارخص|وجدت.{0,25}ارخص|عند غيركم|عرض منافس|منافسكم|مكتب منافس|another office|found.{0,25}cheaper|competitor|other agent)/i.test(text)
+    /(?:مكتب ثاني|المكتب الثاني|مكتب اخر|مكتب غيركم|لقيت.{0,25}ارخص|وجدت.{0,25}ارخص|عند غيركم|عرض منافس|منافسكم|مكتب منافس|another office|found.{0,25}cheaper|competitor|other agent)/i.test(text)
   ) return "competitor_comparison";
 
   if (
