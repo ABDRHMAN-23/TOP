@@ -130,6 +130,26 @@ function typeFamily(value: string): string | null {
   return null;
 }
 
+function isNegatedAreaMention(normalizedMessage: string, phrase: string): boolean {
+  const needle = normalizePhrase(phrase);
+  if (!needle) return false;
+  let offset = 0;
+  while (offset < normalizedMessage.length) {
+    const index = normalizedMessage.indexOf(needle, offset);
+    if (index < 0) return false;
+    const start = Math.max(0, index - 52);
+    const prefix = normalizedMessage.slice(start, index).split(/[,،;؛.!؟?]/).pop() || "";
+    if (/(?:لا اريد|ما اريد|ما ابغى|ما ابغي|مش عايز|مش عاوز|بدون|not|don't want|do not want)(?:\\s+[^\\s,،;؛.!؟?]+){0,3}\\s*$/i.test(prefix)) return true;
+    offset = index + needle.length;
+  }
+  return false;
+}
+
+function positiveRequestTail(normalizedMessage: string): string {
+  const parts = normalizedMessage.split(/(?:[,،;؛.]+(?=\\s*(?:ابغى|ابغي|ابي|اريد|احتاج|لازم|want|need|looking for))|\\bbut\\b|\\binstead\\b|\\brather than\\b|لكن|ولكن|بل|بدل(?:ا)? من)/i);
+  return parts[parts.length - 1] || normalizedMessage;
+}
+
 const AREA_ALIAS_GROUPS = [
   ["المنصورة", "المنصوره", "mansoura", "al mansoura", "al-mansoura"],
   ["خور مكسر", "خورمكسر", "khormaksar", "khor makser", "khor maksar"],
@@ -146,22 +166,25 @@ function inferInventoryHints(message: string, rows: PropertyRow[]): Partial<Buye
   const normalizedMessage = normalizePhrase(message);
   const negativeIntent = /(?:ما ابغي|ما ابغى|ما اريد|لا اريد|مش عايز|مش عاوز|بدون|لا احتاج|لا احتج|do not want|don't want|without)/i.test(normalizedMessage);
 
-  if (!hints.propertyType && !negativeIntent) {
-    const requestedFamily = typeFamily(message);
+  if (!hints.propertyType) {
+    const positiveTail = positiveRequestTail(normalizedMessage);
+    const requestedFamily = typeFamily(positiveTail) || (!negativeIntent ? typeFamily(normalizedMessage) : null);
     if (requestedFamily) {
       const record = rows.find((row) => row.property_type && typeFamily(row.property_type) === requestedFamily);
       if (record?.property_type) hints.propertyType = record.property_type;
-    } else {
+    } else if (!negativeIntent) {
       const types = rows.map((row) => row.property_type).filter((value): value is string => typeof value === "string" && value.trim().length > 0);
       const match = types.find((type) => {
         const normalizedType = normalizePhrase(type);
-        return normalizedType.length >= 3 && normalizedMessage.includes(normalizedType);
+        return normalizedType.length >= 3 && normalizedMessage.includes(normalizedType)
+          && !isNegatedAreaMention(normalizedMessage, normalizedType);
       });
       if (match) hints.propertyType = match;
     }
   }
 
   const areaMatches: string[] = [];
+  let rejectedAreaMention = false;
   for (const row of rows) {
     const label = typeof row.location_label === "string" ? row.location_label.trim() : "";
     if (!label) continue;
@@ -169,23 +192,31 @@ function inferInventoryHints(message: string, rows: PropertyRow[]): Partial<Buye
     for (const piece of pieces) {
       const normalizedPiece = normalizePhrase(piece);
       if (normalizedPiece.length >= 3 && normalizedMessage.includes(normalizedPiece)) {
-        areaMatches.push(piece);
+        if (isNegatedAreaMention(normalizedMessage, normalizedPiece)) rejectedAreaMention = true;
+        else areaMatches.push(piece);
       }
     }
     for (const group of AREA_ALIAS_GROUPS) {
-      const customerAlias = group.find((alias) => normalizedMessage.includes(normalizePhrase(alias)));
-      if (!customerAlias) continue;
-      const propertyAlias = group.find((alias) => normalizePhrase(label).includes(normalizePhrase(alias)));
-      if (propertyAlias) {
-        const labelPiece = pieces.find((piece) => normalizePhrase(piece).includes(normalizePhrase(propertyAlias))) || propertyAlias;
-        areaMatches.push(labelPiece);
-      } else if (!areaMatches.length) {
-        // Preserve an explicitly named area even if the current inventory has no exact listing.
-        areaMatches.push(customerAlias);
+      const mentioned = group.filter((alias) => normalizedMessage.includes(normalizePhrase(alias)));
+      for (const alias of mentioned) {
+        if (isNegatedAreaMention(normalizedMessage, alias)) {
+          rejectedAreaMention = true;
+          continue;
+        }
+        const propertyAlias = group.find((candidate) => normalizePhrase(label).includes(normalizePhrase(candidate)));
+        if (propertyAlias) {
+          const labelPiece = pieces.find((piece) => normalizePhrase(piece).includes(normalizePhrase(propertyAlias))) || propertyAlias;
+          areaMatches.push(labelPiece);
+        } else if (!areaMatches.length) {
+          // Preserve an explicitly named area even if the current inventory has no exact listing.
+          areaMatches.push(alias);
+        }
       }
     }
   }
-  if (areaMatches.length) hints.preferredAreas = [...new Set(areaMatches)].slice(0, 3);
+  const cleanAreas = [...new Map(areaMatches.map((area) => [normalizePhrase(area), area])).values()].slice(0, 3);
+  if (cleanAreas.length) hints.preferredAreas = cleanAreas;
+  else if (rejectedAreaMention) hints.preferredAreas = [];
 
   const knownFeatures = [...new Set(rows.flatMap((row) => Array.isArray(row.verified_features) ? row.verified_features : []))]
     .filter((value) => typeof value === "string" && value.trim().length >= 3);
