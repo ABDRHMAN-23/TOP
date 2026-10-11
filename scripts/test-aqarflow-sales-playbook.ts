@@ -67,6 +67,38 @@ const flexiblePrice = buildSalesPlaybookGuidance({
 });
 assert.ok(flexiblePrice.do.some((line) => line.includes("220 USD")), "slight flexibility should be explicitly capped at 10% over target");
 assert.ok(flexiblePrice.do.some((line) => line.includes("أعلى من الميزانية المرجعية")), "the assistant must disclose an above-target alternative");
+assert.equal(
+  buildSalesPlaybookGuidance({
+    customerMessage: "200 دولار حد نهائي، ما أقدر أزيد.",
+    buyerProfile: { budgetMax: 200, currency: "USD", budgetFlexibility: "slight" },
+  }).do.some((line) => line.includes("حد صارم")),
+  true,
+  "a hard limit in the latest message must override stale prior flexibility",
+);
+
+assert.equal(
+  classifySalesMoment("في نفس المنطقة تقريبًا، لكن ما أعرف باقي التفاصيل.", "العميل: مكتب ثاني عرض عليّ شقة غرفتين بـ190 دولار.\\nالمكتب: هل عرفت المنطقة وهل السعر يشمل نفس الشروط؟"),
+  "competitor_comparison",
+  "an elliptical follow-up must preserve a relevant competitor-comparison frame",
+);
+assert.equal(classifySalesMoment("أرسل لي رقم صاحب الشقة الشخصي."), "privacy_request");
+assert.equal(classifySalesMoment("إذا دفعت مقدمًا، تقدروا تخصموا 30 دولار؟"), "discount_request");
+assert.equal(classifySalesMoment("هل الماء والكهرباء داخل الإيجار؟"), "property_fact_question");
+assert.equal(classifySalesMoment("هل الشقة ما زالت متاحة؟"), "availability_question");
+
+assert.ok(
+  getSalesKnowledgeCards("privacy_request").some((card) => card.id === "privacy"),
+  "private-contact requests should load privacy guidance",
+);
+assert.ok(
+  getSalesKnowledgeCards("discount_request").some((card) => card.id === "negotiation"),
+  "discount requests should load authorization-bound negotiation guidance",
+);
+assert.ok(
+  getSalesKnowledgeCards("property_fact_question").some((card) => card.id === "direct-answer"),
+  "questions about property amenities should prioritize verified facts",
+);
+
 
 const optOut = buildSalesPlaybookGuidance({ customerMessage: "لا ترسلوا لي أي رسائل أخرى." });
 assert.equal(optOut.moment, "stop_contact");
