@@ -98,7 +98,7 @@ export function inferBasicBuyerProfileHints(message: string): BuyerProfile {
   const hasYER = /(?:\byer\b|ريال يمني)/i.test(normalized);
   const currency = hasUSD ? "USD" : hasSAR ? "SAR" : hasYER ? "YER" : null;
   if (currency) {
-    const amount = String.raw`(\d{1,3}(?:[,٬]\d{3})*(?:\.\d+)?)`;
+    const amount = String.raw`(\d{1,12}(?:[,٬]\d{3})*(?:\.\d+)?)`;
     const pattern = currency === "USD"
       ? new RegExp(String.raw`(?:\$\s*${amount}|${amount}\s*(?:usd|us\$|دولار(?:ات)?))`, "gi")
       : currency === "SAR"
