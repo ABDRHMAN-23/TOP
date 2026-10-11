@@ -6,13 +6,20 @@ const notificationsRoute=readFileSync(new URL('../app/api/aqarflow/notifications
 const automationComponent=readFileSync(new URL('../components/aqarflow/AqarFlowAutomation.tsx',import.meta.url),'utf8');
 const scheduledWorker=readFileSync(new URL('../worker.ts',import.meta.url),'utf8');
 const sql=readFileSync(new URL('../supabase/migrations/20261010000200_aqarflow_ai_runtime.sql',import.meta.url),'utf8');
+const autoReplyMigration=readFileSync(new URL('../supabase/migrations/20261011000100_aqarflow_ai_auto_reply.sql',import.meta.url),'utf8');
+const publicDemoMigration=readFileSync(new URL('../supabase/migrations/20261011000200_aqarflow_public_demo.sql',import.meta.url),'utf8');
 const whatsappMigration=readFileSync(new URL('../supabase/migrations/20261010000300_aqarflow_whatsapp_tech_provider.sql',import.meta.url),'utf8');
 const route=readFileSync(new URL('../app/api/aqarflow/sales/route.ts',import.meta.url),'utf8');
+const publicDemoRoute=readFileSync(new URL('../app/api/aqarflow/demo-sales/route.ts',import.meta.url),'utf8');
 const ranked=readFileSync(new URL('../lib/aqarflow/ranked-inventory.ts',import.meta.url),'utf8');
 const body=readFileSync(new URL('../lib/aqarflow/http-body.ts',import.meta.url),'utf8');
 const inbox=readFileSync(new URL('../app/api/aqarflow/inbox/route.ts',import.meta.url),'utf8');
 const crmContacts=readFileSync(new URL('../app/api/aqarflow/crm/contacts/route.ts',import.meta.url),'utf8');
 const whatsappWebhook=readFileSync(new URL('../app/api/integrations/whatsapp/webhook/route.ts',import.meta.url),'utf8');
+const automaticSalesReply=readFileSync(new URL('../lib/aqarflow/automatic-sales-reply.ts',import.meta.url),'utf8');
+const whatsappConnectRoute=readFileSync(new URL('../app/api/integrations/whatsapp/connect/route.ts',import.meta.url),'utf8');
+const automaticReply=readFileSync(new URL('../lib/aqarflow/automatic-sales-reply.ts',import.meta.url),'utf8');
+const automaticReplyPolicy=readFileSync(new URL('../lib/aqarflow/automatic-reply-policy.ts',import.meta.url),'utf8');
 const whatsappCloud=readFileSync(new URL('../lib/aqarflow/whatsapp-cloud.ts',import.meta.url),'utf8');
 const whatsappSend=readFileSync(new URL('../app/api/integrations/whatsapp/send/route.ts',import.meta.url),'utf8');
 const whatsappManager=readFileSync(new URL('../components/aqarflow/WhatsAppConnectionManager.tsx',import.meta.url),'utf8');
@@ -29,6 +36,25 @@ const operationsContract=readFileSync(new URL('../lib/aqarflow/operations-contra
 const operationsComponent=readFileSync(new URL('../components/aqarflow/AqarFlowOperations.tsx',import.meta.url),'utf8');
 const wrangler=readFileSync(new URL('../wrangler.jsonc',import.meta.url),'utf8');
 const props=readFileSync(new URL('../app/api/aqarflow/properties/route.ts',import.meta.url),'utf8');
+assert.match(autoReplyMigration,/ai_auto_reply_opted_out boolean not null default false/i);
+assert.ok(publicDemoMigration.includes("create table if not exists public.aqarflow_public_demo_rate_limits"));
+assert.ok(publicDemoMigration.includes("create or replace function public.aqarflow_consume_public_demo_quota"));
+assert.ok(publicDemoMigration.includes("revoke all on function public.aqarflow_consume_public_demo_quota(text) from public, anon, authenticated"));
+assert.ok(publicDemoMigration.includes("grant execute on function public.aqarflow_consume_public_demo_quota(text) to service_role"));
+assert.ok(publicDemoMigration.includes("hour_count integer not null default 0 check (hour_count between 0 and 6)"));
+assert.ok(publicDemoMigration.includes("day_count integer not null default 0 check (day_count between 0 and 25)"));
+assert.ok(publicDemoMigration.includes("enable row level security"));
+assert.ok(autoReplyMigration.includes("add column if not exists processing_started_at timestamptz"));
+assert.ok(autoReplyMigration.includes("aqarflow_whatsapp_events_lease_idx"));
+assert.ok(autoReplyMigration.includes("buyer_profile jsonb not null default '{}'::jsonb"));
+assert.ok(autoReplyMigration.includes("create or replace function public.aqarflow_reserve_webhook_ai_request"));
+assert.ok(autoReplyMigration.includes("create or replace function public.aqarflow_record_webhook_ai_usage"));
+assert.ok(autoReplyMigration.includes("revoke all on function public.aqarflow_reserve_webhook_ai_request(uuid) from public, anon, authenticated"));
+assert.ok(autoReplyMigration.includes("grant execute on function public.aqarflow_reserve_webhook_ai_request(uuid) to service_role"));
+assert.ok(autoReplyMigration.includes("grant execute on function public.aqarflow_record_webhook_ai_usage(uuid,uuid,text,integer,integer,integer,boolean,text) to service_role"));
+for (const functionBlock of autoReplyMigration.split("$function$;")) {
+  if (functionBlock.includes("security definer")) assert.ok(functionBlock.includes("set search_path = ''"));
+}
 assert.match(sql,/create table if not exists public\.aqarflow_properties/i);
 assert.match(sql,/create table if not exists public\.aqarflow_workspace_memberships/i);
 assert.match(sql,/from public\.aqarflow_workspace_memberships tm/i);
@@ -47,11 +73,28 @@ const functions=[...sql.matchAll(/create or replace function\s+([^\s(]+)[\s\S]*?
 assert.ok(functions.length>=5);
 for(const match of functions){if(/security\s+definer/i.test(match[0])){assert.ok(match[1].toLowerCase().startsWith('private.'));assert.match(match[0],/set search_path\s*=\s*''/i);}}
 assert.match(route,/supabase\.auth\.getUser\(\)/);
+assert.ok(publicDemoRoute.includes("readBoundedUtf8Body"), "public demo request body must be byte bounded");
+assert.ok(publicDemoRoute.includes("MAX_MESSAGE_CHARS = 500"), "public demo must enforce a short customer-message limit");
+assert.ok(publicDemoRoute.includes("aqarflow_consume_public_demo_quota"), "public demo must reserve a rate-limit slot");
+assert.ok(publicDemoRoute.includes("buildPersonalizedSalesPrompt"), "public demo must use the same sales prompt");
+assert.ok(publicDemoRoute.includes("validateSalesDraft"), "public demo output must pass the grounded sales validator");
+assert.ok(publicDemoRoute.includes("getDemoInventory"), "public demo must use isolated illustrative inventory");
+assert.doesNotMatch(publicDemoRoute,/sendMetaWhatsAppText|sendMetaWhatsAppTemplate|aqarflow_crm_messages|aqarflow_properties/, "public demo must never send messages or read/write real office inventory");
 assert.match(route,/readBoundedUtf8Body\(req,MAX_REQUEST_BODY_BYTES\)/);
 assert.match(route,/\.eq\('owner_user_id',workspaceOwnerId\)/);
 assert.match(route,/\.limit\(50\)/);
 assert.match(route,/rankPropertyCandidates\(buyerProfile,candidates\)/);
+assert.ok(ranked.includes("selectNearBudgetAlternative"), "inventory ranker must expose the near-budget fallback without marking it an exact match");
+assert.ok(route.includes("selectPropertiesForSalesReply"), "interactive sales drafts should use the exact-match-first fallback selector");
+assert.ok(route.includes("nearBudgetAlternativeMode"), "interactive prompt must disclose that it is presenting a near-budget alternative");
+assert.ok(automaticSalesReply.includes("selectPropertiesForSalesReply"), "WhatsApp automation should use the same exact-match-first fallback selector");
+assert.ok(automaticSalesReply.includes("nearBudgetAlternativeMode"), "WhatsApp prompt must know the selected property is above the target budget");
+assert.ok(route.includes("buildAllowedSalesContextNumbers(buyerProfile,selected)"));
+assert.ok(automaticSalesReply.includes("buildAllowedSalesContextNumbers(buyerProfile, selected)"));
 assert.match(route,/if\(selected\.length===0\)/);
+assert.match(automaticSalesReply,/aqarflow_reserve_webhook_ai_request/);
+assert.ok(automaticSalesReply.indexOf("aqarflow_reserve_webhook_ai_request") < automaticSalesReply.indexOf("if (!selected.length)"), "automatic reply quota must be reserved before the deterministic no-match branch");
+assert.match(automaticSalesReply,/await recordUsage\(admin, integration\.owner_user_id, reservationId, \{[\s\S]{0,400}model: "deterministic-no-match"/);
 assert.ok(route.indexOf('if(selected.length===0)')<route.indexOf("runtimeEnv('GEMINI_API_KEY')"));
 assert.match(route,/validateSalesDraft\(/);
 assert.match(body,/reader\.cancel\(\)/);
@@ -76,10 +119,55 @@ assert.match(crmContacts,/\.eq\('owner_user_id',ctx\.ownerId!\)/);
 assert.match(crmContacts,/source:'manual'/);
 assert.match(crmContacts,/raw\.id/);
 assert.match(crmContacts,/budgetMin>budgetMax/);
-assert.match(whatsappWebhook,/pendingEventKeys/);
-assert.match(whatsappWebhook,/const acceptedKeys=new Set<string>\(\)/);
-assert.match(whatsappWebhook,/acceptedKeys\.has\(uniqueKey\)/);
-assert.match(whatsappWebhook,/neq\('processing_status','processed'\)/);
+assert.ok(whatsappWebhook.includes("handleWhatsAppAutomaticReply(admin"));
+assert.ok(whatsappWebhook.includes("ai_auto_reply_opted_out"));
+assert.ok(whatsappWebhook.includes("auto_reply_enabled"));
+assert.ok(whatsappWebhook.includes("buyer_profile"));
+assert.ok(whatsappWebhook.includes("processing_status:'failed'"));
+assert.ok(whatsappWebhook.includes("processing_status:'failed',processing_started_at:null"));
+assert.ok(whatsappWebhook.includes("processing_status:'processed',processing_started_at:null"));
+assert.ok(whatsappWebhook.includes("acceptedKeysInBatch.has(uniqueKey)"));
+assert.ok(whatsappWebhook.includes("batchOptOutSenders"));
+assert.ok(whatsappWebhook.includes("batchHandoffSenders"));
+assert.ok(whatsappWebhook.includes("classifySalesMoment(event.messageText||'')"));
+assert.ok(whatsappWebhook.includes("selectLatestInboundEventKeys"));
+assert.ok(whatsappWebhook.includes("latestInboundAutoReplyKeys.has(senderKey+':'+event.eventKey)"));
+assert.ok(whatsappWebhook.includes("currentMoment!=='human_handoff'&&currentMoment!=='stop_contact'"));
+assert.ok(whatsappConnectRoute.includes("export async function PATCH(request: Request)"));
+assert.ok(whatsappConnectRoute.includes("requireOwnerAccount()"));
+assert.ok(whatsappConnectRoute.includes("body.value.autoReplyEnabled"));
+assert.ok(whatsappConnectRoute.includes("phone_registered_at"), "auto replies must require persisted Meta phone registration");
+assert.ok(whatsappRegisterRoute.includes("phone_registered_at: registeredAt"), "successful Meta registration must persist before enabling automatic replies");
+assert.ok(whatsappConnectRoute.includes("auto_reply_enabled: false"));
+assert.ok(automaticReply.includes("aqarflow_reserve_webhook_ai_request"));
+assert.ok(automaticReply.includes("aqarflow_record_webhook_ai_usage"));
+assert.ok(automaticReply.includes("aqarflow_whatsapp_outbound_requests"));
+assert.ok(automaticReply.includes("buildPersonalizedSalesPrompt"));
+assert.ok(automaticReply.includes("validateSalesDraft"));
+assert.ok(automaticReply.includes("contact_opted_out_before_send"));
+assert.ok(automaticReply.includes("automation_disabled_before_send"));
+assert.ok(automaticReply.includes("human_handoff_activated_before_send"));
+assert.ok(automaticReply.includes("whatsapp_credentials_expired_before_send"));
+assert.ok(automaticReply.includes("superseded_by_newer_inbound"));
+assert.ok(automaticReply.includes("latestInboundResult.data.provider_event_key !== event.eventKey"));
+assert.ok(
+  automaticReply.indexOf("superseded_by_newer_inbound") < automaticReply.indexOf("sent = await sendMetaWhatsAppText"),
+  "stale-event guard must run before outbound WhatsApp send",
+);
+assert.ok(
+  automaticReply.indexOf("const { error: claimError }") < automaticReply.indexOf("const [latestContactResult"),
+  "send authorization must be rechecked after claiming an idempotency key",
+);
+assert.ok(
+  automaticReply.indexOf("const [latestContactResult") < automaticReply.indexOf("sent = await sendMetaWhatsAppText"),
+  "latest consent and integration state must be rechecked before sending",
+);
+assert.ok(automaticReplyPolicy.includes("customer_requested_no_contact"));
+assert.ok(automaticReplyPolicy.includes("customer_requested_human"));
+assert.ok(whatsappWebhook.includes("claimedEventKeys=new Set<string>()"));
+assert.ok(whatsappWebhook.includes("processing_status:'queued',processing_started_at:claimAt"));
+assert.ok(whatsappWebhook.includes("processing_started_at.lt."));
+assert.doesNotMatch(whatsappWebhook,/pendingEventKeys/);
 assert.match(whatsappWebhook,/processing_status:'received'/);
 assert.match(whatsappWebhook,/for\(const event of acceptedEvents\)/);
 assert.match(whatsappMigration,/provider_status text check \(provider_status is null or length\(provider_status\) <= 40\)/i);

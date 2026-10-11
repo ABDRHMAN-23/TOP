@@ -5,16 +5,30 @@ export const MAX_CONVERSATION_SUMMARY_CHARS = 1000;
 export const MAX_REQUEST_BODY_CHARS = 12000;
 export const MAX_REQUEST_BODY_BYTES = 32000;
 
-export function buildNoMatchSalesDraft(activeCandidateCount: number): SalesDraft {
+export function buildNoMatchSalesDraft(activeCandidateCount: number, buyerProfile?: BuyerProfile | null): SalesDraft {
   const hasActiveCandidates = Number.isFinite(activeCandidateCount) && activeCandidateCount > 0;
+  const areas = Array.isArray(buyerProfile?.preferredAreas)
+    ? buyerProfile.preferredAreas.filter((v): v is string => typeof v === 'string' && v.trim().length > 0).slice(0, 2)
+    : [];
+  const propertyType = typeof buyerProfile?.propertyType === 'string' ? buyerProfile.propertyType.trim().slice(0, 60) : '';
+  const context = [
+    propertyType ? ` من نوع ${propertyType}` : '',
+    areas.length ? ` في ${areas.join(' أو ')}` : '',
+  ].join('');
+  const budgetGuard = buyerProfile?.budgetMax != null
+    ? ' مع الحفاظ على سقف الميزانية الذي حددته'
+    : '';
+  const askOneQuestion = hasActiveCandidates
+    ? `هل يناسبك أن أبحث في منطقة قريبة${budgetGuard}، أم تفضّل أن نراجع شرطًا آخر؟`
+    : 'ما أهم شرط تحب نحافظ عليه حتى أبحث لك عن بديل مناسب؟';
   return {
     replyDraft: hasActiveCandidates
-      ? 'لم أجد ضمن العقارات النشطة خيارًا يطابق الشروط المعروفة بالكامل، لذلك لن أقدّم عقارًا على أنه مناسب دون دليل. يمكننا توسيع البحث أو مراجعة أحد الشروط.'
-      : 'لا توجد عقارات نشطة مسجلة في المخزون حاليًا، لذلك لن أخمّن تفاصيل غير متوفرة. يمكن إضافة العقارات أولًا أو مراجعة طلب العميل.',
+      ? `راجعت الخيارات المتوفرة عندنا${context}، وما ظهر عقار يطابق طلبك بالكامل. ما أحب أعرض عليك شيئًا قد لا يناسبك؛ ${askOneQuestion}`
+      : `حاليًا ما عندي خيار أقدر أؤكد أنه يناسب طلبك، وما أحب أعطيك معلومة غير دقيقة. ${askOneQuestion}`,
     factsUsed: [],
     unknowns: [hasActiveCandidates ? 'no_eligible_property_match' : 'active_inventory_empty'],
     nextBestAction: 'ask_one_question',
-    askOneQuestion: hasActiveCandidates ? 'هل تفضّل توسيع نطاق البحث أو تعديل أحد الشروط؟' : 'هل تريد إضافة العقارات إلى المخزون أولًا أم مراجعة شروط البحث؟',
+    askOneQuestion,
     handoffRequired: false,
   };
 }
@@ -48,6 +62,7 @@ export function normalizeBuyerProfile(value: unknown): BuyerProfile {
   const areas = cleanList(raw.preferredAreas,8,80); if (areas.length) p.preferredAreas = areas;
   const min = finiteNumber(raw.budgetMin); if (min !== null) p.budgetMin = min;
   const max = finiteNumber(raw.budgetMax); if (max !== null) p.budgetMax = max;
+  if (["hard","slight","flexible"].includes(String(raw.budgetFlexibility))) p.budgetFlexibility = raw.budgetFlexibility as BuyerProfile["budgetFlexibility"];
   const currency = cleanText(raw.currency,8).toUpperCase(); if (/^[A-Z]{3,8}$/.test(currency)) p.currency = currency;
   const beds = finiteNumber(raw.bedroomsMin,100); if (beds !== null && Number.isInteger(beds)) p.bedroomsMin = beds;
   const must = cleanList(raw.mustHaves,8,100); if (must.length) p.mustHaves = must;
@@ -58,12 +73,80 @@ export function normalizeBuyerProfile(value: unknown): BuyerProfile {
   return p;
 }
 export function inferBasicBuyerProfileHints(message: string): BuyerProfile {
-  const normalized = message.replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
+  const normalized = message
+    .normalize("NFKC")
+    .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[\u064B-\u065F\u0670]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ى/g, "ي")
+    .toLocaleLowerCase();
   const hints: BuyerProfile = {};
-  if (/(للإيجار|للايجار|إيجار|ايجار|استئجار|\brent(?:al)?\b|\blease\b|\bto rent\b)/i.test(normalized)) hints.intent = 'rent';
-  else if (/(للبيع|شراء|أشتري|اشتري|تملّك|تملك|\bbuy\b|\bpurchase\b|\bfor sale\b)/i.test(normalized)) hints.intent = 'buy';
-  const match = normalized.match(/(?:^|\s)(\d{1,2})\s*(?:غرف(?:ة)?(?:\s*نوم)?|غرف نوم|bedrooms?|beds?)/i);
-  if (match) { const n = Number(match[1]); if (Number.isInteger(n) && n >= 0 && n <= 20) hints.bedroomsMin = n; }
+
+  if (/(للإيجار|للايجار|إيجار|ايجار|استئجار|\brent(?:al)?\b|\blease\b|\bto rent\b)/i.test(normalized)) hints.intent = "rent";
+  else if (/(للبيع|شراء|اشتري|تملك|\bbuy\b|\bpurchase\b|\bfor sale\b)/i.test(normalized)) hints.intent = "buy";
+
+  const bedroomMatches = Array.from(normalized.matchAll(/(?:^|\s)(\d{1,2})\s*(?:غرف(?:ة)?(?:\s*نوم)?|غرف نوم|bedrooms?|beds?)/gi));
+  const bedroomMatch = bedroomMatches[bedroomMatches.length - 1];
+  if (bedroomMatch) {
+    const bedrooms = Number(bedroomMatch[1]);
+    if (Number.isInteger(bedrooms) && bedrooms >= 0 && bedrooms <= 20) hints.bedroomsMin = bedrooms;
+  } else {
+    // Arabic customers commonly write room counts as words ("غرفتين", "ثلاث غرف").
+    const bedroomWordRules: Array<[RegExp, number]> = [
+      [/(?:غرفتين|غرفتان|غرفتي\s+نوم)(?:\s+نوم)?/i, 2],
+      [/(?:ثلاث|ثلاثة)\s+غرف(?:\s+نوم)?/i, 3],
+      [/(?:اربع|اربعة)\s+غرف(?:\s+نوم)?/i, 4],
+      [/(?:خمس|خمسة)\s+غرف(?:\s+نوم)?/i, 5],
+      [/(?:ست|ستة)\s+غرف(?:\s+نوم)?/i, 6],
+      [/(?:غرفة واحدة|غرفة نوم واحدة|غرفة نوم|غرفة)/i, 1],
+    ];
+    const wordMatches = bedroomWordRules.flatMap(([pattern, count]) => {
+      const match = pattern.exec(normalized);
+      return match ? [{ count, index: match.index, length: match[0].length }] : [];
+    }).sort((left, right) => right.index - left.index || right.length - left.length);
+    if (wordMatches[0]) hints.bedroomsMin = wordMatches[0].count;
+  }
+
+  // Only infer a money amount when a currency is explicitly named; a bare "200"
+  // might be a room count, area, ID, or another quantity.
+  const hasUSD = /(?:\busd\b|us\$|\$|دولار)/i.test(normalized);
+  const hasSAR = /(?:\bsar\b|ريال سعودي)/i.test(normalized);
+  const hasYER = /(?:\byer\b|ريال يمني)/i.test(normalized);
+  const currency = hasUSD ? "USD" : hasSAR ? "SAR" : hasYER ? "YER" : null;
+  const explicitBudgetCue = /(?:ميزاني|budget|حد نهائي|حد اقصي|بحد اقصي|الحد الاقصي|في حدود|بحدود|لا يزيد|ما يزيد|لا يتجاوز|ما يتجاوز|مبلغ استطيع دفعه|اقدر ادفع|استطيع دفع|around|about|under|below|up to|maximum budget|hard limit|can spend|afford)/i.test(normalized);
+  if (currency && explicitBudgetCue) {
+    const amount = String.raw`(\d{1,12}(?:[,٬]\d{3})*(?:\.\d+)?)`;
+    const pattern = currency === "USD"
+      ? new RegExp(String.raw`(?:\$\s*${amount}|${amount}\s*(?:usd|us\$|دولار(?:ات)?))`, "gi")
+      : currency === "SAR"
+        ? new RegExp(String.raw`(?:${amount}\s*(?:sar|ريال سعودي)|(?:sar|ريال سعودي)\s*${amount})`, "gi")
+        : new RegExp(String.raw`(?:${amount}\s*(?:yer|ريال يمني)|(?:yer|ريال يمني)\s*${amount})`, "gi");
+    const amounts: number[] = [];
+    for (const match of normalized.matchAll(pattern)) {
+      const candidate = match.slice(1).find(value => typeof value === "string" && value.trim()) || "";
+      const parsed = Number(candidate.replace(/[，,٬]/g, ""));
+      if (Number.isFinite(parsed) && parsed > 0 && parsed <= 1_000_000_000_000) amounts.push(parsed);
+      if (amounts.length >= 4) break;
+    }
+    if (amounts.length) {
+      hints.currency = currency;
+      if (amounts.length >= 2 && /(?:بين|من|الى|إلى|to|between|and)/i.test(normalized)) {
+        hints.budgetMin = Math.min(...amounts);
+        hints.budgetMax = Math.max(...amounts);
+      } else {
+        hints.budgetMax = amounts[amounts.length - 1];
+      }
+    }
+  }
+
+  const firmBudget = /(?:حد نهائي|حد اقصي|بحد اقصي|الحد الاقصي|لا يزيد|ما يزيد|لا يتجاوز|ما يتجاوز|ما اقدر ازيد|لا اقدر ازيد|ما استطيع ازيد|لا استطيع ازيد|ما اقدر اتجاوز|لا اتجاوز|لا اريد.{0,12}اتجاوز|ما اريد.{0,12}اتجاوز|ميزانيتي.{0,35}نهائي|cannot increase|cant increase|firm budget|hard limit|maximum budget)/i.test(normalized);
+  const widelyFlexibleBudget = /(?:ميزانيتي مرنة|الميزانية مرنة|مرونة واسعة|مرونة كبيرة|الميزانية مفتوحة|flexible budget|very flexible|open budget)/i.test(normalized);
+  const flexibleBudget = /(?:اقدر ازيد.{0,25}(?:قليل|شوي|قليلا)|ممكن ازيد|ممكن نزيد|قابل للتفاوض|قابلة للتفاوض|عندي مرونة|مرن|مرنة|can increase a little|some flexibility)/i.test(normalized);
+  if (firmBudget) hints.budgetFlexibility = "hard";
+  else if (widelyFlexibleBudget) hints.budgetFlexibility = "flexible";
+  else if (flexibleBudget) hints.budgetFlexibility = "slight";
+
   return hints;
 }
 export function parseAqarFlowSalesRequest(value: unknown): AqarFlowSalesRequestResult {

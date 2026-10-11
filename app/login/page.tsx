@@ -1,47 +1,32 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
-import QuvotoLogo from '@/components/QuvotoLogo';
+import { useMemo, useState } from 'react';
+import { ArrowLeft, ArrowRight, Loader2, MessageCircle, ShieldCheck, Smartphone } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { safeInternalRedirectPath } from '@/lib/security/safe-redirect';
 
-function GoogleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
-      <path fill="#4285F4" d="M21.35 12.23c0-.72-.06-1.41-.18-2.08H12v3.94h5.24a4.48 4.48 0 0 1-1.94 2.94v2.44h3.14c1.84-1.7 2.91-4.2 2.91-7.24Z"/>
-      <path fill="#34A853" d="M12 21.5c2.63 0 4.84-.87 6.45-2.35l-3.14-2.44c-.87.58-1.98.92-3.31.92-2.55 0-4.71-1.72-5.49-4.03H3.27v2.52A9.74 9.74 0 0 0 12 21.5Z"/>
-      <path fill="#FBBC05" d="M6.51 13.6A5.85 5.85 0 0 1 6.2 12c0-.56.11-1.1.31-1.6V7.88H3.27A9.75 9.75 0 0 0 2.25 12c0 1.57.38 3.06 1.02 4.12l3.24-2.52Z"/>
-      <path fill="#EA4335" d="M12 6.37c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.84 3.46 14.63 2.5 12 2.5a9.74 9.74 0 0 0-8.73 5.38l3.24 2.52C7.29 8.09 9.45 6.37 12 6.37Z"/>
-    </svg>
-  );
-}
-
-function AppleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-current">
-      <path d="M16.77 12.62c.02 2.13 1.87 2.84 1.89 2.85-.02.05-.3 1.05-1 2.08-.6.9-1.22 1.8-2.2 1.82-.96.02-1.27-.59-2.37-.59-1.1 0-1.44.57-2.35.61-.95.04-1.68-.98-2.29-1.88-1.25-1.81-2.2-5.1-.92-7.32.64-1.11 1.75-1.81 2.96-1.83.93-.02 1.8.63 2.35.63.55 0 1.59-.78 2.68-.66.46.02 1.74.19 2.57 1.4-.07.04-1.54.9-1.52 2.89ZM14.99 4.91c.5-.61.83-1.46.74-2.31-.72.03-1.58.48-2.09 1.09-.46.53-.86 1.39-.75 2.21.8.06 1.61-.4 2.1-.99Z"/>
-    </svg>
-  );
+function normalizePhone(value: string): string | null {
+  const compact = value.trim().replace(/[\\s().-]/g, '');
+  return /^\\+[1-9]\\d{7,14}$/.test(compact) ? compact : null;
 }
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('+967');
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [legal, setLegal] = useState(false);
+  const [authVerified, setAuthVerified] = useState(false);
+  const normalizedPhone = useMemo(() => normalizePhone(phone), [phone]);
 
-  const next =
-    typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('next') || '/dashboard'
-      : '/dashboard';
+  const next = useMemo(() => {
+    if (typeof window === 'undefined') return '/dashboard';
+    return safeInternalRedirectPath(new URLSearchParams(window.location.search).get('next'), '/dashboard');
+  }, []);
 
-  const authError =
-    typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('error')
-      : null;
-
-  const registerConsent = async () => {
+  async function registerConsent() {
     const response = await fetch('/api/legal-consent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -57,274 +42,186 @@ export default function LoginPage() {
     if (!response.ok) {
       throw new Error(typeof result.error === 'string'
         ? result.error
-        : 'Could not securely record your legal acknowledgement. Please try again.');
+        : 'تعذّر تسجيل الموافقة القانونية. حاول مرة أخرى.');
     }
-  };
+  }
 
-  const socialLogin = async (provider: 'google' | 'apple') => {
+  async function sendCode(event?: React.FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
     setError('');
     setMessage('');
+    setAuthVerified(false);
 
     if (!legal) {
-      setError(
-        'Please agree to the Terms of Service and acknowledge the Privacy Policy before continuing.',
-      );
+      setError('وافق على شروط الاستخدام وأقرّ بسياسة الخصوصية قبل المتابعة.');
+      return;
+    }
+    if (!normalizedPhone) {
+      setError('أدخل الرقم بصيغة دولية، مع رمز الدولة، مثل ‎+967771234567.');
       return;
     }
 
     setLoading(true);
     try {
       await registerConsent();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not securely record your legal acknowledgement.');
-      setLoading(false);
-      return;
-    }
-
-    const supabase = createClient();
-    try {
-      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo:
-            window.location.origin +
-            '/auth/callback?next=' +
-            encodeURIComponent(next),
-        },
-      });
-
-      if (oauthError) {
-        setError(oauthError.message);
-        setLoading(false);
-        return;
-      }
-
-      // Explicitly navigate to the provider URL. This avoids leaving the
-      // button in a loading state on browsers where the automatic OAuth
-      // navigation is interrupted.
-      if (data?.url) {
-        window.location.assign(data.url);
-        return;
-      }
-
-      setError('The sign-in provider did not return a redirect URL. Please try again.');
-      setLoading(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not start secure sign-in.');
-      setLoading(false);
-    }
-  };
-
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError('');
-    setMessage('');
-
-    if (!legal) {
-      setError(
-        'Please agree to the Terms of Service and acknowledge the Privacy Policy before continuing.',
-      );
-      return;
-    }
-
-    if (!email.trim()) return;
-
-    setLoading(true);
-    try {
-      await registerConsent();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not securely record your legal acknowledgement.');
-      setLoading(false);
-      return;
-    }
-
-    const supabase = createClient();
-    try {
+      const supabase = createClient();
       const { error: otpError } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
+        phone: normalizedPhone,
         options: {
-          emailRedirectTo:
-            window.location.origin +
-            '/auth/callback?next=' +
-            encodeURIComponent(next),
+          channel: 'whatsapp',
+          shouldCreateUser: true,
+          data: { product: 'aqarflow_ai', onboarding_source: 'public_landing' },
         },
       });
       if (otpError) {
-        setError(otpError.message);
-      } else {
-        setMessage('Check your email for your secure QUVOTO sign-in link.');
+        setError('لم نتمكن من إرسال رمز واتساب. تحقق من الرقم وإعداد قناة WhatsApp OTP في مزود تسجيل الدخول، ثم حاول مجددًا.');
+        return;
       }
+      setStep('otp');
+      setMessage('تم قبول طلب إرسال الرمز. أدخل الرمز الذي يصلك عبر واتساب لإكمال الدخول أو التسجيل.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not start secure sign-in.');
+      setError(err instanceof Error ? err.message : 'تعذر بدء التحقق. حاول مجددًا.');
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  useEffect(() => {
-    if (authError === 'legal-required') {
-      setError(
-        'Please accept the Terms of Service and acknowledge the Privacy Policy before signing in.',
-      );
-    } else if (authError === 'auth') {
-      setError(
-        'The sign-in link could not be completed. Please request a new one.',
-      );
-    } else if (authError === 'consent-save') {
-      setError(
-        'We could not securely record your legal consent. Please try signing in again.',
-      );
+  async function finalizeLogin() {
+    setError('');
+    try {
+      const response = await fetch('/api/legal-consent/finalize', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(typeof result.error === 'string' ? result.error : 'تعذّر حفظ الموافقة القانونية.');
+      }
+      window.location.assign(next);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذّر إكمال التسجيل. اضغط إعادة المحاولة.');
     }
-  }, [authError]);
+  }
+
+  async function verifyCode(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError('');
+    setMessage('');
+    const token = otp.replace(/\\D/g, '').slice(0, 8);
+    if (!normalizedPhone || token.length < 6) {
+      setError('أدخل رمز التحقق الذي وصلك على واتساب.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({
+        phone: normalizedPhone,
+        token,
+        type: 'sms',
+      });
+      if (verifyError || !data.session || !data.user) {
+        setError('رمز التحقق غير صحيح أو انتهت صلاحيته. راجع الرمز أو اطلب رمزًا جديدًا.');
+        return;
+      }
+      setAuthVerified(true);
+      await finalizeLogin();
+    } catch {
+      setError('تعذر التحقق من الرمز الآن. حاول مرة أخرى.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#eaf3ff,transparent_42%),#f7faff] px-4 py-8 text-[#0A1E3D] sm:px-6 sm:py-12">
+    <main dir="rtl" className="min-h-screen bg-[#f7f8f5] px-4 py-8 text-[#192721] sm:px-6 sm:py-12">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center">
         <div className="text-center">
-          <a
-            href="/"
-            aria-label="QUVOTO home"
-            className="inline-flex flex-col items-center"
-          >
-            <QuvotoLogo className="h-20 w-20" stacked />
+          <a href="/" aria-label="AqarFlow AI الصفحة الرئيسية" className="inline-flex items-center gap-3 rounded-2xl px-3 py-2">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#173d32] text-[#dcf6bd]"><Smartphone size={22} /></span>
+            <span className="text-right"><span className="block text-xl font-black tracking-tight">AqarFlow <span className="text-[#2b7057]">AI</span></span><span className="mt-0.5 block text-xs font-bold text-[#718075]">ملك التسويق العقاري</span></span>
           </a>
-          <p className="mt-3 text-xs font-black uppercase tracking-[0.24em] text-[#1769E0]">
-            Speak. Quote. Done.
-          </p>
         </div>
 
-        <div className="mt-8 overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-[0_24px_80px_rgba(10,30,61,.10)] sm:p-8">
-          <div className="text-center">
-            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1769E0]/10 text-[#1769E0]">
-              <ShieldCheck size={21} />
-            </div>
-            <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-[#1769E0]">
-              Secure sign in
-            </p>
-            <h1 className="mt-2 text-3xl font-black tracking-[-0.035em]">
-              Welcome back
-            </h1>
-            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
-              Access your QUVOTO workspace with a secure one-time email link.
-              No password to remember.
-            </p>
+        <section className="mt-7 overflow-hidden rounded-[2rem] border border-[#dce5da] bg-white shadow-xl shadow-[#173d32]/8 sm:mt-9">
+          <div className="bg-[#173d32] px-6 py-7 text-center text-white sm:px-8">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10"><ShieldCheck size={23} /></div>
+            <p className="mt-4 text-xs font-black tracking-wide text-[#c9e7bd]">{step === 'phone' ? 'ابدأ بمساحة مكتبك' : 'التحقق من رقم الهاتف'}</p>
+            <h1 className="mt-2 text-2xl font-black sm:text-3xl">{step === 'phone' ? 'دخول أو تسجيل آمن' : 'أدخل رمز واتساب'}</h1>
+            <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-[#deebe1]">{step === 'phone' ? 'استخدم رقم الهاتف الذي تريد ربطه بمساحة مكتبك. لا تحتاج إلى كلمة مرور.' : 'أدخل رمز التحقق المرتبط بالرقم الذي أدخلته لإكمال المصادقة.'}</p>
           </div>
 
-          <div className="mt-7">
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => socialLogin('google')}
-                className="flex min-h-14 items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white">
-                  <GoogleIcon />
-                </span>
-                <span>Google</span>
-              </button>
+          <div className="p-6 sm:p-8">
+            {step === 'phone' ? (
+              <form onSubmit={(event) => void sendCode(event)} className="space-y-5">
+                <label className="block text-sm font-extrabold text-[#34483a]">
+                  رقم الهاتف مع رمز الدولة
+                  <input
+                    required
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    dir="ltr"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value.slice(0, 24))}
+                    className="mt-2 min-h-13 w-full rounded-2xl border border-[#dce5da] bg-[#fbfcfa] px-4 py-3.5 text-left text-base outline-none transition focus:border-[#6d9b78] focus:bg-white focus:ring-4 focus:ring-[#d8e9d3]"
+                    placeholder="+967 771 234 567"
+                  />
+                  <span className="mt-2 block text-xs font-medium leading-5 text-[#758175]">أدخل علامة + ورمز الدولة والرقم كاملًا. مثال: +967771234567.</span>
+                </label>
 
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => socialLogin('apple')}
-                className="flex min-h-14 items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-[#0A1E3D]">
-                  <AppleIcon />
-                </span>
-                <span>Apple</span>
-              </button>
-            </div>
+                <label className="flex items-start gap-3 rounded-2xl border border-[#e1e8df] bg-[#f8faf7] p-3.5 text-xs leading-6 text-[#617165]">
+                  <input type="checkbox" checked={legal} onChange={(event) => setLegal(event.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-[#285c45]" />
+                  <span>أوافق على <a href="/terms" target="_blank" rel="noreferrer" className="font-extrabold text-[#2b7057] underline">شروط الاستخدام</a> وأقرّ بالاطلاع على <a href="/privacy" target="_blank" rel="noreferrer" className="font-extrabold text-[#2b7057] underline">سياسة الخصوصية</a>.</span>
+                </label>
 
-            <div className="my-6 flex items-center gap-3">
-              <div className="h-px flex-1 bg-slate-200" />
-              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
-                or use email
-              </span>
-              <div className="h-px flex-1 bg-slate-200" />
-            </div>
-
-            <form onSubmit={submit} className="space-y-4">
-              <label className="block text-sm font-bold text-slate-700">
-                Work email
-                <input
-                  required
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="mt-2 min-h-13 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none transition focus:border-[#1769E0] focus:bg-white focus:ring-4 focus:ring-[#1769E0]/10"
-                  placeholder="you@company.com"
-                />
-              </label>
-
-              <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3.5 text-sm leading-5 text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={legal}
-                  onChange={(event) => setLegal(event.target.checked)}
-                  className="mt-1 h-4 w-4 accent-[#1769E0]"
-                />
-                <span>
-                  I agree to the{' '}
-                  <a
-                    href="/terms"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-semibold text-[#1769E0] underline"
-                  >
-                    Terms of Service
-                  </a>{' '}
-                  and acknowledge the{' '}
-                  <a
-                    href="/privacy"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-semibold text-[#1769E0] underline"
-                  >
-                    Privacy Policy
-                  </a>
-                  .
-                </span>
-              </label>
-
-              <button
-                disabled={loading}
-                className="flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-[#1769E0] py-3.5 font-black text-white shadow-lg shadow-blue-600/20 transition hover:bg-[#125bc4] disabled:opacity-60"
-              >
-                {loading ? (
-                  <Loader2 className="animate-spin" size={18} />
-                ) : (
-                  <>
-                    <span>Email me a secure link</span>
-                    <ArrowRight size={17} />
-                  </>
-                )}
-              </button>
-            </form>
-
-            {message && (
-              <p className="mt-4 rounded-2xl bg-emerald-50 p-3.5 text-sm font-semibold text-emerald-700">
-                {message}
-              </p>
-            )}
-            {error && (
-              <p className="mt-4 rounded-2xl bg-red-50 p-3.5 text-sm font-semibold text-red-700">
-                {error}
-              </p>
+                <button type="submit" disabled={loading} className="flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-[#173d32] px-5 py-3.5 font-black text-white shadow-lg shadow-[#173d32]/15 transition hover:bg-[#225442] disabled:cursor-not-allowed disabled:opacity-60">
+                  {loading ? <Loader2 className="animate-spin" size={18} /> : <><MessageCircle size={18} /><span>إرسال رمز عبر واتساب</span><ArrowLeft size={17} /></>}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={verifyCode} className="space-y-5">
+                <div className="rounded-2xl border border-[#dce7d8] bg-[#f5f9f2] p-4">
+                  <p className="text-xs font-bold text-[#617165]">رمز التحقق للرقم</p>
+                  <p dir="ltr" className="mt-1 text-lg font-black tracking-wide text-[#244b39]">{normalizedPhone}</p>
+                  <button type="button" disabled={loading} onClick={() => { setStep('phone'); setOtp(''); setMessage(''); setError(''); setAuthVerified(false); }} className="mt-2 text-xs font-extrabold text-[#2b7057] underline">تغيير الرقم</button>
+                </div>
+                <label className="block text-sm font-extrabold text-[#34483a]">
+                  رمز التحقق
+                  <input
+                    required
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    dir="ltr"
+                    value={otp}
+                    onChange={(event) => setOtp(event.target.value.replace(/\\D/g, '').slice(0, 8))}
+                    className="mt-2 min-h-14 w-full rounded-2xl border border-[#dce5da] bg-[#fbfcfa] px-4 py-3.5 text-center text-2xl font-black tracking-[0.3em] outline-none transition focus:border-[#6d9b78] focus:bg-white focus:ring-4 focus:ring-[#d8e9d3]"
+                    placeholder="••••••"
+                  />
+                </label>
+                <button type="submit" disabled={loading || otp.replace(/\\D/g, '').length < 6} className="flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-[#173d32] px-5 py-3.5 font-black text-white shadow-lg shadow-[#173d32]/15 transition hover:bg-[#225442] disabled:cursor-not-allowed disabled:opacity-60">
+                  {loading ? <Loader2 className="animate-spin" size={18} /> : <><span>تحقق وادخل إلى المكتب</span><ArrowLeft size={17} /></>}
+                </button>
+                <button type="button" disabled={loading} onClick={() => void sendCode()} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-extrabold text-[#2b7057] transition hover:bg-[#f1f6ef] disabled:opacity-50">إعادة إرسال الرمز</button>
+                {authVerified && <button type="button" disabled={loading} onClick={() => void finalizeLogin()} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#dce5da] px-4 py-2 text-sm font-extrabold text-[#244b39] transition hover:bg-[#f1f6ef] disabled:opacity-50">إعادة المحاولة وحفظ الموافقة</button>}
+              </form>
             )}
 
-            <p className="mt-6 text-center text-xs leading-5 text-slate-400">
-              Your customer dashboard is available after sign-in, including
-              Free accounts and paid plans.
-            </p>
+            {message && <p role="status" className="mt-4 rounded-2xl bg-[#eff6ea] p-3.5 text-sm font-semibold leading-6 text-[#2b5c41]">{message}</p>}
+            {error && <p role="alert" className="mt-4 rounded-2xl border border-[#f0d7cc] bg-[#fff8f4] p-3.5 text-sm font-semibold leading-6 text-[#92532e]">{error}</p>}
+
+            <div className="mt-6 flex items-start gap-2 border-t border-[#e9eee7] pt-5 text-xs leading-6 text-[#758175]">
+              <ShieldCheck size={15} className="mt-0.5 shrink-0 text-[#49805c]" />
+              <p>تسجيل الدخول عبر رمز لمرة واحدة، دون كلمة مرور. يتطلب إرسال الرموز عبر واتساب تفعيل قناة WhatsApp OTP في إعدادات مزود المصادقة.</p>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
-          © 2026 QUVOTO · Secure contractor quoting
-        </p>
+        <a href="/" className="mt-6 inline-flex items-center justify-center gap-2 text-sm font-extrabold text-[#4b6655] transition hover:text-[#173d32]"><ArrowRight size={16} /> العودة إلى معاينة «ملك التسويق»</a>
       </div>
     </main>
   );

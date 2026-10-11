@@ -17,10 +17,17 @@ assert.equal(await createSignedLegalConsentToken('short', now), null, 'short sec
 const callback = readFileSync(new URL('../app/auth/callback/route.ts', import.meta.url), 'utf8');
 const consentRoute = readFileSync(new URL('../app/api/legal-consent/route.ts', import.meta.url), 'utf8');
 const login = readFileSync(new URL('../app/login/page.tsx', import.meta.url), 'utf8');
+const consentFinalizeRoute = readFileSync(new URL('../app/api/legal-consent/finalize/route.ts', import.meta.url), 'utf8');
 assert.ok(callback.includes('verifySignedLegalConsentToken(consentToken, consentSecret)'), 'OAuth callback must verify signed consent');
 assert.ok(!callback.includes("consentVersion !== '2026-10-02'"), 'OAuth callback must not trust a plaintext version cookie');
 assert.ok(consentRoute.includes("httpOnly: true"), 'consent cookie must be HttpOnly');
 assert.ok(consentRoute.includes("origin !== url.origin"), 'consent endpoint must reject cross-origin requests');
 assert.ok(login.includes("fetch('/api/legal-consent'"), 'login must register consent through the server endpoint');
+assert.ok(login.includes("channel: 'whatsapp'"), 'AqarFlow phone login must explicitly request WhatsApp OTP delivery');
+assert.ok(login.includes("supabase.auth.verifyOtp"), 'AqarFlow phone login must verify the one-time code before entering the workspace');
+assert.ok(login.includes("fetch('/api/legal-consent/finalize'"), 'phone OTP login must persist signed consent after authentication');
+assert.ok(consentFinalizeRoute.includes("verifySignedLegalConsentToken"), 'finalize endpoint must validate the signed consent cookie');
+assert.ok(consentFinalizeRoute.includes("supabase.auth.getUser()"), 'finalize endpoint must require an authenticated user');
+assert.ok(consentFinalizeRoute.includes("from('legal_consents').insert"), 'finalize endpoint must persist the accepted legal versions');
 assert.ok(!login.includes('document.cookie'), 'login page must not create a trusted consent cookie directly');
 console.log('Signed legal-consent security tests passed.');

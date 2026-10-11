@@ -1,0 +1,166 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { buildSalesPlaybookGuidance, classifySalesMoment } from "../lib/aqarflow/sales-playbook.ts";
+import { getSalesKnowledgeCards, listSalesKnowledgeCardIds } from "../lib/aqarflow/sales-knowledge.ts";
+
+type Scenario = {
+  id: string;
+  category: string;
+  customerMessage: string;
+  expectedMoment: string;
+  objective: string;
+  mustNot: string[];
+};
+
+const bank = JSON.parse(readFileSync("data/aqarflow-sales/scenarios.v1.json", "utf8")) as {
+  version: number;
+  count: number;
+  scenarios: Scenario[];
+};
+
+assert.equal(bank.version, 1, "scenario bank must have a version");
+assert.equal(bank.count, bank.scenarios.length, "declared scenario count must match contents");
+assert.ok(bank.scenarios.length >= 40, "seed bank should contain at least 40 seed cases");
+
+const ids = new Set<string>();
+const messages = new Set<string>();
+const categories = new Set<string>();
+
+for (const scenario of bank.scenarios) {
+  assert.ok(scenario.id && scenario.customerMessage.trim(), "every scenario needs an ID and customer message");
+  assert.ok(scenario.objective.trim(), `${scenario.id}: objective is required`);
+  assert.ok(Array.isArray(scenario.mustNot) && scenario.mustNot.length > 0, `${scenario.id}: forbidden behaviors are required`);
+  assert.ok(!ids.has(scenario.id), `duplicate scenario ID: ${scenario.id}`);
+  assert.ok(!messages.has(scenario.customerMessage), `duplicate scenario message: ${scenario.id}`);
+  ids.add(scenario.id);
+  messages.add(scenario.customerMessage);
+  categories.add(scenario.category);
+  const actual = classifySalesMoment(scenario.customerMessage);
+  assert.equal(actual, scenario.expectedMoment, `${scenario.id}: expected ${scenario.expectedMoment}, received ${actual}`);
+}
+
+assert.ok(categories.size >= 15, "scenario bank must cover at least 15 distinct sales situations");
+
+const price = buildSalesPlaybookGuidance({
+  customerMessage: "ميزانيتي 200 دولار حد نهائي، ما أقدر أزيد.",
+  buyerProfile: { budgetMax: 200, currency: "USD" },
+});
+assert.equal(price.moment, "price_objection");
+assert.ok(price.do.some((line) => line.includes("200 USD")), "hard budget must be added to contextual guidance");
+assert.ok(price.avoid.some((line) => line.includes("خصم")), "price guidance must forbid invented discounts");
+assert.ok(price.do.some((line) => line.includes("حد صارم")), "an explicitly final budget must be treated as a hard ceiling even if profile inference is missing");
+assert.ok(!price.do.some((line) => line.includes("كاقتراح اختياري")), "a hard budget must not receive an over-budget alternative");
+const unspecifiedBudget = buildSalesPlaybookGuidance({
+  customerMessage: "ميزانيتي 200 دولار وأبحث عن شقة مناسبة.",
+  buyerProfile: { budgetMax: 200, currency: "USD" },
+});
+assert.ok(unspecifiedBudget.do.some((line) => line.includes("220 USD")), "an unspecified budget may receive one capped near-budget fallback after exact matches fail");
+assert.ok(unspecifiedBudget.do.some((line) => line.includes("لا بوصفه ضمن الميزانية")), "the alternative must not be misrepresented as within budget");
+const broadFlexBudget = buildSalesPlaybookGuidance({
+  customerMessage: "ميزانيتي مرنة وأستطيع النظر في خيارات أعلى.",
+  buyerProfile: { budgetMax: 200, currency: "USD" },
+});
+assert.ok(broadFlexBudget.do.some((line) => line.includes("240 USD")), "broad flexibility should use the configured 20% maximum");
+const flexiblePrice = buildSalesPlaybookGuidance({
+  customerMessage: "أقدر أزيد قليلًا إذا كان الموقع فعلًا يستاهل.",
+  buyerProfile: { budgetMax: 200, currency: "USD", budgetFlexibility: "slight" },
+});
+assert.ok(flexiblePrice.do.some((line) => line.includes("220 USD")), "slight flexibility should be explicitly capped at 10% over target");
+assert.ok(flexiblePrice.do.some((line) => line.includes("أعلى من الميزانية المرجعية")), "the assistant must disclose an above-target alternative");
+assert.equal(
+  buildSalesPlaybookGuidance({
+    customerMessage: "200 دولار حد نهائي، ما أقدر أزيد.",
+    buyerProfile: { budgetMax: 200, currency: "USD", budgetFlexibility: "slight" },
+  }).do.some((line) => line.includes("حد صارم")),
+  true,
+  "a hard limit in the latest message must override stale prior flexibility",
+);
+
+assert.equal(
+  classifySalesMoment("في نفس المنطقة تقريبًا، لكن ما أعرف باقي التفاصيل.", "العميل: مكتب ثاني عرض عليّ شقة غرفتين بـ190 دولار.\\nالمكتب: هل عرفت المنطقة وهل السعر يشمل نفس الشروط؟"),
+  "competitor_comparison",
+  "an elliptical follow-up must preserve a relevant competitor-comparison frame",
+);
+assert.equal(classifySalesMoment("أرسل لي رقم صاحب الشقة الشخصي."), "privacy_request");
+assert.equal(classifySalesMoment("إذا دفعت مقدمًا، تقدروا تخصموا 30 دولار؟"), "discount_request");
+assert.equal(classifySalesMoment("هل الماء والكهرباء داخل الإيجار؟"), "property_fact_question");
+assert.equal(classifySalesMoment("هل الشقة ما زالت متاحة؟"), "availability_question");
+assert.equal(classifySalesMoment("هل أنت ذكاء اصطناعي أم موظف من المكتب؟"), "identity_question");
+assert.equal(classifySalesMoment("أنت إنسان حقيقي؟"), "identity_question");
+assert.equal(classifySalesMoment("Are you a real person or an AI assistant?"), "identity_question");
+assert.equal(classifySalesMoment("يا غبي، أنتم ما تفهمون شيئًا."), "abusive_customer");
+assert.equal(classifySalesMoment("You are stupid and useless."), "abusive_customer");
+const abuse = buildSalesPlaybookGuidance({ customerMessage: "يا غبي، أنتم ما تفهمون شيئًا." });
+assert.equal(abuse.moment, "abusive_customer");
+assert.ok(abuse.do.some((line) => line.includes("ابق هادئًا")), "abusive language must trigger calm, respectful de-escalation");
+assert.ok(abuse.avoid.some((line) => line.includes("لا ترد بالإهانة")), "the assistant must never retaliate against an abusive customer");
+assert.ok(abuse.avoid.some((line) => line.includes("لغة متملقة")), "professional politeness must not become exaggerated flattery");
+assert.equal(classifySalesMoment("أريد أتحدث مع موظف من المكتب، مش مع روبوت."), "human_handoff");
+assert.ok(
+  getSalesKnowledgeCards("identity_question").some((card) => card.id === "transparent-identity"),
+  "direct identity questions should load truthful identity guidance",
+);
+
+assert.ok(
+  getSalesKnowledgeCards("privacy_request").some((card) => card.id === "privacy"),
+  "private-contact requests should load privacy guidance",
+);
+assert.ok(
+  getSalesKnowledgeCards("discount_request").some((card) => card.id === "negotiation"),
+  "discount requests should load authorization-bound negotiation guidance",
+);
+assert.ok(
+  getSalesKnowledgeCards("property_fact_question").some((card) => card.id === "direct-answer"),
+  "questions about property amenities should prioritize verified facts",
+);
+
+
+const optOut = buildSalesPlaybookGuidance({ customerMessage: "لا ترسلوا لي أي رسائل أخرى." });
+assert.equal(optOut.moment, "stop_contact");
+assert.ok(optOut.avoid.some((line) => line.includes("لا تعرض عقارات")), "opt-out must stop persuasion");
+
+const competitor = buildSalesPlaybookGuidance({ customerMessage: "لقيت شقة أرخص عند مكتب ثاني." });
+assert.equal(competitor.moment, "competitor_comparison");
+assert.ok(competitor.avoid.some((line) => line.includes("تشوّه سمعة المنافس")), "competitor handling must forbid attacks");
+
+const urgent = buildSalesPlaybookGuidance({ customerMessage: "أحتاج بيتًا اليوم، الأمر ضروري." });
+assert.equal(urgent.moment, "urgent_timeline");
+assert.ok(urgent.avoid.some((line) => line.includes("لا تَعِد")), "urgent requests must not create unverified promises");
+
+const rejection = buildSalesPlaybookGuidance({ customerMessage: "لا، هذا العقار لا يناسبني." });
+assert.equal(rejection.moment, "property_rejection");
+assert.ok(rejection.avoid.some((line) => line.includes("العقار المرفوض")), "rejected listing must not be pushed again");
+
+const knowledgeIds = listSalesKnowledgeCardIds();
+assert.ok(knowledgeIds.length >= 15, "sales knowledge library should cover at least 15 operational principles");
+assert.ok(new Set(knowledgeIds).size === knowledgeIds.length, "knowledge card IDs must be unique");
+assert.ok(
+  getSalesKnowledgeCards("price_objection").some((card) => card.id === "price-objection"),
+  "price objections should load the relevant diagnostic sales principle",
+);
+assert.ok(
+  getSalesKnowledgeCards("stop_contact").some((card) => card.id === "opt-out"),
+  "opt-out must load the stop-contact principle",
+);
+assert.ok(
+  getSalesKnowledgeCards("competitor_comparison").some((card) => card.id === "competitor"),
+  "competitor comparisons should load evidence-first competitive guidance",
+);
+assert.ok(
+  getSalesKnowledgeCards("human_handoff").some((card) => card.id === "human-handoff"),
+  "human requests should load handoff guidance",
+);
+assert.ok(
+  getSalesKnowledgeCards("price_objection", true).some((card) => card.id === "near-budget"),
+  "a selected above-target alternative must load its dedicated disclosure safeguards",
+);
+assert.ok(
+  getSalesKnowledgeCards("price_objection", true).length <= 2,
+  "contextual knowledge retrieval must be token-bounded to at most two cards",
+);
+assert.ok(
+  getSalesKnowledgeCards("general_discovery").length <= 2,
+  "routine turns should not receive the full knowledge library",
+);
+
+console.log(`AqarFlow sales-playbook tests passed: ${bank.scenarios.length} scenarios across ${categories.size} categories.`);

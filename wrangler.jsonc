@@ -29,6 +29,9 @@
       "service": "aqarflow-ai1"
     }
   ],
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
   "observability": {
     "enabled": true
   }

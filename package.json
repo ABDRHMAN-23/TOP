@@ -24,7 +24,11 @@
     "test:aqarflow:whatsapp-signup": "node --experimental-strip-types scripts/test-aqarflow-whatsapp-signup.ts",
     "test:aqarflow:operations": "node --experimental-strip-types scripts/test-aqarflow-operations.ts",
     "test:aqarflow:analytics-contract": "node scripts/test-aqarflow-analytics-contract.mjs",
-    "test:aqarflow:analytics-period": "node --experimental-strip-types scripts/test-aqarflow-analytics-period.ts"
+    "test:aqarflow:analytics-period": "node --experimental-strip-types scripts/test-aqarflow-analytics-period.ts",
+    "test:aqarflow:sales-playbook": "node --experimental-strip-types scripts/test-aqarflow-sales-playbook.ts",
+    "test:aqarflow:auto-reply-policy": "node --experimental-strip-types scripts/test-aqarflow-auto-reply-policy.ts",
+    "test:aqarflow:sales-profile": "node --experimental-strip-types scripts/test-aqarflow-sales-profile-inference.ts",
+    "test:aqarflow:multiturn": "node --experimental-strip-types scripts/test-aqarflow-multiturn-seeds.ts"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "1.20.7",

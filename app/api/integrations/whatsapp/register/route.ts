@@ -63,9 +63,11 @@ export async function POST(request: Request) {
       accessToken,
       pin,
     });
-    await admin.from('aqarflow_whatsapp_integrations')
-      .update({ last_verified_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    const registeredAt = new Date().toISOString();
+    const { error: registrationPersistError } = await admin.from('aqarflow_whatsapp_integrations')
+      .update({ phone_registered_at: registeredAt, last_verified_at: registeredAt, updated_at: registeredAt })
       .eq('owner_user_id', owner.ownerUserId).eq('id', integration.id);
+    if (registrationPersistError) return response({ error: 'Meta confirmed the registration, but the state could not be saved. Refresh the page and verify the number before enabling automatic replies.' }, 503);
     // Do not persist or log the PIN. It is accepted for this request only.
     return response({ ...result, message: result.alreadyRegistered
       ? 'رقم واتساب مسجل بالفعل في Cloud API.'

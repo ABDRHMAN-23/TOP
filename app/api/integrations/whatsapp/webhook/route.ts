@@ -3,6 +3,9 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { runtimeEnv } from '@/lib/runtime-env';
 import { parseMetaWhatsAppWebhook, verifyMetaWebhookChallenge, verifyMetaWebhookSignature } from '@/lib/aqarflow/whatsapp-cloud';
 import { readBoundedUtf8Body } from '@/lib/aqarflow/whatsapp-http';
+import { handleWhatsAppAutomaticReply, type AutoReplyIntegration } from '@/lib/aqarflow/automatic-sales-reply';
+import { classifySalesMoment } from '@/lib/aqarflow/sales-playbook';
+import { selectLatestInboundEventKeys } from '@/lib/aqarflow/automatic-reply-policy';
 
 export const dynamic='force-dynamic';
 export async function GET(request:Request) {
@@ -25,14 +28,24 @@ export async function POST(request:Request) {
   if(!events.length)return NextResponse.json({received:true},{status:200,headers:{'Cache-Control':'no-store'}});
   let admin:ReturnType<typeof createAdminClient>;try{admin=createAdminClient();}catch{return NextResponse.json({error:'Webhook storage is unavailable.'},{status:503});}
   const phoneIds=Array.from(new Set(events.map(e=>e.phoneNumberId)));
-  const integrations=new Map<string,{id:string;owner_user_id:string}>();
+  const integrations=new Map<string,AutoReplyIntegration>();
   const disconnectedPhoneIds=new Set<string>();
   for(const phoneId of phoneIds){
-    const {data,error}=await admin.from('aqarflow_whatsapp_integrations').select('id,owner_user_id,status').eq('phone_number_id',phoneId).maybeSingle();
+    const {data,error}=await admin.from('aqarflow_whatsapp_integrations').select('id,owner_user_id,status,phone_number_id,graph_api_version,auto_reply_enabled,access_token_ciphertext,access_token_iv,token_expires_at').eq('phone_number_id',phoneId).maybeSingle();
     if(error||!data)return NextResponse.json({error:'Webhook tenant mapping is not ready.'},{status:503});
     if(data.status==='disconnected'){disconnectedPhoneIds.add(phoneId);continue;}
     if(data.status!=='active'&&data.status!=='needs_reauth')return NextResponse.json({error:'Webhook tenant mapping is not ready.'},{status:503});
-    integrations.set(phoneId,{id:data.id,owner_user_id:data.owner_user_id});
+    integrations.set(phoneId,{
+      id:data.id,
+      owner_user_id:data.owner_user_id,
+      phone_number_id:data.phone_number_id,
+      graph_api_version:data.graph_api_version,
+      status:data.status,
+      auto_reply_enabled:Boolean(data.auto_reply_enabled),
+      access_token_ciphertext:typeof data.access_token_ciphertext==='string'?data.access_token_ciphertext:null,
+      access_token_iv:typeof data.access_token_iv==='string'?data.access_token_iv:null,
+      token_expires_at:typeof data.token_expires_at==='string'?data.token_expires_at:null,
+    });
   }
   const processableEvents=events.filter(e=>!disconnectedPhoneIds.has(e.phoneNumberId));
   if(processableEvents.length===0)return NextResponse.json({received:true,ignoredDisconnected:events.length},{status:200,headers:{'Cache-Control':'no-store'}});
@@ -53,28 +66,52 @@ export async function POST(request:Request) {
       .upsert(rows,{onConflict:'owner_user_id,provider_event_key',ignoreDuplicates:true});
     if(error)return NextResponse.json({error:'Webhook event persistence failed.'},{status:503});
   }
-  // Include both brand-new events and previous attempts that failed before finalization.
-  // This allows a Meta retry to recover a partial DB failure while processed events remain idempotent.
-  const pendingEventKeys=new Set<string>();
+  // Atomically lease pending events before performing expensive generation or provider sends.
+  // A duplicate Meta delivery cannot claim a fresh lease; stale leases can recover after a crash.
+  const claimedEventKeys=new Set<string>();
   for(const [ownerUserId,rows] of grouped.entries()){
-    const keys=rows.map(row=>row.provider_event_key).filter((key):key is string=>typeof key==='string');
+    const keys=[...new Set(rows.map(row=>row.provider_event_key).filter((key):key is string=>typeof key==='string'))];
     if(keys.length===0)continue;
-    const {data:pending,error}=await admin.from('aqarflow_whatsapp_events').select('provider_event_key')
-      .eq('owner_user_id',ownerUserId).in('provider_event_key',keys).neq('processing_status','processed');
-    if(error)return NextResponse.json({error:'Could not load pending webhook events.'},{status:503});
-    for(const row of pending||[]){
-      if(typeof row.provider_event_key==='string')pendingEventKeys.add(ownerUserId+':'+row.provider_event_key);
+    const claimAt=new Date().toISOString();
+    const staleBefore=new Date(Date.now()-2*60*1000).toISOString();
+    const {data:claimed,error:claimError}=await admin.from('aqarflow_whatsapp_events')
+      .update({processing_status:'queued',processing_started_at:claimAt})
+      .eq('owner_user_id',ownerUserId).in('provider_event_key',keys)
+      .or(`processing_status.eq.received,processing_status.eq.failed,and(processing_status.eq.queued,processing_started_at.is.null),and(processing_status.eq.queued,processing_started_at.lt.${staleBefore})`)
+      .select('provider_event_key');
+    if(claimError)return NextResponse.json({error:'Could not claim pending webhook events safely.'},{status:503});
+    for(const row of claimed||[]){
+      if(typeof row.provider_event_key==='string')claimedEventKeys.add(ownerUserId+':'+row.provider_event_key);
     }
   }
-  const acceptedEvents: typeof processableEvents = [];
-  const acceptedKeys=new Set<string>();
-  for(const event of processableEvents){
+  const acceptedKeysInBatch=new Set<string>();
+  const acceptedEvents=processableEvents.filter(event=>{
+    const integration=integrations.get(event.phoneNumberId);
+    if(!integration)return false;
+    const uniqueKey=integration.owner_user_id+':'+event.eventKey;
+    if(!claimedEventKeys.has(uniqueKey)||acceptedKeysInBatch.has(uniqueKey))return false;
+    acceptedKeysInBatch.add(uniqueKey);
+    return true;
+  });
+  const latestInboundAutoReplyKeys=selectLatestInboundEventKeys(acceptedEvents.map(event=>({
+    ownerId:integrations.get(event.phoneNumberId)?.owner_user_id||'',
+    eventKey:event.eventKey,
+    kind:event.kind,
+    senderPhoneNumber:event.senderPhoneNumber,
+    providerTimestamp:event.providerTimestamp,
+  })));
+  // Pre-scan the full webhook batch so a later opt-out or human request suppresses
+  // replies to earlier messages from the same sender in this same provider delivery.
+  const batchOptOutSenders=new Set<string>();
+  const batchHandoffSenders=new Set<string>();
+  for(const event of acceptedEvents){
+    if(event.kind!=='inbound_message'||event.messageType!=='text'||!event.senderPhoneNumber)continue;
     const integration=integrations.get(event.phoneNumberId);
     if(!integration)continue;
-    const uniqueKey=integration.owner_user_id+':'+event.eventKey;
-    if(!pendingEventKeys.has(uniqueKey)||acceptedKeys.has(uniqueKey))continue;
-    acceptedKeys.add(uniqueKey);
-    acceptedEvents.push(event);
+    const senderKey=integration.owner_user_id+':'+event.senderPhoneNumber;
+    const moment=classifySalesMoment(event.messageText||'');
+    if(moment==='stop_contact')batchOptOutSenders.add(senderKey);
+    if(moment==='human_handoff')batchHandoffSenders.add(senderKey);
   }
   if(acceptedEvents.length===0)return NextResponse.json({
     received:true,eventCount:0,duplicateEvents:processableEvents.length,
@@ -131,7 +168,7 @@ export async function POST(request:Request) {
     const now=new Date().toISOString();
     const eventAt=event.providerTimestamp||now;
     const {data:existingContact,error:existingContactError}=await admin.from('aqarflow_crm_contacts')
-      .select('id,display_name,source,last_seen_at')
+      .select('id,display_name,source,last_seen_at,ai_auto_reply_opted_out')
       .eq('owner_user_id',integration.owner_user_id).eq('phone_number',event.senderPhoneNumber).maybeSingle();
     if(existingContactError)return NextResponse.json({error:'Could not load WhatsApp contact.'},{status:503});
     const lastSeenAt=existingContact?.last_seen_at&&Date.parse(existingContact.last_seen_at)>Date.parse(eventAt)
@@ -140,11 +177,12 @@ export async function POST(request:Request) {
       owner_user_id:integration.owner_user_id,phone_number:event.senderPhoneNumber,
       // Keep user-edited names and lead source; provider events should not overwrite CRM curation.
       display_name:existingContact?.display_name||event.senderDisplayName||null,source:existingContact?.source||'whatsapp',
+      ai_auto_reply_opted_out:existingContact?.ai_auto_reply_opted_out??false,
       last_seen_at:lastSeenAt,updated_at:now,
-    },{onConflict:'owner_user_id,phone_number'}).select('id').single();
+    },{onConflict:'owner_user_id,phone_number'}).select('id,ai_auto_reply_opted_out').single();
     if(contactError||!contact)return NextResponse.json({error:'Could not persist WhatsApp contact.'},{status:503});
     const {data:existingConversation,error:existingConversationError}=await admin.from('aqarflow_crm_conversations')
-      .select('id,status,last_message_at,last_message_preview,updated_at')
+      .select('id,status,last_message_at,last_message_preview,updated_at,handoff_required,buyer_profile')
       .eq('owner_user_id',integration.owner_user_id).eq('integration_id',integration.id).eq('contact_id',contact.id).maybeSingle();
     if(existingConversationError)return NextResponse.json({error:'Could not load CRM conversation.'},{status:503});
     const isLatest=!existingConversation||Date.parse(eventAt)>=Date.parse(existingConversation.last_message_at);
@@ -154,6 +192,8 @@ export async function POST(request:Request) {
       status:isLatest?'open':existingConversation.status,
       last_message_at:isLatest?eventAt:existingConversation.last_message_at,
       last_message_preview:isLatest?preview:existingConversation.last_message_preview,
+      handoff_required:existingConversation?.handoff_required??false,
+      buyer_profile:existingConversation?.buyer_profile??{},
       updated_at:isLatest?now:existingConversation.updated_at,
     },{onConflict:'owner_user_id,integration_id,contact_id'}).select('id').single();
     if(conversationError||!conversation)return NextResponse.json({error:'Could not persist CRM conversation.'},{status:503});
@@ -163,12 +203,42 @@ export async function POST(request:Request) {
       provider_status:'received',created_at:event.providerTimestamp||now,
     },{onConflict:'owner_user_id,provider_message_id',ignoreDuplicates:true});
     if(messageError)return NextResponse.json({error:'Could not persist CRM message.'},{status:503});
+
+    if(event.kind==='inbound_message') {
+      const senderKey=integration.owner_user_id+':'+event.senderPhoneNumber;
+      const currentMoment=classifySalesMoment(event.messageText||'');
+      if(batchHandoffSenders.has(senderKey)&&currentMoment!=='human_handoff'&&currentMoment!=='stop_contact'){
+        continue;
+      }
+      // Persist every inbound message in the CRM, but respond only to the newest
+      // message from this sender in the same Meta batch. Control messages (opt-out
+      // and human handoff) still run even when an ordinary message follows them.
+      if(!latestInboundAutoReplyKeys.has(senderKey+':'+event.eventKey)
+        &&currentMoment!=='human_handoff'&&currentMoment!=='stop_contact'){
+        continue;
+      }
+      const replyResult=await handleWhatsAppAutomaticReply(admin,{
+        integration,
+        event,
+        contactId:contact.id,
+        conversationId:conversation.id,
+        contactOptedOut:Boolean(contact.ai_auto_reply_opted_out)||batchOptOutSenders.has(senderKey),
+        priorBuyerProfile:existingConversation?.buyer_profile??{},
+      });
+      if(replyResult.action==='failed') {
+        await admin.from('aqarflow_whatsapp_events')
+          .update({processing_status:'failed',processing_started_at:null})
+          .eq('owner_user_id',integration.owner_user_id)
+          .eq('provider_event_key',event.eventKey);
+        return NextResponse.json({error:'Automatic reply processing did not finish safely; the event remains retryable.'},{status:503,headers:{'Cache-Control':'no-store'}});
+      }
+    }
   }
   for(const event of acceptedEvents){
     const integration=integrations.get(event.phoneNumberId);
     if(!integration)continue;
     const {error}=await admin.from('aqarflow_whatsapp_events')
-      .update({processing_status:'processed'})
+      .update({processing_status:'processed',processing_started_at:null})
       .eq('owner_user_id',integration.owner_user_id)
       .eq('provider_event_key',event.eventKey);
     if(error)return NextResponse.json({error:'Could not finalize CRM event state.'},{status:503});

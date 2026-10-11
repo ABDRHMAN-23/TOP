@@ -2,12 +2,15 @@ import assert from "node:assert/strict";
 import {
   buildPersonalizedSalesPrompt,
   buildVerifiedFactTokens,
+  buildAllowedSalesContextNumbers,
   findUnsupportedNumericClaims,
   matchVerifiedProperties,
   mergeBuyerProfile,
+  mergeBuyerProfileForConversation,
   sanitizeVerifiedProperties,
   validateSalesDraft,
 } from "../lib/aqarflow/sales-engine.ts";
+import { rankPropertyCandidates, selectNearBudgetAlternative, selectPropertiesForSalesReply } from "../lib/aqarflow/ranked-inventory.ts";
 
 const prior = {
   intent: "buy" as const,
@@ -29,6 +32,24 @@ assert.deepEqual(
   mergeBuyerProfile({ mustHaves: ["balcony", "parking"] }, { mustHaves: ["sea view"] }).mustHaves,
   ["balcony", "parking", "sea view"],
   "partial extraction must not erase previously captured requirements",
+);
+assert.deepEqual(
+  mergeBuyerProfileForConversation(
+    { preferredAreas: ["المنصورة"], mustHaves: ["balcony"] },
+    { preferredAreas: ["عدن"], dealBreakers: ["balcony"] },
+    "لا أريد المنصورة، أبغى عدن وبدون شرفة",
+  ),
+  { preferredAreas: ["عدن"], dealBreakers: ["balcony"] },
+  "explicitly corrected areas and rejected features must replace stale customer preferences",
+);
+assert.deepEqual(
+  mergeBuyerProfileForConversation(
+    { preferredAreas: ["Aden"], mustHaves: ["parking"] },
+    { preferredAreas: ["Mansoura"], mustHaves: ["elevator"] },
+    "أبحث أيضًا عن خيارات في المنصورة وأحتاج مصعدًا",
+  ).preferredAreas,
+  ["Aden", "Mansoura"],
+  "additional preferences should accumulate when the customer has not corrected the previous preference",
 );
 
 const malformedProfile = mergeBuyerProfile(
@@ -107,6 +128,27 @@ assert.equal(matches[0].property.id, "fit", "eligible, matching properties shoul
 assert.equal(matches.find((match) => match.property.id === "over-budget")?.eligible, false, "known budget violations must be excluded");
 assert.ok(matches.find((match) => match.property.id === "unknown-currency")?.unknowns.includes("budget_comparison_unavailable"), "unknown currency must not be treated as a budget match");
 
+const hardBudgetMatch = matchVerifiedProperties(
+  { intent: "rent", budgetMax: 200, currency: "USD" },
+  [
+    { id: "strict-at-cap", title: "At cap", purpose: "rent", price: 200, currency: "USD" },
+    { id: "strict-over-cap", title: "Over cap", purpose: "rent", price: 215, currency: "USD" },
+  ],
+);
+assert.equal(hardBudgetMatch.find((m) => m.property.id === "strict-at-cap")?.eligible, true);
+assert.equal(hardBudgetMatch.find((m) => m.property.id === "strict-over-cap")?.eligible, false, "budget must be strict unless flexibility is explicit");
+
+const slightBudgetMatch = matchVerifiedProperties(
+  { intent: "rent", budgetMax: 200, currency: "USD", budgetFlexibility: "slight" },
+  [
+    { id: "slight-over", title: "Slight over", purpose: "rent", price: 215, currency: "USD" },
+    { id: "too-far-over", title: "Too far over", purpose: "rent", price: 221, currency: "USD" },
+  ],
+);
+assert.equal(slightBudgetMatch.find((m) => m.property.id === "slight-over")?.eligible, true, "explicit slight flexibility may include an option up to 10% over the target");
+assert.ok(slightBudgetMatch.find((m) => m.property.id === "slight-over")?.unknowns.includes("disclose_price_above_stated_budget"), "the reply must be reminded to disclose the overage");
+assert.equal(slightBudgetMatch.find((m) => m.property.id === "too-far-over")?.eligible, false, "slight flexibility must remain bounded at 10%");
+
 const availabilityMatches = matchVerifiedProperties(
   { intent: "buy" },
   [
@@ -148,6 +190,8 @@ const prompt = buildPersonalizedSalesPrompt({
 });
 
 assert.match(prompt, /verified_properties/);
+assert.match(prompt, /sales_playbook/);
+assert.match(prompt, /professional customer-service voice/);
 assert.match(prompt, /Do not invent a view/);
 assert.match(prompt, /Apartment A/);
 assert.doesNotMatch(prompt, /A real listing/, "free-form property descriptions must not enter model context");
@@ -277,5 +321,82 @@ assert.equal(validateSalesDraft({
   askOneQuestion: "هل تريد صورًا؟ وهل تريد معاينة؟",
   handoffRequired: false,
 }, properties), null, "multiple explicit questions must be rejected");
+
+const nowVerified = new Date().toISOString();
+const nearBudgetProfile = { intent: "rent" as const, propertyType: "شقة", preferredAreas: ["المنصورة"], budgetMax: 200, currency: "USD" };
+const nearBudgetCandidates = [
+  { id: "near-215", title: "Near budget flat", propertyType: "شقة", purpose: "rent", price: 215, currency: "USD", bedrooms: 2, locationLabel: "المنصورة", availability: "available" as const, factsLastVerifiedAt: nowVerified, verifiedFeatures: [] },
+  { id: "over-225", title: "Too expensive flat", propertyType: "شقة", purpose: "rent", price: 225, currency: "USD", bedrooms: 2, locationLabel: "المنصورة", availability: "available" as const, factsLastVerifiedAt: nowVerified, verifiedFeatures: [] },
+];
+const nearBudgetRanked = rankPropertyCandidates(nearBudgetProfile, nearBudgetCandidates);
+assert.equal(selectNearBudgetAlternative(nearBudgetProfile, nearBudgetRanked)?.id, "near-215", "an unspecified budget may receive one confirmed alternative up to 10% above the target when no exact match exists");
+const noExactSelection = selectPropertiesForSalesReply(nearBudgetProfile, nearBudgetRanked);
+assert.deepEqual(noExactSelection.properties.map((property) => property.id), ["near-215"], "the near-budget mode should select only the closest eligible alternative");
+assert.equal(noExactSelection.nearBudgetAlternativeMode, true);
+
+const slightOverBudgetProfile = { ...nearBudgetProfile, budgetFlexibility: "slight" as const };
+const slightOverBudgetRanked = rankPropertyCandidates(slightOverBudgetProfile, [
+  { ...nearBudgetCandidates[0], id: "slight-215", price: 215 },
+  { ...nearBudgetCandidates[0], id: "slight-218", price: 218 },
+  { ...nearBudgetCandidates[0], id: "slight-225", price: 225 },
+]);
+const slightOverBudgetSelection = selectPropertiesForSalesReply(slightOverBudgetProfile, slightOverBudgetRanked);
+assert.deepEqual(
+  slightOverBudgetSelection.properties.map((property) => property.id),
+  ["slight-215"],
+  "when no in-budget option exists, slight flexibility should select only the closest allowed over-budget option",
+);
+assert.equal(slightOverBudgetSelection.nearBudgetAlternativeMode, true, "slight-flexibility fallback must be explicitly marked as near-budget");
+
+const flexibleOverBudgetProfile = { ...nearBudgetProfile, budgetFlexibility: "flexible" as const };
+const flexibleOverBudgetRanked = rankPropertyCandidates(flexibleOverBudgetProfile, [
+  { ...nearBudgetCandidates[0], id: "flex-215", price: 215 },
+  { ...nearBudgetCandidates[0], id: "flex-230", price: 230 },
+  { ...nearBudgetCandidates[0], id: "flex-241", price: 241 },
+]);
+const flexibleOverBudgetSelection = selectPropertiesForSalesReply(flexibleOverBudgetProfile, flexibleOverBudgetRanked);
+assert.deepEqual(
+  flexibleOverBudgetSelection.properties.map((property) => property.id),
+  ["flex-215"],
+  "even with broader explicit flexibility, present one closest alternative rather than a list of higher-priced listings",
+);
+assert.equal(flexibleOverBudgetSelection.nearBudgetAlternativeMode, true);
+
+const withExactSelection = selectPropertiesForSalesReply(
+  { ...nearBudgetProfile, budgetFlexibility: "slight" },
+  rankPropertyCandidates({ ...nearBudgetProfile, budgetFlexibility: "slight" }, [
+    { ...nearBudgetCandidates[0], id: "within-200", title: "Within budget", price: 200 },
+    nearBudgetCandidates[0],
+  ]),
+);
+assert.deepEqual(withExactSelection.properties.map((property) => property.id), ["within-200"], "an exact in-budget property must win over a more expensive option even when slight flexibility is allowed");
+assert.equal(withExactSelection.nearBudgetAlternativeMode, false);
+const unknownAvailabilityRanked = rankPropertyCandidates(
+  nearBudgetProfile,
+  [{ ...nearBudgetCandidates[0], id: "status-unknown", title: "Unverified availability flat", price: 200, availability: "unknown", factsLastVerifiedAt: null }],
+);
+const unknownAvailabilitySelection = selectPropertiesForSalesReply(nearBudgetProfile, unknownAvailabilityRanked);
+assert.equal(unknownAvailabilitySelection.properties.length, 0, "a matching price alone must not recommend an unverified-availability listing");
+assert.equal(
+  selectNearBudgetAlternative({ ...nearBudgetProfile, budgetFlexibility: "hard" }, nearBudgetRanked),
+  null,
+  "an explicitly hard budget must never receive an above-budget alternative",
+);
+const staleNearBudget = rankPropertyCandidates(nearBudgetProfile, [
+  { id: "stale", title: "Stale flat", propertyType: "شقة", purpose: "rent", price: 215, currency: "USD", bedrooms: 2, locationLabel: "المنصورة", availability: "available", factsLastVerifiedAt: "2020-01-01T00:00:00.000Z", verifiedFeatures: [] },
+]);
+assert.equal(selectNearBudgetAlternative(nearBudgetProfile, staleNearBudget), null, "a near-budget fallback must have freshly verified availability");
+
+const allowedContextNumbers = buildAllowedSalesContextNumbers(nearBudgetProfile, [nearBudgetCandidates[0]]);
+assert.ok(allowedContextNumbers.includes(200) && allowedContextNumbers.includes(15), "budget and exact overage may be referenced as explicit buyer context");
+const nearBudgetDraft = validateSalesDraft({
+  replyDraft: "لدي خيار متاح بسعر 215 دولارًا، أعلى من ميزانيتك بـ15 دولارًا. هل أرسل لك التفاصيل؟",
+  factsUsed: ["near-215: price=215 USD", "near-215: availability=available"],
+  unknowns: [],
+  nextBestAction: "ask_one_question",
+  askOneQuestion: "هل أرسل لك التفاصيل؟",
+  handoffRequired: false,
+}, [nearBudgetCandidates[0]], allowedContextNumbers);
+assert.ok(nearBudgetDraft, "validator should allow a truthful exact price and disclosed overage for a near-budget alternative");
 
 console.log("AqarFlow sales-engine tests passed.");

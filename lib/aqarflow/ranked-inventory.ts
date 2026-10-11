@@ -1,7 +1,111 @@
-import { matchVerifiedProperties, type BuyerProfile, type PropertyMatch } from './sales-engine.ts';
+import { matchVerifiedProperties, type BuyerProfile, type PropertyMatch, type VerifiedProperty } from './sales-engine.ts';
 
 const MATCH_BATCH_SIZE = 5;
 export const MAX_PROPERTY_CANDIDATES = 50;
+
+
+/**
+ * When exact matches are absent, optionally return one verified, near-budget
+ * alternative for consideration. A stated hard ceiling is always respected.
+ * This does not mark the alternative eligible or within budget.
+ */
+export function selectNearBudgetAlternative(
+  buyer: BuyerProfile | null | undefined,
+  ranked: PropertyMatch[],
+): VerifiedProperty | null {
+  const profile = buyer || {};
+  if (profile.budgetMax == null || !profile.currency || profile.budgetFlexibility === "hard") return null;
+  const ceilingRate = profile.budgetFlexibility === "flexible" ? 0.2 : 0.1;
+  const upperBound = profile.budgetMax * (1 + ceilingRate);
+  const currency = profile.currency.toUpperCase();
+
+  const alternatives = ranked.filter((match) => {
+    if (match.eligible || match.conflicts.length !== 1 || match.conflicts[0] !== "above_budget_maximum") return false;
+    const property = match.property;
+    if (property.availability !== "available" || property.price == null || !property.currency) return false;
+    if (property.currency.toUpperCase() !== currency || property.price <= profile.budgetMax! || property.price > upperBound) return false;
+    // Do not promote a higher-priced option if a stated required feature or property type is unverified.
+    if (match.unknowns.some((unknown) =>
+      unknown.startsWith("must_have_unverified:")
+      || unknown === "property_type_unknown"
+      || unknown === "bedrooms_unknown"
+      || unknown === "budget_comparison_unavailable"
+      || unknown === "availability_unknown"
+    )) return false;
+    return true;
+  });
+
+  alternatives.sort((a, b) =>
+    (a.property.price! - profile.budgetMax!) - (b.property.price! - profile.budgetMax!)
+    || b.score - a.score
+  );
+  return alternatives[0]?.property || null;
+}
+
+
+export type RankedReplySelection = {
+  properties: VerifiedProperty[];
+  nearBudgetAlternativeMode: boolean;
+};
+
+/**
+ * Prefer confirmed in-budget matches. Unknown price/currency is not treated as a
+ * budget match. If no exact match exists, a single permitted near-budget option
+ * can be returned for transparent, optional consideration.
+ */
+export function selectPropertiesForSalesReply(
+  buyer: BuyerProfile | null | undefined,
+  ranked: PropertyMatch[],
+  limit = 5,
+): RankedReplySelection {
+  const profile = buyer || {};
+  const hasBudget = profile.budgetMin != null || profile.budgetMax != null;
+  let viable = ranked.filter((match) =>
+    match.eligible
+    && match.property.availability === "available"
+    && !(hasBudget && match.unknowns.includes("budget_comparison_unavailable"))
+  );
+
+  if (profile.budgetMax != null && profile.currency) {
+    const withinBudget = viable.filter((match) => match.matchedSignals.includes("within_budget"));
+    if (withinBudget.length) {
+      return {
+        properties: withinBudget.slice(0, Math.max(1, Math.min(limit, 5))).map((match) => match.property),
+        nearBudgetAlternativeMode: false,
+      };
+    }
+
+    // When the customer explicitly allows a bounded overage, treat it as a
+    // transparent fallback—not permission to present a list of pricier options.
+    // Choose the closest confirmed option and let the prompt disclose the delta.
+    const overTarget = viable.filter((match) =>
+      match.matchedSignals.includes("above_target_budget_explicit_flexibility")
+      && match.property.price != null
+    );
+    if (overTarget.length) {
+      overTarget.sort((a, b) =>
+        (a.property.price! - profile.budgetMax!) - (b.property.price! - profile.budgetMax!)
+        || b.score - a.score
+      );
+      return {
+        properties: [overTarget[0].property],
+        nearBudgetAlternativeMode: true,
+      };
+    }
+  }
+
+  if (viable.length) {
+    return {
+      properties: viable.slice(0, Math.max(1, Math.min(limit, 5))).map((match) => match.property),
+      nearBudgetAlternativeMode: false,
+    };
+  }
+
+  const alternative = selectNearBudgetAlternative(profile, ranked);
+  return alternative
+    ? { properties: [alternative], nearBudgetAlternativeMode: true }
+    : { properties: [], nearBudgetAlternativeMode: false };
+}
 
 export function rankPropertyCandidates(buyer: BuyerProfile | null | undefined, rawCandidates: unknown): PropertyMatch[] {
   if (!Array.isArray(rawCandidates)) return [];

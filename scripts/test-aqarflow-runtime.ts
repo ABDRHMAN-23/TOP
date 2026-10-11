@@ -7,8 +7,28 @@ assert.equal(parsed.ok,true);
 if(parsed.ok){assert.equal(parsed.value.conversationSummary.length,1000);assert.equal((parsed.value.buyerProfile as any).admin,undefined);}
 assert.equal(parseAqarFlowSalesRequest({customerMessage:'x'.repeat(1601)}).ok,false);
 assert.deepEqual(inferBasicBuyerProfileHints('أبحث عن شقة للبيع فيها ٣ غرف نوم').bedroomsMin,3);
+assert.equal(inferBasicBuyerProfileHints("أبحث عن شقة بغرفتين للإيجار في المنصورة وميزانيتي 200 دولار").bedroomsMin,2,"Arabic word-form two-bedroom request should be understood");
+assert.equal(inferBasicBuyerProfileHints("أريد شقة بثلاث غرف نوم").bedroomsMin,3,"Arabic word-form three-bedroom request should be understood");
+assert.equal(inferBasicBuyerProfileHints("أبحث عن غرفة نوم للإيجار").bedroomsMin,1,"single-bedroom wording should be understood");
+assert.equal(inferBasicBuyerProfileHints("لا أريد غرفتين، أريد ثلاث غرف").bedroomsMin,3,"latest word-form correction should win");
+assert.equal(inferBasicBuyerProfileHints("لا أريد 2 غرف، أريد 3 غرف نوم").bedroomsMin,3,"latest numeric correction should win");
 assert.equal(normalizeBuyerProfile({preferredAreas:'Aden',mustHaves:['parking']}).preferredAreas,undefined);
+const inferredSoft = inferBasicBuyerProfileHints("ميزانيتي 200 دولار، وأقدر أزيد قليلًا إذا كان الموقع ممتازًا.");
+assert.equal(inferredSoft.budgetMax, 200, "explicit dollar budget should be extracted");
+assert.equal(inferredSoft.currency, "USD", "currency must be explicit before a monetary amount is accepted");
+assert.equal(inferredSoft.budgetFlexibility, "slight", "explicit willingness to increase a little should be recognized");
+const inferredHard = inferBasicBuyerProfileHints("ميزانيتي 200 دولار حد نهائي، ما أقدر أزيد.");
+assert.equal(inferredHard.budgetFlexibility, "hard", "firm budget language must override flexibility");
+assert.equal(inferBasicBuyerProfileHints("أريد 200 مترًا").budgetMax, undefined, "bare numbers without an explicit currency must not be treated as money");
+assert.equal(inferBasicBuyerProfileHints("هل الشقة سعرها 200 دولار؟").budgetMax, undefined, "a property price question must not be mistaken for the customer's budget");
+assert.equal(normalizeBuyerProfile({budgetMax:200,currency:"USD",budgetFlexibility:"slight"}).budgetFlexibility,"slight","explicit saved budget flexibility must survive profile normalization");
+
 assert.equal(buildNoMatchSalesDraft(0).unknowns[0],'active_inventory_empty');
+const tailoredNoMatch=buildNoMatchSalesDraft(5,{intent:'rent',propertyType:'شقة',preferredAreas:['المنصورة'],budgetMax:200,currency:'USD'});
+assert.match(tailoredNoMatch.replyDraft,/المنصورة/,'no-match reply should acknowledge the requested area');
+assert.match(tailoredNoMatch.replyDraft,/الميزانية/,'no-match reply should preserve an explicit budget');
+assert.equal(tailoredNoMatch.nextBestAction,'ask_one_question');
+assert.ok(tailoredNoMatch.replyDraft.includes(tailoredNoMatch.askOneQuestion||''),'no-match reply should contain the actual WhatsApp question');
 const sample = Array.from({length:9},(_,i)=>({id:'p'+i,title:'Property '+i,purpose:'sale',price:200000,currency:'USD',bedrooms:1,locationLabel:'Sanaa',factsLastVerifiedAt:new Date().toISOString()}));
 sample[8]={id:'p8',title:'Target Aden 3-bedroom',purpose:'sale',price:80000,currency:'USD',bedrooms:3,locationLabel:'Aden',factsLastVerifiedAt:new Date().toISOString()};
 const ranked=rankPropertyCandidates({intent:'buy',budgetMax:90000,currency:'USD',preferredAreas:['Aden'],bedroomsMin:3},sample);
