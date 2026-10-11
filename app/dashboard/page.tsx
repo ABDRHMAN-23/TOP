@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import {
   ArrowLeft, ArrowUpLeft, BarChart3, Building2, CalendarClock, CheckCircle2,
-  ChevronLeft, CircleHelp, ClipboardList, Home, MessageCircle, MessagesSquare,
-  Settings2, ShieldCheck, Sparkles, Target, Users, WalletCards, Zap,
+  ChevronLeft, CircleHelp, ClipboardList, Home, MessagesSquare,
+  Settings2, ShieldCheck, Sparkles, Users,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 
