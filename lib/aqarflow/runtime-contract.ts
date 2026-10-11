@@ -97,7 +97,8 @@ export function inferBasicBuyerProfileHints(message: string): BuyerProfile {
   const hasSAR = /(?:\bsar\b|ريال سعودي)/i.test(normalized);
   const hasYER = /(?:\byer\b|ريال يمني)/i.test(normalized);
   const currency = hasUSD ? "USD" : hasSAR ? "SAR" : hasYER ? "YER" : null;
-  if (currency) {
+  const explicitBudgetCue = /(?:ميزاني|budget|حد نهائي|بحد اقصي|الحد الاقصي|في حدود|بحدود|لا يزيد|ما يزيد|لا يتجاوز|ما يتجاوز|مبلغ استطيع دفعه|اقدر ادفع|استطيع دفع|around|about|under|below|up to|maximum budget|hard limit|can spend|afford)/i.test(normalized);
+  if (currency && explicitBudgetCue) {
     const amount = String.raw`(\d{1,12}(?:[,٬]\d{3})*(?:\.\d+)?)`;
     const pattern = currency === "USD"
       ? new RegExp(String.raw`(?:\$\s*${amount}|${amount}\s*(?:usd|us\$|دولار(?:ات)?))`, "gi")
@@ -122,7 +123,7 @@ export function inferBasicBuyerProfileHints(message: string): BuyerProfile {
     }
   }
 
-  const firmBudget = /(?:حد نهائي|بحد اقصى|ما اقدر ازيد|لا اقدر ازيد|ما استطيع ازيد|لا استطيع ازيد|ما اقدر اتجاوز|لا اتجاوز|ميزانيتي.{0,35}نهائي|cannot increase|can't increase|firm budget|hard limit|maximum budget)/i.test(normalized);
+  const firmBudget = /(?:حد نهائي|بحد اقصي|الحد الاقصي|ما اقدر ازيد|لا اقدر ازيد|ما استطيع ازيد|لا استطيع ازيد|ما اقدر اتجاوز|لا اتجاوز|لا اريد.{0,12}اتجاوز|ما اريد.{0,12}اتجاوز|ميزانيتي.{0,35}نهائي|cannot increase|cant increase|firm budget|hard limit|maximum budget)/i.test(normalized);
   const flexibleBudget = /(?:اقدر ازيد.{0,25}(?:قليل|شوي|قليلا)|ممكن ازيد|ممكن نزيد|قابل للتفاوض|قابلة للتفاوض|عندي مرونة|مرن|مرنة|flexible budget|can increase a little|some flexibility)/i.test(normalized);
   if (firmBudget) hints.budgetFlexibility = "hard";
   else if (flexibleBudget) hints.budgetFlexibility = "slight";
