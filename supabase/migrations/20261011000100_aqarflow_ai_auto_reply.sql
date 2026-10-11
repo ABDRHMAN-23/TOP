@@ -2,6 +2,9 @@
 -- Auto replies remain disabled per integration until the workspace owner explicitly enables them.
 begin;
 
+alter table public.aqarflow_whatsapp_integrations
+  add column if not exists phone_registered_at timestamptz;
+
 alter table public.aqarflow_crm_contacts
   add column if not exists ai_auto_reply_opted_out boolean not null default false;
 
