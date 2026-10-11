@@ -4,12 +4,13 @@ import {
   buildPersonalizedSalesPrompt,
   mergeBuyerProfileForConversation,
   validateSalesDraft,
+  buildAllowedSalesContextNumbers,
   type BuyerProfile,
   type SalesDraft,
   type VerifiedProperty,
 } from "@/lib/aqarflow/sales-engine";
 import { generateGeminiJson, GeminiRuntimeError } from "@/lib/aqarflow/gemini-runtime";
-import { rankPropertyCandidates } from "@/lib/aqarflow/ranked-inventory";
+import { rankPropertyCandidates, selectNearBudgetAlternative } from "@/lib/aqarflow/ranked-inventory";
 import { buildNoMatchSalesDraft, normalizeBuyerProfile } from "@/lib/aqarflow/runtime-contract";
 import { inferInventoryHints } from "@/lib/aqarflow/sales-profile-inference";
 import { decideAutomaticReply } from "@/lib/aqarflow/automatic-reply-policy";
@@ -240,7 +241,15 @@ export async function handleWhatsAppAutomaticReply(
   if (profileError) return { action: "failed", reason: "buyer_profile_persist_failed" };
 
   const ranked = rankPropertyCandidates(buyerProfile, candidates);
-  const selected = ranked.filter((match) => match.eligible).slice(0, 5).map((match) => match.property);
+  let selected = ranked.filter((match) => match.eligible).slice(0, 5).map((match) => match.property);
+  let nearBudgetAlternativeMode = false;
+  if (!selected.length) {
+    const nearBudgetAlternative = selectNearBudgetAlternative(buyerProfile, ranked);
+    if (nearBudgetAlternative) {
+      selected = [nearBudgetAlternative];
+      nearBudgetAlternativeMode = true;
+    }
+  }
   let draft: SalesDraft | null = null;
   let reservationId: string | null = null;
   let inputTokens: number | null = 0;
@@ -300,6 +309,7 @@ export async function handleWhatsAppAutomaticReply(
         conversationSummary: summary,
         buyerProfile,
         properties: selected,
+        nearBudgetAlternativeMode,
       })) as Record<string, unknown>;
     } catch {
       await recordUsage(admin, integration.owner_user_id, reservationId, {
@@ -338,7 +348,7 @@ export async function handleWhatsAppAutomaticReply(
       if (isRecord(decoded) && (typeof decoded.askOneQuestion !== "string" || !decoded.askOneQuestion.trim())) {
         decoded.askOneQuestion = null;
       }
-      draft = validateSalesDraft(decoded, selected);
+      draft = validateSalesDraft(decoded, selected, buildAllowedSalesContextNumbers(buyerProfile, selected));
     } catch {
       draft = null;
     }
