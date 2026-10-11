@@ -16,6 +16,16 @@ const base = {
 
 assert.deepEqual(decideAutomaticReply(base), { action: "send", reason: "eligible_text_inbound" });
 assert.equal(decideAutomaticReply({ ...base, enabled: false }).reason, "auto_reply_disabled");
+assert.deepEqual(
+  decideAutomaticReply({ ...base, enabled: false, messageText: "لا ترسلوا لي أي رسائل أخرى." }),
+  { action: "opt_out", reason: "customer_requested_no_contact" },
+  "opt-out must be honored even while automation is disabled",
+);
+assert.deepEqual(
+  decideAutomaticReply({ ...base, integrationStatus: "needs_reauth", messageText: "أريد أن أتحدث مع موظف من المكتب." }),
+  { action: "handoff", reason: "customer_requested_human" },
+  "human handoff must be honored even when the WhatsApp integration needs reauthorization",
+);
 assert.equal(decideAutomaticReply({ ...base, integrationStatus: "needs_reauth" }).reason, "integration_not_active");
 assert.equal(decideAutomaticReply({ ...base, contactOptedOut: true }).reason, "contact_opted_out");
 assert.equal(decideAutomaticReply({ ...base, eventKind: "delivery_status" }).reason, "not_inbound_message");
