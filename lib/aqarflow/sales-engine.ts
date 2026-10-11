@@ -472,7 +472,7 @@ function normalizeNumericLiteral(value: string): string {
 }
 
 /** Return numeric literals in the reply that are not present in verified numeric property fields. */
-export function findUnsupportedNumericClaims(reply: string, verifiedProperties: unknown): string[] {
+export function findUnsupportedNumericClaims(reply: string, verifiedProperties: unknown, allowedContextNumbers: number[] = []): string[] {
   const properties = sanitizeVerifiedProperties(verifiedProperties);
   const allowed = new Set<string>();
   for (const property of properties) {
@@ -480,6 +480,13 @@ export function findUnsupportedNumericClaims(reply: string, verifiedProperties: 
       if (typeof value === "number" && Number.isFinite(value)) {
         allowed.add(normalizeNumericLiteral(String(value)));
       }
+    }
+  }
+  // Explicit buyer context (for example, budget and the difference from a disclosed
+  // nearby alternative) may be repeated, but must be supplied by the caller.
+  for (const value of allowedContextNumbers) {
+    if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+      allowed.add(normalizeNumericLiteral(String(value)));
     }
   }
 
@@ -504,7 +511,7 @@ function containsPositiveAvailabilityClaim(reply: string): boolean {
 }
 
 /** Validate the response shape before it can be shown to a user or sent to a channel. */
-export function validateSalesDraft(value: unknown, verifiedProperties: unknown): SalesDraft | null {
+export function validateSalesDraft(value: unknown, verifiedProperties: unknown, allowedContextNumbers: number[] = []): SalesDraft | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
   const actions = [
@@ -536,7 +543,7 @@ export function validateSalesDraft(value: unknown, verifiedProperties: unknown):
   // workspace-verified inventory on every call. This still is not a full semantic claim verifier.
   const allowed = new Set(buildVerifiedFactTokens(verifiedListings));
   if (factsUsed.some((fact) => !allowed.has(fact))) return null;
-  if (findUnsupportedNumericClaims(replyDraft, verifiedProperties).length > 0) return null;
+  if (findUnsupportedNumericClaims(replyDraft, verifiedProperties, allowedContextNumbers).length > 0) return null;
 
   if (raw.nextBestAction === "ask_one_question" && !askOneQuestion) return null;
   if (raw.nextBestAction === "handoff_to_agent" && !handoffRequired) return null;
