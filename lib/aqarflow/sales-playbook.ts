@@ -1,3 +1,5 @@
+import { getSalesKnowledgeCards, type SalesKnowledgeCard } from "./sales-knowledge.ts";
+
 /**
  * AqarFlow AI — context-aware sales playbook.
  *
@@ -35,6 +37,7 @@ export type SalesPlaybookGuidance = {
   objective: string;
   do: string[];
   avoid: string[];
+  knowledgeCards: SalesKnowledgeCard[];
 };
 
 function normalizeArabic(value: string): string {
@@ -283,5 +286,6 @@ export function buildSalesPlaybookGuidance(input: SalesPlaybookInput): SalesPlay
     objective: base.objective,
     do: doRules,
     avoid: avoidRules,
+    knowledgeCards: getSalesKnowledgeCards(moment),
   };
 }
