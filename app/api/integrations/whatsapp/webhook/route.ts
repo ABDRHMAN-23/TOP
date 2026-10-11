@@ -64,29 +64,28 @@ export async function POST(request:Request) {
       .upsert(rows,{onConflict:'owner_user_id,provider_event_key',ignoreDuplicates:true});
     if(error)return NextResponse.json({error:'Webhook event persistence failed.'},{status:503});
   }
-  // Include both brand-new events and previous attempts that failed before finalization.
-  // This allows a Meta retry to recover a partial DB failure while processed events remain idempotent.
-  const pendingEventKeys=new Set<string>();
+  // Atomically lease pending events before performing expensive generation or provider sends.
+  // A duplicate Meta delivery cannot claim a fresh lease; stale leases can recover after a crash.
+  const claimedEventKeys=new Set<string>();
   for(const [ownerUserId,rows] of grouped.entries()){
-    const keys=rows.map(row=>row.provider_event_key).filter((key):key is string=>typeof key==='string');
+    const keys=[...new Set(rows.map(row=>row.provider_event_key).filter((key):key is string=>typeof key==='string'))];
     if(keys.length===0)continue;
-    const {data:pending,error}=await admin.from('aqarflow_whatsapp_events').select('provider_event_key')
-      .eq('owner_user_id',ownerUserId).in('provider_event_key',keys).neq('processing_status','processed');
-    if(error)return NextResponse.json({error:'Could not load pending webhook events.'},{status:503});
-    for(const row of pending||[]){
-      if(typeof row.provider_event_key==='string')pendingEventKeys.add(ownerUserId+':'+row.provider_event_key);
+    const claimAt=new Date().toISOString();
+    const staleBefore=new Date(Date.now()-2*60*1000).toISOString();
+    const {data:claimed,error:claimError}=await admin.from('aqarflow_whatsapp_events')
+      .update({processing_status:'queued',processing_started_at:claimAt})
+      .eq('owner_user_id',ownerUserId).in('provider_event_key',keys)
+      .or(`processing_status.eq.received,processing_status.eq.failed,and(processing_status.eq.queued,processing_started_at.is.null),and(processing_status.eq.queued,processing_started_at.lt.${staleBefore})`)
+      .select('provider_event_key');
+    if(claimError)return NextResponse.json({error:'Could not claim pending webhook events safely.'},{status:503});
+    for(const row of claimed||[]){
+      if(typeof row.provider_event_key==='string')claimedEventKeys.add(ownerUserId+':'+row.provider_event_key);
     }
   }
-  const acceptedEvents: typeof processableEvents = [];
-  const acceptedKeys=new Set<string>();
-  for(const event of processableEvents){
+  const acceptedEvents=processableEvents.filter(event=>{
     const integration=integrations.get(event.phoneNumberId);
-    if(!integration)continue;
-    const uniqueKey=integration.owner_user_id+':'+event.eventKey;
-    if(!pendingEventKeys.has(uniqueKey)||acceptedKeys.has(uniqueKey))continue;
-    acceptedKeys.add(uniqueKey);
-    acceptedEvents.push(event);
-  }
+    return Boolean(integration&&claimedEventKeys.has(integration.owner_user_id+':'+event.eventKey));
+  });
   if(acceptedEvents.length===0)return NextResponse.json({
     received:true,eventCount:0,duplicateEvents:processableEvents.length,
     ignoredDisconnected:events.length-processableEvents.length,
@@ -189,7 +188,7 @@ export async function POST(request:Request) {
       });
       if(replyResult.action==='failed') {
         await admin.from('aqarflow_whatsapp_events')
-          .update({processing_status:'failed'})
+          .update({processing_status:'failed',processing_started_at:null})
           .eq('owner_user_id',integration.owner_user_id)
           .eq('provider_event_key',event.eventKey);
         return NextResponse.json({error:'Automatic reply processing did not finish safely; the event remains retryable.'},{status:503,headers:{'Cache-Control':'no-store'}});
@@ -200,7 +199,7 @@ export async function POST(request:Request) {
     const integration=integrations.get(event.phoneNumberId);
     if(!integration)continue;
     const {error}=await admin.from('aqarflow_whatsapp_events')
-      .update({processing_status:'processed'})
+      .update({processing_status:'processed',processing_started_at:null})
       .eq('owner_user_id',integration.owner_user_id)
       .eq('provider_event_key',event.eventKey);
     if(error)return NextResponse.json({error:'Could not finalize CRM event state.'},{status:503});
