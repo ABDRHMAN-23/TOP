@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   ArrowLeft, ArrowUpLeft, ArrowUpRight, Check, CheckCheck, ChevronDown, Clock3, Home,
   Menu, MessageCircle, MessageSquare, MessagesSquare, Send, ShieldCheck,
   Target, TrendingUp, WalletCards, X, Zap,
 } from 'lucide-react';
 
-type ChatMessage = { from: 'customer' | 'office'; text: string; time: string };
+type ChatMessage = { from: 'customer' | 'office'; text: string; time: string; kind?: 'property'; image?: string; propertyTitle?: string; propertyMeta?: string; price?: string };
 
 const demoScenarios: Record<string, {
   label: string;
@@ -41,6 +41,131 @@ const demoScenarios: Record<string, {
   },
 };
 
+const demoConversations: Record<string, ChatMessage[]> = {
+  expensive: [
+  {
+    "from": "customer",
+    "text": "السلام عليكم، شفت إعلان الشقة في المنصورة. ممكن الصور والتفاصيل والسعر؟",
+    "time": "10:42 ص"
+  },
+  {
+    "from": "office",
+    "text": "وعليكم السلام، حيّاك الله. قبل التفاصيل: تبحث عن سكن لك وحدك أو للعائلة؟ حتى أركز على الأشياء التي تهمك فعلًا.",
+    "time": "10:42 ص"
+  },
+  {
+    "from": "customer",
+    "text": "للعائلة. أحتاج غرفتين ومكان هادئ ونظيف.",
+    "time": "10:43 ص"
+  },
+  {
+    "from": "office",
+    "text": "تمام، خلّينا نراجع نموذج شقة عائلية بغرفتين. الصور والسعر هنا جزء من سيناريو توضيحي وليست إعلانًا حقيقيًا.",
+    "time": "10:43 ص"
+  },
+  {
+    "from": "office",
+    "text": "صور الشقة ومعلوماتها التوضيحية:",
+    "time": "10:43 ص",
+    "kind": "property",
+    "image": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=85",
+    "propertyTitle": "شقة عائلية بإضاءة طبيعية",
+    "propertyMeta": "غرفتان · صالة · مطبخ · حمام · مواصفات افتراضية",
+    "price": "260 دولار شهريًا — سعر افتراضي"
+  },
+  {
+    "from": "customer",
+    "text": "الشكل جميل، لكن 260 دولار غالي. ميزانيتي 220 فقط.",
+    "time": "10:44 ص"
+  },
+  {
+    "from": "office",
+    "text": "أتفهمك، ومن الأفضل نحدد الميزانية من البداية. قبل ما نستبعد الخيار، هل 220 حد نهائي لا يمكن تجاوزه، أم قد تقبل فرقًا بسيطًا إذا ثبت أن الموقع والحالة يناسبان احتياج عائلتك؟",
+    "time": "10:44 ص"
+  },
+  {
+    "from": "customer",
+    "text": "ممكن أزيد قليلًا، لكن شفت شقق أرخص من هذا السعر.",
+    "time": "10:45 ص"
+  },
+  {
+    "from": "office",
+    "text": "ومن حقك تقارن. خلّينا نقارن على نفس الأساس: عدد الغرف، حالة الصيانة، الموقع، الخدمات وأي رسوم إضافية. السعر الأقل ممتاز إذا كان يحقق الشروط نفسها؛ لا أريد أن تدفع فرقًا بلا فائدة واضحة.",
+    "time": "10:45 ص"
+  },
+  {
+    "from": "customer",
+    "text": "المكتب الثاني يقول إن عنده شقة قريبة بـ230 دولار.",
+    "time": "10:46 ص"
+  },
+  {
+    "from": "office",
+    "text": "هذا يستحق المقارنة فعلًا. اسألهم عن الخدمات المشمولة وحالة الشقة وأي تكاليف إضافية، وقارنها بالتفاصيل المؤكدة هنا. إذا كان العرضان متساويين، فالأوفر منطقي. أما إذا ظهر فرق حقيقي يهمك، تقدر تقرر إن كان يستحق 10 دولارات إضافية.",
+    "time": "10:46 ص"
+  },
+  {
+    "from": "office",
+    "text": "وهذه صورة توضيحية أخرى لتوزيع مساحة المعيشة. الصور في هذه المعاينة للشرح فقط، ويجب في العرض الفعلي أن تكون صور العقار نفسه.",
+    "time": "10:46 ص",
+    "kind": "property",
+    "image": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=900&q=85",
+    "propertyTitle": "المعيشة والتوزيع الداخلي",
+    "propertyMeta": "صورة توضيحية وليست توثيقًا لعقار حقيقي",
+    "price": "المواصفات الفعلية تحتاج إلى التحقق"
+  },
+  {
+    "from": "customer",
+    "text": "طيب، وإذا الشقة التي أعجبتني غير متوفرة أصلًا؟ ما أبغى أضيّع وقتي.",
+    "time": "10:47 ص"
+  },
+  {
+    "from": "office",
+    "text": "سؤال في مكانه. لا يصح تأكيد التوفر قبل مراجعة المكتب. إذا لم تكن متاحة، نستخدم الشروط نفسها للبحث عن بديل، ولا نرسل لك سعرًا أو صورة على أنها تخص عقارًا آخر.",
+    "time": "10:47 ص"
+  },
+  {
+    "from": "customer",
+    "text": "أنا يهمني الهدوء والنظافة، وأقدر أوصل إلى 240 إذا كان المكان يستاهل. أكثر من كذا صعب.",
+    "time": "10:48 ص"
+  },
+  {
+    "from": "office",
+    "text": "الآن صارت أولوياتك واضحة: غرفتان، هدوء ونظافة، ومبلغ أقصى 240 دولار. في هذا السيناريو التمثيلي نفترض أن المالك وافق على 240 بدل السعر الافتراضي 260؛ هذا تفاوض افتراضي وليس خصمًا حقيقيًا أو وعدًا بعرض متاح.",
+    "time": "10:48 ص"
+  },
+  {
+    "from": "customer",
+    "text": "إذا وافق على 240 وكانت التفاصيل واضحة، ممكن أجي أشوفها.",
+    "time": "10:49 ص"
+  },
+  {
+    "from": "office",
+    "text": "ممتاز. قبل الزيارة، ينبغي تأكيد السعر النهائي، والتوفر، وحالة الشقة والخدمات المشمولة، حتى لا تكون هناك مفاجآت. إذا تطابقت التفاصيل مع ما تبحث عنه، تكون المعاينة خطوة منطقية قبل اتخاذ القرار.",
+    "time": "10:49 ص"
+  },
+  {
+    "from": "customer",
+    "text": "تمام. أقدر أجي بكرة بين 4 و6 العصر.",
+    "time": "10:50 ص"
+  },
+  {
+    "from": "office",
+    "text": "سجلنا في هذا المثال الوقت الذي يناسبك: غدًا بين 4 و6 مساءً. هذا ليس حجزًا فعليًا؛ يجب أن يؤكد المكتب توفر العقار والموعد قبل اعتباره مؤكدًا.",
+    "time": "10:50 ص"
+  },
+  {
+    "from": "customer",
+    "text": "ممتاز، أرسلوا لي التفاصيل المؤكدة، وإذا كل شيء مثل ما اتفقنا عليه أنا جاهز للمعاينة.",
+    "time": "10:51 ص"
+  },
+  {
+    "from": "office",
+    "text": "اتفقنا مبدئيًا في هذا السيناريو: ميزانية واضحة، مقارنة عادلة، تفاوض محترم على السعر، ثم طلب معاينة. الفكرة ليست الضغط على العميل، بل توضيح القيمة والتحقق من التفاصيل حتى يتقدم وهو مطمئن.",
+    "time": "10:51 ص"
+  }
+]
+};
+
 const features = [
   { icon: Target, title: 'يفهم ما وراء السؤال', body: 'يميز بين سؤال عن السعر، واعتراض، وتردد، ومقارنة، وطلب جاهز للمعاينة. لا يستخدم الرد نفسه مع الجميع.' },
   { icon: MessageSquare, title: 'يتقن فن الاعتراضات', body: 'يتعامل مع «غالي»، و«سأفكر»، و«وجدت أرخص» عبر فهم السبب واختيار الخطوة المناسبة، لا عبر المجادلة.' },
@@ -60,10 +185,25 @@ const faqs = [
 
 export default function HomePage() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeScenario, setActiveScenario] = useState('budget');
+  const [activeScenario, setActiveScenario] = useState('expensive');
   const [messageInput, setMessageInput] = useState('');
-  const [extraMessages, setExtraMessages] = useState<ChatMessage[]>([]);
+  const [extraMessages, setExtraMessages] = useState<ChatMessage[]>(demoConversations.expensive);
+  const transcriptRef = useRef<HTMLDivElement | null>(null);
   const [isSending, setIsSending] = useState(false);
+
+  const previousScenarioRef = useRef(activeScenario);
+  useEffect(() => {
+    const transcript = transcriptRef.current;
+    if (!transcript) return;
+    if (previousScenarioRef.current !== activeScenario) {
+      previousScenarioRef.current = activeScenario;
+      transcript.scrollTop = 0;
+      return;
+    }
+    if (isSending || extraMessages[extraMessages.length - 1]?.time === 'الآن') {
+      transcript.scrollTop = transcript.scrollHeight;
+    }
+  }, [activeScenario, extraMessages, isSending]);
   const [sendError, setSendError] = useState('');
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
 
@@ -71,7 +211,7 @@ export default function HomePage() {
 
   function chooseScenario(key: string) {
     setActiveScenario(key);
-    setExtraMessages([]);
+    setExtraMessages(demoConversations[key] ?? demoConversations.expensive);
     setMessageInput('');
     setSendError('');
   }
@@ -103,8 +243,14 @@ export default function HomePage() {
         throw new Error(typeof data.error === 'string' ? data.error : 'تعذر الرد الآن. حاول مرة أخرى.');
       }
       setExtraMessages((current) => [...current, { from: 'office', text: data.reply as string, time: 'الآن' }]);
-    } catch (error) {
-      setSendError(error instanceof Error ? error.message : 'تعذر الرد الآن. حاول مرة أخرى.');
+    } catch {
+      const normalized = text.toLowerCase();
+      let fallback = 'أفهم قصدك. هذه معاينة توضيحية ولا تملك مخزونًا فعليًا لتأكيد عقار أو سعر أو موعد. ما أهم شرط تريد أن نحافظ عليه؟';
+      if (/غالي|سعر|ميزاني|أرخص|مكلف/.test(normalized)) fallback = 'أتفهم أن السعر عامل مهم. بدل ما أضغط عليك، خلّينا نقارن السعر بالموقع والمساحة والحالة والخدمات المؤكدة، ونلتزم بالحد الذي يناسب ميزانيتك. كم الحد الأعلى الذي لا تريد تجاوزه؟';
+      else if (/صور|صورة|شوف|أشوف/.test(normalized)) fallback = 'أكيد، من حقك تشوف الصور والتفاصيل قبل أي قرار. الصور الظاهرة في المثال توضيحية فقط؛ في الاستخدام الفعلي تُرسل صور العقار المسجل بعد التحقق من أنها تخصه.';
+      else if (/موعد|أجي|معاين|بكرة|غد/.test(normalized)) fallback = 'المعاينة خطوة مناسبة بعد التأكد من العقار وتوفره. أقدر أوضح لك الخطوة المقترحة، لكن لا أستطيع تأكيد موعد حقيقي من هذه المعاينة؛ يجب أن يؤكده المكتب أولًا.';
+      else if (/واتساب|آلي|ذكاء|روبوت/.test(normalized)) fallback = 'هذه معاينة تفاعلية توضيحية داخل الموقع وليست حساب واتساب حقيقيًا، ولا ترسل رسائل إلى مكتب أو عميل. عند ربط الخدمة الفعلية تُضبط القناة والصلاحيات قبل تفعيل الردود.';
+      setExtraMessages((current) => [...current, { from: 'office', text: fallback, time: 'الآن' }]);
     } finally {
       setIsSending(false);
     }
@@ -224,24 +370,32 @@ export default function HomePage() {
             <p>اكتب سؤالك بطريقتك، وستحصل على رد طبيعي يتفاعل مع كلامك وسياق المحادثة. هذه تجربة عامة لا تتصل بمخزون مكتبك أو بواتساب.</p>
           </div>
           <div className="af-demo-layout">
-            <div className="af-demo-chat">
-              <div className="af-demo-chat-head">
-                <div className="af-office-avatar af-office-avatar-small"><Home size={17} /></div>
-                <div><b>محادثة مع مكتب عقاري</b><span><i /> متاح للتجربة</span></div>
-                <span className="af-demo-menu-dot">•••</span>
+            <div className="af-demo-chat af-whatsapp-demo">
+              <div className="af-demo-chat-head af-whatsapp-head">
+                <div className="af-whatsapp-avatar"><Home size={18} /></div>
+                <div><b>مكتب النخبة العقاري</b><span><i /> متصل الآن · معاينة توضيحية</span></div>
+                <div className="af-whatsapp-actions"><MessageCircle size={18} /><span className="af-demo-menu-dot">⋮</span></div>
               </div>
-              <div className="af-scenario-pills" role="group" aria-label="اختر موقف المحادثة">
-                {Object.entries(demoScenarios).map(([key, item]) => (
-                  <button type="button" key={key} disabled={isSending} className={activeScenario === key ? 'af-scenario-pill active' : 'af-scenario-pill'} onClick={() => chooseScenario(key)}>{item.label}</button>
-                ))}
-              </div>
-              <div className="af-demo-transcript" aria-live="polite">
-                {extraMessages.length === 0 ? <div className="af-demo-message office"><p>أهلًا بك، تفضل. اسألني عن اللي تحتاجه، أو قل لي ميزانيتك والمنطقة المناسبة لك ونبدأ منها.</p><small>الآن <CheckCheck size={12} /></small></div> : null}
+              <div className="af-whatsapp-demo-label">محادثة واحدة متكاملة · جميع الاعتراضات ضمن نفس الحوار</div>
+              <div className="af-whatsapp-date">اليوم</div>
+              <div className="af-demo-transcript af-whatsapp-transcript" aria-live="polite" ref={transcriptRef}>
                 {extraMessages.map((message, index) => (
                   <div className={message.from === 'customer' ? 'af-demo-message customer' : 'af-demo-message office'} key={'extra-' + activeScenario + '-' + index}>
+                    {message.kind === 'property' ? (
+                      <div className="af-property-attachment">
+                        <img src={message.image} alt={message.propertyTitle || 'صورة عقار توضيحية'} loading="lazy" />
+                        <div className="af-property-attachment-body">
+                          <strong>{message.propertyTitle}</strong>
+                          <span>{message.propertyMeta}</span>
+                          <b>{message.price}</b>
+                          <small>صور توضيحية · ليست عرضًا حقيقيًا</small>
+                        </div>
+                      </div>
+                    ) : null}
                     <p>{message.text}</p><small>{message.time} {message.from === 'office' ? <CheckCheck size={12} /> : null}</small>
                   </div>
                 ))}
+                {isSending ? <div className="af-demo-message office af-typing-bubble"><span>يكتب الآن</span><i /><i /><i /></div> : null}
               </div>
               <form className="af-demo-input-row" onSubmit={sendDemoMessage}>
                 <input value={messageInput} onChange={(event) => setMessageInput(event.target.value)} aria-label="اكتب رسالة لتجربة المعاينة" placeholder={isSending ? 'لحظة...' : 'اكتب سؤالك أو اعتراضك هنا...'} maxLength={700} disabled={isSending} />
@@ -249,7 +403,7 @@ export default function HomePage() {
               </form>
               {isSending ? <p className="af-demo-status" role="status">لحظة، نرتّب لك الرد المناسب…</p> : null}
               {sendError ? <p className="af-demo-error" role="alert">{sendError}</p> : null}
-              <p className="af-demo-disclaimer"><ShieldCheck size={13} /> المحادثة للتجربة فقط، ولا تُرسل رسائل حقيقية أو تُحفظ في حساب.</p>
+              <p className="af-demo-disclaimer"><ShieldCheck size={13} /> معاينة تفاعلية بأسلوب واتساب. الصور والأسعار أمثلة توضيحية، ولا يوجد مخزون عقاري حقيقي متصل.</p>
             </div>
             <aside className="af-strategy-panel">
               <div className="af-strategy-eyebrow"><span className="af-strategy-dot" /> أسلوب المبيعات</div>
@@ -257,7 +411,7 @@ export default function HomePage() {
               <div className="af-strategy-item"><span className="af-strategy-icon"><Target size={17} /></span><div><small>هدف الرد</small><p>{scenario.objective}</p></div></div>
               <div className="af-strategy-item"><span className="af-strategy-icon"><BrainMini /></span><div><small>المبدأ المطبق</small><p>{scenario.principle}</p></div></div>
               <div className="af-strategy-boundary"><ShieldCheck size={17} /><p>تبقى الأسعار والمواصفات مرتبطة ببيانات المكتب الفعلية، ولا تُعرض معلومة غير مؤكدة على أنها حقيقة.</p></div>
-              <button className="af-button af-button-dark af-strategy-reset" type="button" disabled={isSending} onClick={() => chooseScenario('budget')}>إعادة المثال الأساسي <ArrowLeft size={15} /></button>
+              <button className="af-button af-button-dark af-strategy-reset" type="button" disabled={isSending} onClick={() => chooseScenario('expensive')}>إعادة المثال الكامل <ArrowLeft size={15} /></button>
             </aside>
           </div>
         </div>
