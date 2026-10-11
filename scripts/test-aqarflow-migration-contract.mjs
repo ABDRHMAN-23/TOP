@@ -125,7 +125,7 @@ assert.ok(
   "send authorization must be rechecked after claiming an idempotency key",
 );
 assert.ok(
-  automaticReply.indexOf("const [latestContactResult") < automaticReply.indexOf("send = await sendMetaWhatsAppText"),
+  automaticReply.indexOf("const [latestContactResult") < automaticReply.indexOf("sent = await sendMetaWhatsAppText"),
   "latest consent and integration state must be rechecked before sending",
 );
 assert.ok(automaticReplyPolicy.includes("customer_requested_no_contact"));
