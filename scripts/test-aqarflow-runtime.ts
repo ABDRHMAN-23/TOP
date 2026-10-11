@@ -8,6 +8,14 @@ if(parsed.ok){assert.equal(parsed.value.conversationSummary.length,1000);assert.
 assert.equal(parseAqarFlowSalesRequest({customerMessage:'x'.repeat(1601)}).ok,false);
 assert.deepEqual(inferBasicBuyerProfileHints('أبحث عن شقة للبيع فيها ٣ غرف نوم').bedroomsMin,3);
 assert.equal(normalizeBuyerProfile({preferredAreas:'Aden',mustHaves:['parking']}).preferredAreas,undefined);
+const inferredSoft = inferBasicBuyerProfileHints("ميزانيتي 200 دولار، وأقدر أزيد قليلًا إذا كان الموقع ممتازًا.");
+assert.equal(inferredSoft.budgetMax, 200, "explicit dollar budget should be extracted");
+assert.equal(inferredSoft.currency, "USD", "currency must be explicit before a monetary amount is accepted");
+assert.equal(inferredSoft.budgetFlexibility, "slight", "explicit willingness to increase a little should be recognized");
+const inferredHard = inferBasicBuyerProfileHints("ميزانيتي 200 دولار حد نهائي، ما أقدر أزيد.");
+assert.equal(inferredHard.budgetFlexibility, "hard", "firm budget language must override flexibility");
+assert.equal(inferBasicBuyerProfileHints("أريد 200 مترًا").budgetMax, undefined, "bare numbers without an explicit currency must not be treated as money");
+
 assert.equal(buildNoMatchSalesDraft(0).unknowns[0],'active_inventory_empty');
 const tailoredNoMatch=buildNoMatchSalesDraft(5,{intent:'rent',propertyType:'شقة',preferredAreas:['المنصورة'],budgetMax:200,currency:'USD'});
 assert.match(tailoredNoMatch.replyDraft,/المنصورة/,'no-match reply should acknowledge the requested area');
