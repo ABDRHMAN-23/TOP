@@ -8,7 +8,7 @@ export const MAX_REQUEST_BODY_BYTES = 32000;
 export function buildNoMatchSalesDraft(activeCandidateCount: number, buyerProfile?: BuyerProfile | null): SalesDraft {
   const hasActiveCandidates = Number.isFinite(activeCandidateCount) && activeCandidateCount > 0;
   const areas = Array.isArray(buyerProfile?.preferredAreas)
-    ? buyerProfile.preferredAreas.filter((v): v is string => typeof v === 'string' && v.trim()).slice(0, 2)
+    ? buyerProfile.preferredAreas.filter((v): v is string => typeof v === 'string' && v.trim().length > 0).slice(0, 2)
     : [];
   const propertyType = typeof buyerProfile?.propertyType === 'string' ? buyerProfile.propertyType.trim().slice(0, 60) : '';
   const context = [
