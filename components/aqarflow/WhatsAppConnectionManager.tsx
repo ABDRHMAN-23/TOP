@@ -2,7 +2,7 @@
 import { useCallback,useEffect,useRef,useState } from 'react';
 import { buildMetaSignupExtras, parseMetaEmbeddedSignupMessage, type MetaEmbeddedSignupMetadata, type MetaSignupMode } from '@/lib/aqarflow/whatsapp-signup';
 
-type Connection={id:string;waba_id:string;phone_number_id:string;display_phone_number:string|null;verified_name:string|null;graph_api_version:string;status:string;last_verified_at:string;token_expires_at:string|null};
+type Connection={id:string;waba_id:string;phone_number_id:string;display_phone_number:string|null;verified_name:string|null;graph_api_version:string;status:string;last_verified_at:string;token_expires_at:string|null;auto_reply_enabled:boolean};
 type SignupMetadata=MetaEmbeddedSignupMetadata;
 type MetaLoginResponse={authResponse?:{code?:string};status?:string};
 type MetaSdk={init:(options:{appId:string;cookie:boolean;xfbml:boolean;version:string})=>void;login:(callback:(response:MetaLoginResponse)=>void,options:Record<string,unknown>)=>void};
@@ -80,10 +80,21 @@ export default function WhatsAppConnectionManager({appId,configId,graphVersion,s
   try{const r=await fetch('/api/integrations/whatsapp/connect',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({phoneNumberId})});const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر فصل الاتصال.');setNotice('تم فصل الاتصال ومسح رمز الوصول المخزن.');await refresh();}
   catch(e){setError(e instanceof Error?e.message:'تعذر فصل الاتصال.');}finally{setBusy(false);}
  }
+ async function toggleAutoReply(c:Connection,enabled:boolean){
+  if(enabled&&!confirm('سيبدأ هذا الرقم بإرسال ردود مبيعات تلقائية بعد التحقق من حقائق العقارات. سيبقى طلب إيقاف التواصل وطلب موظف بشري أولوية. هل تريد تفعيل الرد الآلي لهذا الرقم؟'))return;
+  setBusy(true);setError('');setNotice('');
+  try{
+   const r=await fetch('/api/integrations/whatsapp/connect',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({phoneNumberId:c.phone_number_id,autoReplyEnabled:enabled})});
+   const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر تحديث إعداد الرد الآلي.');
+   setConnections(old=>old.map(item=>item.phone_number_id===c.phone_number_id?{...item,auto_reply_enabled:Boolean(b.autoReplyEnabled)}:item));
+   setNotice(enabled?'تم تفعيل الرد الآلي لهذا الرقم.':'تم إيقاف الرد الآلي لهذا الرقم.');
+  }catch(e){setError(e instanceof Error?e.message:'تعذر تحديث إعداد الرد الآلي.');}
+  finally{setBusy(false);}
+ }
  return <div dir="rtl" className="space-y-5">
   <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
    <p className="text-sm font-bold text-blue-700">WHATSAPP CLOUD API</p><h2 className="mt-2 text-xl font-black">ربط رقم واتساب للأعمال</h2>
-   <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">سيُفتح تدفق Meta Embedded Signup. بعد التفويض، يتحقق الخادم من انتماء رقم الهاتف إلى حساب الأعمال، ثم يخزن رمز الوصول مشفرًا. لن تُرسل رسائل تلقائيًا؛ سيبقى الرد تحت مراجعة المالك من صندوق المحادثات. نمط الربط الحالي: {signupMode==='coexistence'?'ربط واتساب للأعمال الموجود مع Cloud API (Coexistence)':'تسجيل WhatsApp Cloud API القياسي'}.</p>
+   <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">سيُفتح تدفق Meta Embedded Signup. بعد التفويض، يتحقق الخادم من انتماء رقم الهاتف إلى حساب الأعمال، ثم يخزن رمز الوصول مشفرًا. يبقى الرد الآلي متوقفًا افتراضيًا لكل رقم. يمكنك تفعيله صراحةً بعد التأكد من بيانات العقارات وقواعد التعامل مع العملاء. نمط الربط الحالي: {signupMode==='coexistence'?'ربط واتساب للأعمال الموجود مع Cloud API (Coexistence)':'تسجيل WhatsApp Cloud API القياسي'}.</p>
    {!appId||!configId||!graphVersion?<p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">يلزم إعداد App ID وConfig ID وإصدار Graph API قبل تفعيل الربط الحي.</p>:null}
    {error&&<p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
    {notice&&<p role="status" className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
@@ -93,6 +104,13 @@ export default function WhatsAppConnectionManager({appId,configId,graphVersion,s
    <div className="border-b p-5"><h2 className="font-black">الاتصالات المحفوظة</h2></div>
    {loading?<p className="p-6 text-sm text-slate-500">يجري التحميل…</p>:connections.length===0?<p className="p-6 text-sm text-slate-500">لا توجد أرقام مرتبطة حتى الآن.</p>:<div className="divide-y">{connections.map(c=><article key={c.id} className="flex flex-col gap-4 p-5">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-bold">{c.verified_name||'WhatsApp Business'} · {c.display_phone_number||c.phone_number_id}</h3><p className="mt-1 text-xs text-slate-500">الحالة: {c.status==='active'?'نشط':c.status==='needs_reauth'?'يحتاج إعادة تفويض':c.status} · الإصدار {c.graph_api_version}</p><p className="mt-1 text-xs text-slate-500">آخر تحقق: {new Date(c.last_verified_at).toLocaleString('ar')}</p></div><button disabled={busy} onClick={()=>disconnect(c.phone_number_id)} className="self-start rounded-xl border border-red-200 px-4 py-2 text-sm font-bold text-red-700 disabled:opacity-50">فصل الرقم</button></div>
+    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+     <div><p className="text-sm font-bold">ملك التسويق · الرد الآلي</p><p className="mt-1 text-xs leading-5 text-slate-600">{c.auto_reply_enabled?'مفعّل لهذا الرقم. سيُسجّل طلب إيقاف التواصل ويحوّل طلب الموظف إلى مراجعة بشرية.':'متوقف افتراضيًا. المحادثات الواردة تُحفظ دون إرسال رد تسويقي تلقائي.'}</p></div>
+     <label className="flex min-h-11 items-center gap-3 rounded-xl bg-slate-50 px-3 py-2 text-sm font-bold">
+      <input type="checkbox" checked={Boolean(c.auto_reply_enabled)} disabled={busy||c.status!=='active'} onChange={e=>void toggleAutoReply(c,e.target.checked)} className="h-5 w-5 accent-blue-700" />
+      تفعيل الرد الآلي
+     </label>
+    </div>
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-sm font-bold">{registeredPhones[c.phone_number_id]?'تم تأكيد التسجيل خلال هذه الجلسة':'تسجيل الرقم في WhatsApp Cloud API'}</p><p className="mt-1 text-xs leading-5 text-slate-600">يتحقق الخادم من حالة الرقم أولًا، ثم يسجله إن كان موثقًا ولم يكن متصلًا. PIN لا يُحفظ في قاعدة البيانات ويُستخدم لهذا الطلب فقط.</p><div className="mt-3 flex flex-col gap-2 sm:flex-row"><input type="password" autoComplete="off" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={phonePins[c.phone_number_id]||''} onChange={e=>setPhonePins(old=>({...old,[c.phone_number_id]:e.target.value.replace(/\D/g,'').slice(0,6)}))} className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm sm:max-w-56" placeholder="PIN من 6 أرقام" aria-label={'PIN تسجيل '+(c.display_phone_number||c.phone_number_id)}/><button disabled={busy||!/^\d{6}$/.test(phonePins[c.phone_number_id]||'')||c.status!=='active'} onClick={()=>registerPhone(c.phone_number_id)} className="min-h-11 rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">التحقق وتسجيل الرقم</button></div></div>
    </article>)}</div>}
   </section>
