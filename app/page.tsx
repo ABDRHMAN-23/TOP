@@ -46,7 +46,7 @@ const features = [
   { icon: MessageSquare, title: 'يتقن فن الاعتراضات', body: 'يتعامل مع «غالي»، و«سأفكر»، و«وجدت أرخص» عبر فهم السبب واختيار الخطوة المناسبة، لا عبر المجادلة.' },
   { icon: Home, title: 'يبحث عن البديل المناسب', body: 'إذا لم يتوفر العقار، يرجع إلى مخزون المكتب ويبحث عن خيارات قريبة مع احترام الميزانية والشروط الأساسية.' },
   { icon: ShieldCheck, title: 'يحفظ هيبة المكتب', body: 'لبق وواثق، لا يتوسل لإتمام الصفقة، ولا يرد الإساءة بالإساءة، ولا يقدم وعودًا خارج صلاحياته.' },
-  { icon: WalletCards, title: 'يرتكز على بيانات المكتب', body: 'السعر والمواصفات والتوفر من سجلات العقارات، لا من تخمين النموذج أو ذاكرته العامة.' },
+  { icon: WalletCards, title: 'يرتكز على بيانات المكتب', body: 'السعر والمواصفات والتوفر تستند إلى سجلات المكتب، لا إلى افتراضات غير مؤكدة.' },
   { icon: TrendingUp, title: 'يتحسن بالاختبار', body: 'نقيس جودة الردود على سيناريوهات جديدة، ونحلل الأخطاء ونحسن القواعد بدل الاكتفاء بعبارة «كن خبير مبيعات».' },
 ];
 
@@ -129,7 +129,7 @@ export default function HomePage() {
           <nav id="af-site-navigation" className={mobileOpen ? 'af-nav af-nav-open' : 'af-nav'}>
             <a href="#difference" onClick={() => setMobileOpen(false)}>لماذا AqarFlow؟</a>
             <a href="#method" onClick={() => setMobileOpen(false)}>كيف يعمل</a>
-            <a href="#demo" onClick={() => setMobileOpen(false)}>جرّب المساعد</a>
+            <a href="#demo" onClick={() => setMobileOpen(false)}>جرّب المحادثة</a>
             <a href="#faq" onClick={() => setMobileOpen(false)}>الأسئلة الشائعة</a>
           </nav>
           <div className="af-header-actions">
@@ -220,7 +220,7 @@ export default function HomePage() {
       <section id="demo" className="af-section af-demo-section">
         <div className="af-wrap">
           <div className="af-demo-heading">
-            <div><span className="af-kicker">جرّبه بنفسك</span><h2>نفس العميل، مواقف مختلفة.<br /><span>والرد يتغيّر بذكاء.</span></h2></div>
+            <div><span className="af-kicker">جرّبه بنفسك</span><h2>نفس العميل، مواقف مختلفة.<br /><span>والرد يناسب الموقف.</span></h2></div>
             <p>اكتب سؤالك بطريقتك، وستحصل على رد طبيعي يتفاعل مع كلامك وسياق المحادثة. هذه تجربة عامة لا تتصل بمخزون مكتبك أو بواتساب.</p>
           </div>
           <div className="af-demo-layout">
@@ -256,7 +256,7 @@ export default function HomePage() {
               <h3>{scenario.title}</h3>
               <div className="af-strategy-item"><span className="af-strategy-icon"><Target size={17} /></span><div><small>هدف الرد</small><p>{scenario.objective}</p></div></div>
               <div className="af-strategy-item"><span className="af-strategy-icon"><BrainMini /></span><div><small>المبدأ المطبق</small><p>{scenario.principle}</p></div></div>
-              <div className="af-strategy-boundary"><ShieldCheck size={17} /><p>يبقى السعر والتوفر والمواصفات مرتبطًا ببيانات المكتب الفعلية. لا يصنع المساعد عرضًا من خياله.</p></div>
+              <div className="af-strategy-boundary"><ShieldCheck size={17} /><p>تبقى الأسعار والمواصفات مرتبطة ببيانات المكتب الفعلية، ولا تُعرض معلومة غير مؤكدة على أنها حقيقة.</p></div>
               <button className="af-button af-button-dark af-strategy-reset" type="button" disabled={isSending} onClick={() => chooseScenario('budget')}>إعادة المثال الأساسي <ArrowLeft size={15} /></button>
             </aside>
           </div>
@@ -285,7 +285,7 @@ export default function HomePage() {
           <div className="af-values-copy">
             <span className="af-kicker af-kicker-light">هيبة المكتب ليست تفصيلًا</span>
             <h2>يقنع بثقة.<br /><span>ويحترم بلا استثناء.</span></h2>
-            <p>الاحتراف لا يعني الإلحاح، والذكاء لا يعني التلاعب. المساعد الذي يمثّل مكتبك يحافظ على أسلوبه حتى عندما يكون العميل مترددًا أو غاضبًا.</p>
+            <p>الاحتراف لا يعني الإلحاح أو التلاعب. منظومة المبيعات تحافظ على أسلوب المكتب حتى عندما يكون العميل مترددًا أو غاضبًا.</p>
             <a href="#demo" className="af-values-link">شاهد موقفًا آخر <ArrowLeft size={16} /></a>
           </div>
           <div className="af-values-list">
@@ -299,7 +299,7 @@ export default function HomePage() {
 
       <section id="faq" className="af-section af-faq-section">
         <div className="af-wrap af-faq-layout">
-          <div className="af-faq-intro"><span className="af-kicker">أسئلة مهمة</span><h2>قبل أن تبدأ،<br /><span>هذه الصورة كاملة.</span></h2><p>نوضّح ما يفعله المساعد وما يتطلب تكاملًا أو تحققًا إضافيًا، دون وعود لا يدعمها النظام.</p><a href="#demo" className="af-text-link">اختبر المعاينة التفاعلية <ArrowLeft size={15} /></a></div>
+          <div className="af-faq-intro"><span className="af-kicker">أسئلة مهمة</span><h2>قبل أن تبدأ،<br /><span>هذه الصورة كاملة.</span></h2><p>نوضّح ما تقدمه المنظومة وما يتطلب تكاملًا أو تحققًا إضافيًا، دون وعود لا يدعمها النظام.</p><a href="#demo" className="af-text-link">اختبر المعاينة التفاعلية <ArrowLeft size={15} /></a></div>
           <div className="af-faq-list">
             {faqs.map((faq, index) => (
               <div className={activeFaq === index ? 'af-faq-item af-faq-active' : 'af-faq-item'} key={faq.q}>
@@ -316,7 +316,7 @@ export default function HomePage() {
         <div className="af-wrap af-final-cta-inner">
           <span className="af-final-icon"><Zap size={22} /></span>
           <h2>اجعل كل محادثة فرصة<br /><span>لبناء ثقة وإتمام صفقة مناسبة.</span></h2>
-          <p>ابدأ بمعاينة طريقة العمل، ثم انتقل إلى مساحة المكتب لإعداد العقارات والمساعد.</p>
+          <p>ابدأ بمعاينة طريقة العمل، ثم انتقل إلى مساحة المكتب لإعداد العقارات وقنوات التواصل.</p>
           <div className="af-final-actions"><a href="#demo" className="af-button af-button-white">جرّب المحادثة <ArrowLeft size={16} /></a><a href="/login" className="af-button af-button-outline-light">دخول المكتب <ArrowUpRight size={16} /></a></div>
         </div>
       </section>
