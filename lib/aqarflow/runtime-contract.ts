@@ -18,16 +18,17 @@ export function buildNoMatchSalesDraft(activeCandidateCount: number, buyerProfil
   const budgetGuard = buyerProfile?.budgetMax != null
     ? ' مع الحفاظ على سقف الميزانية الذي حددته'
     : '';
+  const askOneQuestion = hasActiveCandidates
+    ? `هل يناسبك أن أبحث في منطقة قريبة${budgetGuard}، أم تفضّل أن نراجع شرطًا آخر؟`
+    : 'ما أهم شرط تحب نحافظ عليه حتى أبحث لك عن بديل مناسب؟';
   return {
     replyDraft: hasActiveCandidates
-      ? `راجعت الخيارات المسجلة${context}، لكن ما ظهر خيار أقدر أقول لك إنه يطابق شروطك بالكامل. ما أحب أضيّع وقتك بعقار ما يناسبك؛ أقدر أوسّع البحث إلى منطقة أخرى${budgetGuard} أو أراجع معك شرطًا مرنًا.`
-      : 'حاليًا لا يظهر في المخزون المسجل خيار أقدر أطابقه مع طلبك بثقة، وما أحب أعطيك مواصفات أو وعودًا غير مؤكدة. خلّينا نحدد أهم شرط تريد الحفاظ عليه قبل توسيع البحث.',
+      ? `راجعت الخيارات المتوفرة عندنا${context}، وما ظهر عقار يطابق طلبك بالكامل. ما أحب أعرض عليك شيئًا قد لا يناسبك؛ ${askOneQuestion}`
+      : `حاليًا ما عندي خيار أقدر أؤكد أنه يناسب طلبك، وما أحب أعطيك معلومة غير دقيقة. ${askOneQuestion}`,
     factsUsed: [],
     unknowns: [hasActiveCandidates ? 'no_eligible_property_match' : 'active_inventory_empty'],
     nextBestAction: 'ask_one_question',
-    askOneQuestion: hasActiveCandidates
-      ? `هل تقبل توسيع البحث إلى منطقة أخرى${budgetGuard}، أم تفضّل مراجعة شرط آخر؟`
-      : 'ما أهم شرط يجب الحفاظ عليه في البحث؟',
+    askOneQuestion,
     handoffRequired: false,
   };
 }
