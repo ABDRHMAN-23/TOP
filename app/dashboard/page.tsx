@@ -84,7 +84,7 @@ export default async function DashboardPage() {
           <div className="af-workspace-header-actions">
             <span className="af-workspace-user"><span className="af-workspace-user-dot" />{workspaceLabel}</span>
             <a href="/settings/whatsapp" className="af-workspace-settings"><Settings2 size={16} /><span>إعدادات واتساب</span></a>
-            <a href="/login?next=%2Fdashboard" className="af-workspace-exit">الحساب <ArrowUpLeft size={15} /></a>
+            <a href="/aqarflow-analytics" className="af-workspace-exit">التحليلات <BarChart3 size={15} /></a>
           </div>
         </header>
 
