@@ -10,6 +10,8 @@ assert.deepEqual(inferBasicBuyerProfileHints('أبحث عن شقة للبيع ف
 assert.equal(inferBasicBuyerProfileHints("أبحث عن شقة بغرفتين للإيجار في المنصورة وميزانيتي 200 دولار").bedroomsMin,2,"Arabic word-form two-bedroom request should be understood");
 assert.equal(inferBasicBuyerProfileHints("أريد شقة بثلاث غرف نوم").bedroomsMin,3,"Arabic word-form three-bedroom request should be understood");
 assert.equal(inferBasicBuyerProfileHints("أبحث عن غرفة نوم للإيجار").bedroomsMin,1,"single-bedroom wording should be understood");
+assert.equal(inferBasicBuyerProfileHints("لا أريد غرفتين، أريد ثلاث غرف").bedroomsMin,3,"latest word-form correction should win");
+assert.equal(inferBasicBuyerProfileHints("لا أريد 2 غرف، أريد 3 غرف نوم").bedroomsMin,3,"latest numeric correction should win");
 assert.equal(normalizeBuyerProfile({preferredAreas:'Aden',mustHaves:['parking']}).preferredAreas,undefined);
 const inferredSoft = inferBasicBuyerProfileHints("ميزانيتي 200 دولار، وأقدر أزيد قليلًا إذا كان الموقع ممتازًا.");
 assert.equal(inferredSoft.budgetMax, 200, "explicit dollar budget should be extracted");
