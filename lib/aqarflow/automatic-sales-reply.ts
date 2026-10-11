@@ -414,9 +414,76 @@ export async function handleWhatsAppAutomaticReply(
     return setHandoff(admin, integration.owner_user_id, input.conversationId, "outbound_send_claim_failed");
   }
 
+  // Recheck mutable consent and delivery state after claiming the idempotency key,
+  // immediately before talking to Meta. A customer may opt out or the owner may
+  // disable automation while Gemini is generating the draft.
+  const [latestContactResult, latestIntegrationResult, latestSendConversationResult] = await Promise.all([
+    admin.from("aqarflow_crm_contacts")
+      .select("ai_auto_reply_opted_out")
+      .eq("owner_user_id", integration.owner_user_id).eq("id", input.contactId).maybeSingle(),
+    admin.from("aqarflow_whatsapp_integrations")
+      .select("id,status,auto_reply_enabled,phone_number_id,graph_api_version,access_token_ciphertext,access_token_iv,token_expires_at")
+      .eq("owner_user_id", integration.owner_user_id).eq("id", integration.id).maybeSingle(),
+    admin.from("aqarflow_crm_conversations")
+      .select("status,handoff_required")
+      .eq("owner_user_id", integration.owner_user_id).eq("id", input.conversationId).maybeSingle(),
+  ]);
+  if (latestContactResult.error || !latestContactResult.data
+    || latestIntegrationResult.error || !latestIntegrationResult.data
+    || latestSendConversationResult.error || !latestSendConversationResult.data) {
+    await admin.from("aqarflow_whatsapp_outbound_requests")
+      .update({ status: "failed", failure_code: "pre_send_state_recheck_failed" })
+      .eq("owner_user_id", integration.owner_user_id).eq("idempotency_key", idempotencyKey);
+    await saveIncomingDraft(admin, integration.owner_user_id, event, draft);
+    return setHandoff(admin, integration.owner_user_id, input.conversationId, "pre_send_state_recheck_failed");
+  }
+  const latestIntegration = latestIntegrationResult.data;
+  if (latestContactResult.data.ai_auto_reply_opted_out) {
+    await admin.from("aqarflow_whatsapp_outbound_requests")
+      .update({ status: "failed", failure_code: "blocked_contact_opted_out" })
+      .eq("owner_user_id", integration.owner_user_id).eq("idempotency_key", idempotencyKey);
+    await saveIncomingDraft(admin, integration.owner_user_id, event, draft);
+    return { action: "skipped", reason: "contact_opted_out_before_send" };
+  }
+  if (!latestIntegration.auto_reply_enabled) {
+    await admin.from("aqarflow_whatsapp_outbound_requests")
+      .update({ status: "failed", failure_code: "blocked_automation_disabled" })
+      .eq("owner_user_id", integration.owner_user_id).eq("idempotency_key", idempotencyKey);
+    await saveIncomingDraft(admin, integration.owner_user_id, event, draft);
+    return { action: "skipped", reason: "automation_disabled_before_send" };
+  }
+  if (latestSendConversationResult.data.handoff_required || latestSendConversationResult.data.status !== "open") {
+    await admin.from("aqarflow_whatsapp_outbound_requests")
+      .update({ status: "failed", failure_code: "blocked_conversation_state_changed" })
+      .eq("owner_user_id", integration.owner_user_id).eq("idempotency_key", idempotencyKey);
+    await saveIncomingDraft(admin, integration.owner_user_id, event, draft);
+    return { action: "skipped", reason: latestSendConversationResult.data.handoff_required
+      ? "human_handoff_activated_before_send" : "conversation_closed_before_send" };
+  }
+  if (latestIntegration.status !== "active"
+    || !latestIntegration.access_token_ciphertext
+    || !latestIntegration.access_token_iv
+    || latestIntegration.phone_number_id !== integration.phone_number_id) {
+    await admin.from("aqarflow_whatsapp_outbound_requests")
+      .update({ status: "failed", failure_code: "whatsapp_connection_changed_before_send" })
+      .eq("owner_user_id", integration.owner_user_id).eq("idempotency_key", idempotencyKey);
+    await saveIncomingDraft(admin, integration.owner_user_id, event, draft);
+    return setHandoff(admin, integration.owner_user_id, input.conversationId, "whatsapp_connection_changed_before_send");
+  }
+  if (latestIntegration.token_expires_at && Date.parse(latestIntegration.token_expires_at) <= Date.now() + 60_000) {
+    await admin.from("aqarflow_whatsapp_integrations")
+      .update({ status: "needs_reauth", auto_reply_enabled: false, updated_at: new Date().toISOString() })
+      .eq("owner_user_id", integration.owner_user_id).eq("id", integration.id);
+    await admin.from("aqarflow_whatsapp_outbound_requests")
+      .update({ status: "failed", failure_code: "whatsapp_credentials_expired_before_send" })
+      .eq("owner_user_id", integration.owner_user_id).eq("idempotency_key", idempotencyKey);
+    await saveIncomingDraft(admin, integration.owner_user_id, event, draft);
+    return setHandoff(admin, integration.owner_user_id, input.conversationId, "whatsapp_credentials_expired_before_send");
+  }
+
   let token: string;
   try {
-    token = await decryptMetaAccessToken(integration.access_token_ciphertext, integration.access_token_iv, encryptionKey);
+    token = await decryptMetaAccessToken(latestIntegration.access_token_ciphertext, latestIntegration.access_token_iv, encryptionKey);
   } catch {
     await admin.from("aqarflow_whatsapp_outbound_requests")
       .update({ status: "failed", failure_code: "token_decryption_failed" })
@@ -428,8 +495,8 @@ export async function handleWhatsAppAutomaticReply(
   let sent: { messageId: string };
   try {
     sent = await sendMetaWhatsAppText({
-      graphApiVersion: integration.graph_api_version,
-      phoneNumberId: integration.phone_number_id,
+      graphApiVersion: latestIntegration.graph_api_version,
+      phoneNumberId: latestIntegration.phone_number_id,
       accessToken: token,
       to: recipientPhoneNumber,
       text: draft.replyDraft,
