@@ -5,6 +5,12 @@ begin;
 alter table public.aqarflow_crm_contacts
   add column if not exists ai_auto_reply_opted_out boolean not null default false;
 
+alter table public.aqarflow_whatsapp_events
+  add column if not exists processing_started_at timestamptz;
+
+create index if not exists aqarflow_whatsapp_events_lease_idx
+  on public.aqarflow_whatsapp_events(processing_status, processing_started_at);
+
 alter table public.aqarflow_crm_conversations
   add column if not exists buyer_profile jsonb not null default '{}'::jsonb
   check (jsonb_typeof(buyer_profile) = 'object');
