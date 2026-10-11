@@ -302,7 +302,7 @@
       "id": "NEG-01",
       "category": "negotiation",
       "customerMessage": "هل ممكن تنزلوا من السعر؟",
-      "expectedMoment": "price_objection",
+      "expectedMoment": "discount_request",
       "objective": "التحقق من صلاحيات الخصم أو التحويل للمسؤول.",
       "mustNot": [
         "لا تخترع موافقة مالك."
@@ -312,7 +312,7 @@
       "id": "NEG-02",
       "category": "negotiation",
       "customerMessage": "إذا دفعت مقدمًا، تعطوني خصمًا؟",
-      "expectedMoment": "price_objection",
+      "expectedMoment": "discount_request",
       "objective": "توضيح أن الخصم يحتاج تأكيدًا من المالك أو المسؤول.",
       "mustNot": [
         "لا تعد بخصم مقابل دفعة غير معتمدة."
