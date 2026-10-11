@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import {
-  ArrowLeft, ArrowUpRight, Check, CheckCheck, ChevronDown, Clock3, Home,
+  ArrowLeft, ArrowUpLeft, ArrowUpRight, Check, CheckCheck, ChevronDown, Clock3, Home,
   Menu, MessageCircle, MessageSquare, MessagesSquare, Send, ShieldCheck,
   Sparkles, Target, TrendingUp, WalletCards, X, Zap,
 } from 'lucide-react';
