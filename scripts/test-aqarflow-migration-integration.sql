@@ -350,6 +350,13 @@ DO $auto_reply_privilege_check$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='aqarflow_whatsapp_integrations'
+      AND column_name='phone_registered_at'
+  ) THEN
+    RAISE EXCEPTION 'WhatsApp phone registration state is missing';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
     WHERE table_schema='public' AND table_name='aqarflow_crm_contacts'
       AND column_name='ai_auto_reply_opted_out' AND is_nullable='NO'
   ) THEN
