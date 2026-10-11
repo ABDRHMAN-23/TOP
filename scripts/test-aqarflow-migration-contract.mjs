@@ -130,6 +130,9 @@ assert.ok(whatsappWebhook.includes("acceptedKeysInBatch.has(uniqueKey)"));
 assert.ok(whatsappWebhook.includes("batchOptOutSenders"));
 assert.ok(whatsappWebhook.includes("batchHandoffSenders"));
 assert.ok(whatsappWebhook.includes("classifySalesMoment(event.messageText||'')"));
+assert.ok(whatsappWebhook.includes("selectLatestInboundEventKeys"));
+assert.ok(whatsappWebhook.includes("latestInboundAutoReplyKeys.has(senderKey+':'+event.eventKey)"));
+assert.ok(whatsappWebhook.includes("currentMoment!=='human_handoff'&&currentMoment!=='stop_contact'"));
 assert.ok(whatsappConnectRoute.includes("export async function PATCH(request: Request)"));
 assert.ok(whatsappConnectRoute.includes("requireOwnerAccount()"));
 assert.ok(whatsappConnectRoute.includes("body.value.autoReplyEnabled"));
@@ -145,6 +148,12 @@ assert.ok(automaticReply.includes("contact_opted_out_before_send"));
 assert.ok(automaticReply.includes("automation_disabled_before_send"));
 assert.ok(automaticReply.includes("human_handoff_activated_before_send"));
 assert.ok(automaticReply.includes("whatsapp_credentials_expired_before_send"));
+assert.ok(automaticReply.includes("superseded_by_newer_inbound"));
+assert.ok(automaticReply.includes("latestInboundResult.data.provider_event_key !== event.eventKey"));
+assert.ok(
+  automaticReply.indexOf("superseded_by_newer_inbound") < automaticReply.indexOf("sent = await sendMetaWhatsAppText"),
+  "stale-event guard must run before outbound WhatsApp send",
+);
 assert.ok(
   automaticReply.indexOf("const { error: claimError }") < automaticReply.indexOf("const [latestContactResult"),
   "send authorization must be rechecked after claiming an idempotency key",
