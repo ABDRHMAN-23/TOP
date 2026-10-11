@@ -148,6 +148,8 @@ const prompt = buildPersonalizedSalesPrompt({
 });
 
 assert.match(prompt, /verified_properties/);
+assert.match(prompt, /sales_playbook/);
+assert.match(prompt, /professional customer-service voice/);
 assert.match(prompt, /Do not invent a view/);
 assert.match(prompt, /Apartment A/);
 assert.doesNotMatch(prompt, /A real listing/, "free-form property descriptions must not enter model context");
