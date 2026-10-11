@@ -61,7 +61,9 @@ export function selectPropertiesForSalesReply(
   const profile = buyer || {};
   const hasBudget = profile.budgetMin != null || profile.budgetMax != null;
   let viable = ranked.filter((match) =>
-    match.eligible && !(hasBudget && match.unknowns.includes("budget_comparison_unavailable"))
+    match.eligible
+    && match.property.availability === "available"
+    && !(hasBudget && match.unknowns.includes("budget_comparison_unavailable"))
   );
 
   if (profile.budgetMax != null && profile.currency) {
