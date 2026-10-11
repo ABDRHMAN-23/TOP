@@ -433,7 +433,7 @@ export function buildPersonalizedSalesPrompt(input: {
     system,
     customer_message: message,
     conversation_summary: summary,
-    sales_playbook: buildSalesPlaybookGuidance({ customerMessage: message, conversationSummary: summary, buyerProfile: profile }),
+    sales_playbook: buildSalesPlaybookGuidance({ customerMessage: message, conversationSummary: summary, buyerProfile: profile, nearBudgetAlternativeMode: Boolean(input.nearBudgetAlternativeMode) }),
     buyer_profile: {
       intent: profile.intent || "unknown",
       property_type: cleanText(profile.propertyType, 80) || null,
