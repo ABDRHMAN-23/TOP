@@ -911,3 +911,22 @@ img{max-width:100%}
   .af-workspace-footer{align-items:flex-start;flex-direction:column;gap:8px;font-size:8px}
   .af-workspace-footer>a{margin-right:0}
 }
+
+
+/* Final UI polish: visible keyboard focus, readable form focus, and reliable touch targets. */
+.af-site :is(a,button,input,select,textarea,[tabindex]):focus-visible,
+.af-login-page :is(a,button,input,select,textarea,[tabindex]):focus-visible,
+.af-workspace :is(a,button,input,select,textarea,[tabindex]):focus-visible{
+  outline:3px solid #c4a06a;
+  outline-offset:3px;
+}
+.af-login-form input:not([type="checkbox"]):focus-visible{
+  border-color:var(--af-green);
+  box-shadow:0 0 0 3px rgba(22,118,83,.12);
+}
+.af-mobile-toggle{min-width:44px;min-height:44px}
+@media(max-width:700px){
+  .af-header-actions .af-button{min-height:44px}
+  .af-login-back{min-height:44px}
+  .af-workspace-settings,.af-workspace-exit{min-height:40px}
+}
