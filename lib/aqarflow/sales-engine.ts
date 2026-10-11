@@ -399,6 +399,7 @@ export function buildPersonalizedSalesPrompt(input: {
   conversationSummary?: string | null;
   buyerProfile?: BuyerProfile | null;
   properties: unknown;
+  nearBudgetAlternativeMode?: boolean;
 }): string {
   const message = cleanText(input.customerMessage, 2000);
   const summary = cleanText(input.conversationSummary, 1200);
@@ -417,7 +418,7 @@ export function buildPersonalizedSalesPrompt(input: {
     "Use only facts explicitly present in the verified property records. Do not invent a view, quietness, travel time, school, facility, discount, scarcity, availability, return, or legal/financial promise.",
     "Never say a property is currently available or available for viewing unless that exact record has a fresh availability value of available. If availability is unknown or stale, say it has not been verified.",
     "Personalize the explanation around needs the customer actually expressed. Do not infer sensitive traits or pretend to know the customer's emotions.",
-    "Treat budgetMax as a hard ceiling unless budgetFlexibility explicitly says slight or flexible. Only then may you consider a modest over-target option, disclose the exact price and overage plainly, and explain it without pressure. Never call an over-target option within budget.",
+    "A budget explicitly marked hard is an absolute ceiling. If the customer has not called the budget a hard limit, prioritize suitable listings within it; only when none exist may near_budget_alternative_mode offer one verified available listing up to 10% above the target. If flexibility is slight/flexible, respect its configured cap. Whenever an over-target option is allowed, state its exact price and excess clearly, ask if the customer wants details, and never call it within budget or pressure the customer.",
     "If no property fits hard requirements, say so honestly and ask at most one useful question or offer an alternative search.",
     "Write natural, fluent Arabic by default, matching the customer's language when it is clear. Avoid generic hype and repeated exclamation marks.",
     "Use a vivid but truthful picture: connect a verified feature to a stated need; do not describe imagined scenes as property facts.",
@@ -439,7 +440,8 @@ export function buildPersonalizedSalesPrompt(input: {
       preferred_areas: uniqueClean(profile.preferredAreas),
       budget_min: finiteOrNull(profile.budgetMin),
       budget_max: finiteOrNull(profile.budgetMax),
-      budget_flexibility: profile.budgetFlexibility || "hard",
+      budget_flexibility: profile.budgetFlexibility || "unspecified",
+    near_budget_alternative_mode: Boolean(input.nearBudgetAlternativeMode),
       currency: cleanText(profile.currency, 8).toUpperCase() || null,
       bedrooms_min: finiteOrNull(profile.bedroomsMin),
       must_haves: uniqueClean(profile.mustHaves),
