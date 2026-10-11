@@ -103,5 +103,17 @@ assert.ok(
   getSalesKnowledgeCards("human_handoff").some((card) => card.id === "human-handoff"),
   "human requests should load handoff guidance",
 );
+assert.ok(
+  getSalesKnowledgeCards("price_objection", true).some((card) => card.id === "near-budget"),
+  "a selected above-target alternative must load its dedicated disclosure safeguards",
+);
+assert.ok(
+  getSalesKnowledgeCards("price_objection", true).length <= 2,
+  "contextual knowledge retrieval must be token-bounded to at most two cards",
+);
+assert.ok(
+  getSalesKnowledgeCards("general_discovery").length <= 2,
+  "routine turns should not receive the full knowledge library",
+);
 
 console.log(`AqarFlow sales-playbook tests passed: ${bank.scenarios.length} scenarios across ${categories.size} categories.`);
