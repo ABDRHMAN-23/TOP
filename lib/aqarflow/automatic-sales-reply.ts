@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { runtimeEnv } from "@/lib/runtime-env";
 import {
   buildPersonalizedSalesPrompt,
-  mergeBuyerProfile,
+  mergeBuyerProfileForConversation,
   validateSalesDraft,
   type BuyerProfile,
   type SalesDraft,
@@ -329,7 +329,7 @@ export async function handleWhatsAppAutomaticReply(
   const candidates = (rows || []).map((row: unknown) => mapProperty(row as PropertyRow));
   const previousProfile = normalizeBuyerProfile(conversation.buyer_profile);
   const extractedProfile = inferInventoryHints(text, (rows || []) as PropertyRow[]);
-  const buyerProfile = mergeBuyerProfile(previousProfile, extractedProfile);
+  const buyerProfile = mergeBuyerProfileForConversation(previousProfile, extractedProfile, text);
 
   const { error: profileError } = await admin.from("aqarflow_crm_conversations")
     .update({ buyer_profile: buyerProfile, updated_at: new Date().toISOString() })
