@@ -160,8 +160,8 @@ export function inferInventoryHints(message: string, rows: InventoryHintRow[]): 
   const dealBreakers: string[] = [];
   const addFeaturePreference = (feature: string, mention: string, index: number) => {
     const prefix = normalizedMessage.slice(Math.max(0, index - 56), index).split(/[,،;؛.!؟?]/).pop() || "";
-    const negative = /(?:بدون|بلا|من غير|without|don't want|do not want)\\s*$/.test(prefix)
-      || /(?:ما ابغي|ما ابغى|ما اريد|لا اريد|مش عايز|مش عاوز)(?:\\s+[^\\s,،;؛.!؟?]+){0,5}\\s*$/i.test(prefix);
+    const negative = /(?:بدون|بلا|من غير|without|don't want|do not want)\s*$/.test(prefix)
+      || /(?:ما ابغي|ما ابغى|ما اريد|لا اريد|مش عايز|مش عاوز)(?:\s+[^\s,،;؛.!؟?]+){0,5}\s*$/i.test(prefix);
     if (negative) {
       dealBreakers.push(feature);
       return;
