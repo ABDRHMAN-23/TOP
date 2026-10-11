@@ -10,7 +10,7 @@ The product's intended differentiator is **sales intelligence**, not a public pr
 - `lib/aqarflow/sales-playbook.ts`: first heuristic layer for selecting context-specific sales guidance.
 - `data/aqarflow-sales/scenarios.v1.json`: seed scenarios for automated classification/evaluation; this is not a 15,000-case dataset and does not mean the model has been fine-tuned.
 - `components/aqarflow/AqarFlowSalesAssistant.tsx` and `app/api/aqarflow/sales/route.ts`: authenticated interface/API for generating a response draft from workspace inventory.
-- `lib/aqarflow/whatsapp-cloud.ts` and `app/api/integrations/whatsapp/`: existing WhatsApp Cloud integration components; connecting the drafted sales engine into end-to-end automatic replies still requires integration and real-provider testing.
+- `lib/aqarflow/whatsapp-cloud.ts` and `app/api/integrations/whatsapp/`: existing WhatsApp Cloud integration components; the feature branch now connects inbound webhook handling to a guarded automatic-sales-reply orchestrator. Per-number auto reply remains off by default; provider configuration, end-to-end tests with a real Meta app, and a successful CI build are still required before production use.
 - `supabase/migrations/`: database changes and contracts for the current application. Review migrations, access boundaries, and backups before applying any schema changes.
 - `docs/AQARFLOW_KING_OF_MARKETING_AR.md`: product behavior, safety principles, evaluation approach, and roadmap for expanding the scenario set.
 
@@ -45,6 +45,7 @@ Relevant focused tests:
 ```bash
 npm run test:aqarflow:sales
 npm run test:aqarflow:sales-playbook
+npm run test:aqarflow:auto-reply-policy
 npm run test:aqarflow:runtime
 npm run validate:aqarflow:promptfoo
 ```
@@ -53,4 +54,4 @@ Full CI also runs migration checks, additional application tests, dependency aud
 
 ## Important status note
 
-The sales playbook and 46 scenario seed cases on the feature branch are an initial implementation slice. They are not proof of fine-tuning, a large reviewed training corpus, live WhatsApp auto-reply behavior, or production readiness. Check the associated pull request and CI results before merging. Do not apply database migrations or enable outbound automation in a live workspace without separately reviewing access controls, consent behavior, backups, rollback, and provider configuration.
+The sales playbook and 47 scenario seed cases on the feature branch are an initial implementation slice. They are not proof of fine-tuning, a large reviewed training corpus, live WhatsApp auto-reply behavior, or production readiness. Check the associated pull request and CI results before merging. Do not apply database migrations or enable outbound automation in a live workspace without separately reviewing access controls, consent behavior, backups, rollback, and provider configuration.
