@@ -62,12 +62,13 @@ export function resolveBudgetFlexibility(
   message: string,
   declared?: "hard" | "slight" | "flexible",
 ): "hard" | "slight" | "flexible" | undefined {
-  if (declared === "hard" || declared === "slight" || declared === "flexible") return declared;
+  // Explicit wording in the latest customer turn wins over an older inferred profile.
+  // A customer can tighten the ceiling after previously expressing flexibility.
   const text = normalizeArabic(message);
   if (/(?:حد نهائي|حد اقصي|بحد اقصي|الحد الاقصي|لا اقدر ازيد|ما اقدر ازيد|ما استطيع ازيد|لا استطيع ازيد|لا اتجاوز|لا اريد.{0,12}اتجاوز|ما اريد.{0,12}اتجاوز|cannot increase|cant increase|firm budget|hard limit|maximum budget)/i.test(text)) return "hard";
   if (/(?:ميزانيتي مرنة|الميزانية مرنة|مرونة كبيرة|مرونة واسعة|الميزانية مفتوحة|flexible budget|very flexible|open budget)/i.test(text)) return "flexible";
   if (/(?:اقدر ازيد.{0,25}(?:قليل|شوي|قليلا)|ممكن ازيد.{0,25}(?:قليل|شوي|قليلا)?|ممكن نزيد|عندي مرونة|مرن|مرنة|قابل للتفاوض|قابلة للتفاوض|can increase a little|some flexibility)/i.test(text)) return "slight";
-  return undefined;
+  return declared === "hard" || declared === "slight" || declared === "flexible" ? declared : undefined;
 }
 
 /** Classify the customer's latest message with opt-out and handoff taking priority. */
