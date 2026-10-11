@@ -49,6 +49,19 @@ function normalizeArabic(value: string): string {
     .trim();
 }
 
+/** Resolve explicit budget boundaries from the latest message when the structured profile is incomplete. */
+export function resolveBudgetFlexibility(
+  message: string,
+  declared?: "hard" | "slight" | "flexible",
+): "hard" | "slight" | "flexible" | undefined {
+  if (declared === "hard" || declared === "slight" || declared === "flexible") return declared;
+  const text = normalizeArabic(message);
+  if (/(?:حد نهائي|حد اقصي|بحد اقصي|الحد الاقصي|لا اقدر ازيد|ما اقدر ازيد|ما استطيع ازيد|لا استطيع ازيد|لا اتجاوز|لا اريد.{0,12}اتجاوز|ما اريد.{0,12}اتجاوز|cannot increase|cant increase|firm budget|hard limit|maximum budget)/i.test(text)) return "hard";
+  if (/(?:اقدر ازيد.{0,25}(?:قليل|شوي|قليلا)|ممكن ازيد.{0,25}(?:قليل|شوي|قليلا)?|ممكن نزيد|عندي مرونة|مرن|مرنة|قابل للتفاوض|قابلة للتفاوض|flexible budget|can increase a little|some flexibility)/i.test(text)) return "slight";
+  if (/(?:ميزانيتي مرنة|مرونة كبيرة|مرونة واسعة|flexible budget|very flexible)/i.test(text)) return "flexible";
+  return undefined;
+}
+
 /** Classify the customer's latest message with opt-out and handoff taking priority. */
 export function classifySalesMoment(message: string): SalesMoment {
   const text = normalizeArabic(message);
@@ -242,7 +255,7 @@ export function buildSalesPlaybookGuidance(input: SalesPlaybookInput): SalesPlay
   const avoidRules = [...base.avoid];
 
   if (typeof input.buyerProfile?.budgetMax === "number") {
-    const flexibility = input.buyerProfile.budgetFlexibility;
+    const flexibility = resolveBudgetFlexibility(input.customerMessage, input.buyerProfile.budgetFlexibility);
     const currency = input.buyerProfile.currency || "بوحدة غير محددة";
     if (flexibility === "hard") {
       doRules.push(
@@ -257,7 +270,7 @@ export function buildSalesPlaybookGuidance(input: SalesPlaybookInput): SalesPlay
     } else {
       const ceiling = Math.round(input.buyerProfile.budgetMax * 1.1 * 100) / 100;
       doRules.push(
-        `ميزانية العميل المرجعية ${input.buyerProfile.budgetMax} ${currency}. أعطِ الأولوية للعقارات المطابقة داخل الميزانية. إذا لم يوجد أي خيار مناسب داخلها، ولم يقل العميل إنها حد صارم، يمكن عرض عقار واحد فقط قريب من الميزانية بسعر لا يتجاوز ${ceiling} ${currency} كاقتراح اختياري—not as a match within budget. وضّح السعر الحقيقي والزيادة على الميزانية صراحةً، واسأل بأدب هل يرغب في الاطلاع على تفاصيله. لا تضغط عليه ولا تكرر الخيار إذا رفضه. إذا صرّح بأن الميزانية نهائية، تعامل معها كحد صارم.`,
+        `ميزانية العميل المرجعية ${input.buyerProfile.budgetMax} ${currency}. أعطِ الأولوية للعقارات المطابقة داخل الميزانية. إذا لم يوجد أي خيار مناسب داخلها، ولم يقل العميل إنها حد صارم، يمكن عرض عقار واحد فقط قريب من الميزانية بسعر لا يتجاوز ${ceiling} ${currency} كاقتراح اختياري، لا بوصفه ضمن الميزانية. وضّح السعر الحقيقي والزيادة على الميزانية صراحةً، واسأل بأدب هل يرغب في الاطلاع على تفاصيله. لا تضغط عليه ولا تكرر الخيار إذا رفضه. إذا صرّح بأن الميزانية نهائية، تعامل معها كحد صارم.`,
       );
     }
   }
