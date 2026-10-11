@@ -116,6 +116,18 @@ assert.ok(automaticReply.includes("aqarflow_record_webhook_ai_usage"));
 assert.ok(automaticReply.includes("aqarflow_whatsapp_outbound_requests"));
 assert.ok(automaticReply.includes("buildPersonalizedSalesPrompt"));
 assert.ok(automaticReply.includes("validateSalesDraft"));
+assert.ok(automaticReply.includes("contact_opted_out_before_send"));
+assert.ok(automaticReply.includes("automation_disabled_before_send"));
+assert.ok(automaticReply.includes("human_handoff_activated_before_send"));
+assert.ok(automaticReply.includes("whatsapp_credentials_expired_before_send"));
+assert.ok(
+  automaticReply.indexOf("const { error: claimError }") < automaticReply.indexOf("const [latestContactResult"),
+  "send authorization must be rechecked after claiming an idempotency key",
+);
+assert.ok(
+  automaticReply.indexOf("const [latestContactResult") < automaticReply.indexOf("send = await sendMetaWhatsAppText"),
+  "latest consent and integration state must be rechecked before sending",
+);
 assert.ok(automaticReplyPolicy.includes("customer_requested_no_contact"));
 assert.ok(automaticReplyPolicy.includes("customer_requested_human"));
 assert.ok(whatsappWebhook.includes("claimedEventKeys=new Set<string>()"));
