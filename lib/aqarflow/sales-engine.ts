@@ -14,6 +14,8 @@ export type BuyerProfile = {
   preferredAreas?: string[];
   budgetMin?: number | null;
   budgetMax?: number | null;
+  /** Strict unless the customer explicitly permits a small or flexible overage. */
+  budgetFlexibility?: "hard" | "slight" | "flexible";
   currency?: string | null;
   bedroomsMin?: number | null;
   mustHaves?: string[];
@@ -102,6 +104,9 @@ export function mergeBuyerProfile(
   }
   if (next.preferredTone && ["concise", "warm", "detailed", "unknown"].includes(next.preferredTone)) {
     if (next.preferredTone !== "unknown" || !before.preferredTone) merged.preferredTone = next.preferredTone;
+  }
+  if (next.budgetFlexibility && ["hard", "slight", "flexible"].includes(next.budgetFlexibility)) {
+    merged.budgetFlexibility = next.budgetFlexibility;
   }
   for (const key of ["budgetMin", "budgetMax", "bedroomsMin"] as const) {
     const value = finiteOrNull(next[key]);
@@ -244,10 +249,19 @@ export function matchVerifiedProperties(
       property.currency && currency && property.currency.toUpperCase() === currency
     );
     if (hasBudget && property.price != null && comparableCurrency) {
+      const flexibility = profile.budgetFlexibility || "hard";
+      const overageRate = flexibility === "slight" ? 0.1 : flexibility === "flexible" ? 0.2 : 0;
+      const permittedMax = profile.budgetMax == null ? null : profile.budgetMax * (1 + overageRate);
       if (profile.budgetMin != null && property.price < profile.budgetMin) {
         conflicts.push("below_budget_minimum");
-      } else if (profile.budgetMax != null && property.price > profile.budgetMax) {
+      } else if (profile.budgetMax != null && property.price > (permittedMax ?? profile.budgetMax)) {
         conflicts.push("above_budget_maximum");
+      } else if (profile.budgetMax != null && property.price > profile.budgetMax) {
+        // Over-budget options are eligible only when the customer explicitly allowed flexibility.
+        // Keep the overage visible so the reply must disclose it; never present it as in-budget.
+        matchedSignals.push("above_target_budget_explicit_flexibility");
+        unknowns.push("disclose_price_above_stated_budget");
+        score += 8;
       } else {
         matchedSignals.push("within_budget");
         score += 40;
@@ -351,6 +365,7 @@ export function buildPersonalizedSalesPrompt(input: {
     "Use only facts explicitly present in the verified property records. Do not invent a view, quietness, travel time, school, facility, discount, scarcity, availability, return, or legal/financial promise.",
     "Never say a property is currently available or available for viewing unless that exact record has a fresh availability value of available. If availability is unknown or stale, say it has not been verified.",
     "Personalize the explanation around needs the customer actually expressed. Do not infer sensitive traits or pretend to know the customer's emotions.",
+    "Treat budgetMax as a hard ceiling unless budgetFlexibility explicitly says slight or flexible. Only then may you consider a modest over-target option, disclose the exact price and overage plainly, and explain it without pressure. Never call an over-target option within budget.",
     "If no property fits hard requirements, say so honestly and ask at most one useful question or offer an alternative search.",
     "Write natural, fluent Arabic by default, matching the customer's language when it is clear. Avoid generic hype and repeated exclamation marks.",
     "Use a vivid but truthful picture: connect a verified feature to a stated need; do not describe imagined scenes as property facts.",
@@ -372,6 +387,7 @@ export function buildPersonalizedSalesPrompt(input: {
       preferred_areas: uniqueClean(profile.preferredAreas),
       budget_min: finiteOrNull(profile.budgetMin),
       budget_max: finiteOrNull(profile.budgetMax),
+      budget_flexibility: profile.budgetFlexibility || "hard",
       currency: cleanText(profile.currency, 8).toUpperCase() || null,
       bedrooms_min: finiteOrNull(profile.bedroomsMin),
       must_haves: uniqueClean(profile.mustHaves),
