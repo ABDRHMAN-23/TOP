@@ -1,98 +1,151 @@
 import { redirect } from 'next/navigation';
-import { FileText, Plus, ExternalLink, Settings } from 'lucide-react';
-import QuoteActions from './QuoteActions';
-import QuvotoLogo from '@/components/QuvotoLogo';
-import NotificationCenter from '@/components/NotificationCenter';
-import DailyBrief from '@/components/DailyBrief';
-
-function Brand(){return <QuvotoLogo className="h-10"/>;}
+import {
+  ArrowLeft, ArrowUpLeft, BarChart3, Building2, CalendarClock, CheckCircle2,
+  ChevronLeft, CircleHelp, ClipboardList, Home, MessageCircle, MessagesSquare,
+  Settings2, ShieldCheck, Sparkles, Target, Users, WalletCards, Zap,
+} from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
+type QuickLink = {
+  href: string;
+  title: string;
+  description: string;
+  label: string;
+  tone: 'green' | 'blue' | 'gold';
+  icon: typeof Home;
+};
+
+const quickLinks: QuickLink[] = [
+  { href: '/properties', title: 'مخزون العقارات', description: 'أضف العقارات وحدّث أسعارها ومواصفاتها وحالتها.', label: 'إدارة العقارات', tone: 'green', icon: Home },
+  { href: '/aqarflow-assistant', title: 'مساعد المبيعات', description: 'اختبر طريقة التعامل مع الأسئلة والاعتراضات قبل اعتماد الرد.', label: 'تجربة المساعد', tone: 'blue', icon: Sparkles },
+  { href: '/aqarflow-inbox', title: 'صندوق المحادثات', description: 'راجع محادثات العملاء وتابع الردود والخطوات التالية.', label: 'فتح المحادثات', tone: 'green', icon: MessagesSquare },
+  { href: '/aqarflow-crm', title: 'إدارة العملاء المحتملين', description: 'نظّم بيانات العملاء ومراحل المتابعة والملاحظات.', label: 'إدارة العملاء', tone: 'gold', icon: Users },
+  { href: '/aqarflow-operations', title: 'المعاينات والمتابعة', description: 'نظّم المواعيد والمهام المرتبطة بفرص البيع.', label: 'إدارة العمليات', tone: 'blue', icon: CalendarClock },
+  { href: '/aqarflow-analytics', title: 'تحليلات المبيعات', description: 'تابع أداء المخزون والعملاء والعمليات ضمن مساحة المكتب.', label: 'عرض التحليلات', tone: 'green', icon: BarChart3 },
+];
+
 export default async function DashboardPage() {
+  const supabase = await createClient();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData.user) redirect('/login');
+
+  const user = authData.user;
+  let ownerId = user.id;
+  let activePropertyCount = 0;
+  let inventoryReady = true;
+  let workspaceLabel = user.email || 'مساحة المكتب';
+
   try {
-    const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+    const { data: memberships, error: membershipError } = await supabase
+      .from('aqarflow_workspace_memberships')
+      .select('owner_id,role')
+      .eq('member_id', user.id)
+      .neq('owner_id', user.id)
+      .limit(2);
 
-  const { data: subscription } = await supabase.from('subscriptions').select('plan,status,billing_interval').eq('user_id', user.id).maybeSingle();
-  const { data: referralRows } = await supabase.from('referrals').select('status,qualifying_plan,qualifying_interval,free_qualified_at').eq('referrer_user_id', user.id);
-  const freeCount = (referralRows || []).filter((r:any)=>!!r.free_qualified_at).length;
-  const paidRows = (referralRows || []).filter((r:any)=>['qualified','rewarded'].includes(r.status) && r.qualifying_plan===subscription?.plan && r.qualifying_interval===subscription?.billing_interval);
-  const paidCount = paidRows.length;
-  const rewardTrack = subscription?.billing_interval === 'year' ? 'annual' : subscription?.billing_interval === 'month' && subscription?.plan !== 'free' ? 'monthly' : 'free';
-  const rewardNext = rewardTrack === 'annual' ? (paidCount < 2 ? 2 : paidCount < 4 ? 4 : paidCount < 8 ? 8 : paidCount < 10 ? 10 : paidCount < 14 ? 14 : 16) : rewardTrack === 'monthly' ? (paidCount < 1 ? 1 : paidCount < 4 ? 4 : paidCount < 7 ? 7 : paidCount < 10 ? 10 : paidCount + (3 - ((paidCount - 1) % 3))) : Math.max(10, Math.ceil((freeCount + 1) / 10) * 10);
-  const rewardCount = rewardTrack === 'free' ? freeCount : paidCount;
-  const rewardLabel = rewardTrack === 'annual' ? 'Annual reward' : rewardTrack === 'monthly' ? 'Monthly reward' : 'Free-user reward';
-  const isTeam = subscription?.plan === 'team' && ['active','trialing'].includes(subscription.status || '');
+    if (membershipError) {
+      inventoryReady = false;
+    } else if ((memberships || []).length > 1) {
+      inventoryReady = false;
+    } else if (memberships?.[0]?.owner_id) {
+      ownerId = memberships[0].owner_id;
+      workspaceLabel = 'مساحة الفريق';
+    }
 
-  const { data: quotes } = await supabase
-    .from('quotes')
-    .select('id, quote_number, client_name, client_email, total, currency, status, created_at, public_token')
-    .order('created_at', { ascending: false })
-    .limit(50);
-  const { data: followups } = await supabase
-    .from('followups')
-    .select('id, status, scheduled_for, note, quotes(quote_number, client_name)')
-    .eq('user_id', user.id)
-    .eq('status', 'pending')
-    .order('scheduled_for', { ascending: true })
-    .limit(20);
-  const { data: jobs } = await supabase
-    .from('jobs')
-    .select('id, status, created_at, title, quote_id')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(20);
-
-  return <main className="min-h-screen bg-[#f7faff]">
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
-        <a href="/" aria-label="QUVOTO home"><Brand/></a>
-        <div className="flex items-center gap-2"><NotificationCenter/>
-          <a href="/advisor" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Advisor</a>
-          <a href="/settings" className="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-3.5 text-sm font-bold text-slate-600"><Settings size={16}/><span className="hidden sm:inline">Settings</span></a>
-          {isTeam && <a href="/team" className="hidden min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0] sm:inline-flex">Team</a>}
-          <a href="/rewards" className="flex min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0]"><span className="hidden sm:inline">Rewards</span><span className="sm:hidden">🎁</span></a>
-          <a href="/workspace" className="hidden min-h-11 items-center rounded-xl border border-slate-200 px-3.5 text-sm font-bold text-slate-600 sm:inline-flex">Workspace</a>
-          <a href="/app" className="flex min-h-11 items-center gap-2 rounded-xl bg-[#1769E0] px-3.5 text-sm font-bold text-white"><Plus size={16}/><span className="hidden sm:inline">New quote</span><span className="sm:hidden">New</span></a>
-        </div>
-      </div>
-    </header>
-    <section className="mx-auto max-w-6xl px-4 py-7 sm:px-8 sm:py-10">
-      <div><p className="text-sm font-extrabold tracking-[0.16em] text-[#1769E0]">WORKSPACE</p><h1 className="mt-1 text-[2rem] font-extrabold leading-tight tracking-[-0.04em] sm:text-4xl">Your quotes</h1><p className="mt-2 text-slate-500">{quotes?.length || 0} recent quotes in your QUVOTO workspace.</p></div>
-      <div className="mt-4 flex flex-wrap gap-2"><a href="/aqarflow-crm" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">إدارة العملاء المحتملين</a><a href="/aqarflow-assistant" className="rounded-xl bg-[#1769E0] px-4 py-3 text-sm font-bold text-white">مساعد المبيعات العقارية</a><a href="/properties" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">إدارة العقارات</a><a href="/aqarflow-inbox" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">صندوق محادثات العملاء</a><a href="/settings/whatsapp" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">إعدادات واتساب</a></div>
-      <DailyBrief quotes={quotes||[]} followups={followups||[]} jobs={jobs||[]}/>
-      <a href="/rewards" className="mt-6 block overflow-hidden rounded-[1.5rem] border border-[#1769E0]/15 bg-white p-5 shadow-sm hover:border-[#2F8CFF] sm:mt-8 sm:p-6"><div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex items-center gap-2"><span className="rounded-full bg-[#1769E0]/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#1769E0]">Rewards</span><span className="text-xs font-bold text-slate-400">{rewardLabel}</span></div><h2 className="mt-2 text-xl font-black">You're {Math.max(0,rewardNext-rewardCount)} away from your next unlock.</h2><p className="mt-1 text-sm text-slate-500">Keep sharing QUVOTO. Your counter updates automatically.</p></div><div className="min-w-[11rem]"><div className="flex justify-between text-xs font-bold text-slate-500"><span>{rewardCount}</span><span>{rewardNext}</span></div><div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#1769E0]" style={{width:Math.min(100,(rewardCount/Math.max(1,rewardNext))*100)+'%'}}/></div></div></div></a>
-      <div className="mt-6 overflow-hidden rounded-[1.5rem] sm:mt-8 sm:rounded-[1.7rem] border bg-white shadow-sm">
-        {!quotes?.length ? <div className="p-12 text-center"><FileText className="mx-auto mb-3 text-slate-300" size={38}/><h2 className="text-xl font-bold">No quotes yet</h2><p className="mt-2 text-slate-500">Create your first voice quote.</p><a href="/app" className="mt-5 inline-flex rounded-xl bg-[#1769E0] px-5 py-3 font-bold text-white">Create quote</a></div> :
-        <div className="divide-y">{quotes.map((quote) => <div key={quote.id} className="flex flex-col gap-4 p-4 sm:flex-row sm:p-5 sm:items-center sm:justify-between"><div><div className="font-bold">{quote.quote_number}</div><div className="text-sm text-slate-500">{quote.client_name || 'No client name'} · {new Date(quote.created_at).toLocaleDateString()}</div></div><div className="flex flex-wrap items-center gap-3 sm:justify-end"><div className="font-black">{quote.currency} {Number(quote.total).toFixed(2)}</div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold capitalize">{quote.status}</span><a target="_blank" rel="noreferrer" href={"/q/"+quote.public_token} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><ExternalLink size={17}/></a><QuoteActions quoteId={quote.id} clientEmail={quote.client_email} publicToken={quote.public_token} initialStatus={quote.status}/></div></div>)}</div>}
-      </div>
-    </section>
-    </main>;
-  } catch (error) {
-    // Keep the Dashboard shell usable when a backend/API dependency is temporarily unavailable.
-    return <main className="min-h-screen bg-[#f7faff]">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
-          <a href="/" aria-label="QUVOTO home"><Brand/></a>
-          <div className="flex items-center gap-2">
-            <a href="/rewards" className="flex min-h-11 items-center rounded-xl bg-[#1769E0]/10 px-3.5 text-sm font-bold text-[#1769E0]">Rewards</a>
-            <a href="/app" className="flex min-h-11 items-center gap-2 rounded-xl bg-[#1769E0] px-3.5 text-sm font-bold text-white"><Plus size={16}/> <span className="hidden sm:inline">New quote</span><span className="sm:hidden">New</span></a>
-          </div>
-        </div>
-      </header>
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-8">
-        <p className="text-sm font-extrabold tracking-[0.16em] text-[#1769E0]">WORKSPACE</p>
-        <h1 className="mt-1 text-[2rem] font-extrabold leading-tight tracking-[-0.04em] sm:text-4xl">Your quotes</h1>
-        <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <h2 className="text-xl font-black text-[#0A1E3D]">Dashboard is ready</h2>
-          <p className="mt-2 max-w-2xl text-slate-500">Your dashboard shell is available even when a backend/API request is temporarily unavailable. Your saved quotes will appear here automatically when the connection returns.</p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <a href="/app" className="rounded-xl bg-[#1769E0] px-5 py-3 font-bold text-white">Create quote</a>
-            <a href="/rewards" className="rounded-xl border border-slate-200 px-5 py-3 font-bold text-slate-700">Open rewards</a>
-          </div>
-        </div>
-      </section>
-    </main>;
+    if (inventoryReady) {
+      const { count, error } = await supabase
+        .from('aqarflow_properties')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_user_id', ownerId)
+        .eq('is_active', true);
+      if (error) inventoryReady = false;
+      else activePropertyCount = count || 0;
+    }
+  } catch {
+    inventoryReady = false;
   }
+
+  const firstName = typeof user.user_metadata?.full_name === 'string'
+    ? user.user_metadata.full_name.split(' ')[0]
+    : typeof user.user_metadata?.name === 'string'
+      ? user.user_metadata.name.split(' ')[0]
+      : null;
+
+  return (
+    <main dir="rtl" className="af-workspace">
+      <div className="af-workspace-shell">
+        <header className="af-workspace-header">
+          <a href="/" className="af-workspace-brand" aria-label="AqarFlow AI — الرئيسية">
+            <span className="af-workspace-brand-mark"><MessagesSquare size={22} /></span>
+            <span><strong>AqarFlow<span> AI</span></strong><small>مساحة المبيعات العقارية</small></span>
+          </a>
+          <div className="af-workspace-header-actions">
+            <span className="af-workspace-user"><span className="af-workspace-user-dot" />{workspaceLabel}</span>
+            <a href="/settings/whatsapp" className="af-workspace-settings"><Settings2 size={16} /><span>إعدادات واتساب</span></a>
+            <a href="/login?next=%2Fdashboard" className="af-workspace-exit">الحساب <ArrowUpLeft size={15} /></a>
+          </div>
+        </header>
+
+        <section className="af-workspace-welcome">
+          <div className="af-workspace-welcome-copy">
+            <span className="af-workspace-kicker"><span /> مساحة عمل المكتب العقاري</span>
+            <h1>{firstName ? 'أهلًا، ' + firstName : 'أهلًا بك في مساحة مكتبك'}<br /><span>خلّينا نحوّل المحادثات إلى فرص حقيقية.</span></h1>
+            <p>من هنا تدير العقارات والعملاء والمعاينات، وتختبر مساعد المبيعات قبل توسيع استخدامه. المعلومات الدقيقة وسمعة المكتب تأتي أولًا.</p>
+            <div className="af-workspace-welcome-actions">
+              <a href="/aqarflow-assistant" className="af-workspace-primary">جرّب مساعد المبيعات <ArrowLeft size={16} /></a>
+              <a href="/properties" className="af-workspace-secondary">أضف عقارًا <Building2 size={16} /></a>
+            </div>
+          </div>
+          <div className="af-workspace-summary">
+            <div className="af-workspace-summary-top"><span className="af-workspace-summary-icon"><Home size={19} /></span><span className="af-workspace-summary-label">مخزون المكتب</span><span className="af-workspace-summary-state">{inventoryReady ? 'متصل' : 'يحتاج إعدادًا'}</span></div>
+            {inventoryReady ? <><strong className="af-workspace-summary-number">{activePropertyCount}</strong><span className="af-workspace-summary-caption">عقار نشط مسجّل</span></> : <><strong className="af-workspace-summary-number af-workspace-summary-number-small">لنبدأ الإعداد</strong><span className="af-workspace-summary-caption">تحقق من تهيئة قاعدة بيانات AqarFlow أولًا.</span></>}
+            <div className="af-workspace-summary-bottom"><span><ShieldCheck size={14} /> {inventoryReady ? 'المساعد يعتمد على بيانات المخزون' : 'لم تُعرض أرقام غير مؤكدة'}</span><a href="/properties" aria-label="فتح مخزون العقارات"><ChevronLeft size={17} /></a></div>
+          </div>
+        </section>
+
+        {!inventoryReady ? (
+          <div role="status" className="af-workspace-setup-alert">
+            <CircleHelp size={18} />
+            <div><b>مساحة المكتب تحتاج إلى تهيئة</b><p>تعذر قراءة مخزون AqarFlow أو تحديد مساحة العمل. لم نعرض أرقامًا تخمينية. راجع إعداد قاعدة البيانات والصلاحيات قبل إضافة بيانات حقيقية.</p></div>
+          </div>
+        ) : null}
+
+        <section className="af-workspace-section">
+          <div className="af-workspace-section-heading"><div><span>مركز العمل</span><h2>كل أدوات مكتبك، في مكان واحد.</h2></div><p>ابدأ بالمخزون، ثم اختبر أسلوب المساعد، وبعدها تابع المحادثات والعمليات.</p></div>
+          <div className="af-workspace-tools">
+            {quickLinks.map((item) => {
+              const Icon = item.icon;
+              return <a href={item.href} key={item.href} className={'af-workspace-tool af-workspace-tool-' + item.tone}>
+                <span className="af-workspace-tool-icon"><Icon size={21} /></span>
+                <span className="af-workspace-tool-arrow"><ArrowUpLeft size={15} /></span>
+                <h3>{item.title}</h3><p>{item.description}</p><span className="af-workspace-tool-link">{item.label}<ArrowLeft size={14} /></span>
+              </a>;
+            })}
+          </div>
+        </section>
+
+        <section className="af-workspace-bottom-grid">
+          <div className="af-workspace-checklist">
+            <div className="af-workspace-panel-heading"><span className="af-workspace-panel-icon"><ClipboardList size={18} /></span><div><h2>ابدأ في أربع خطوات</h2><p>إعداد واضح قبل الاعتماد على الأتمتة.</p></div></div>
+            <div className="af-workspace-step"><span>01</span><div><b>أضف عقاراتك الحقيقية</b><p>السعر، النوع، المنطقة، المواصفات وحالة التوفر.</p></div><a href="/properties" aria-label="إدارة العقارات"><ArrowLeft size={15} /></a></div>
+            <div className="af-workspace-step"><span>02</span><div><b>اختبر طريقة البيع</b><p>راجع الردود على السعر والاعتراضات والبدائل.</p></div><a href="/aqarflow-assistant" aria-label="مساعد المبيعات"><ArrowLeft size={15} /></a></div>
+            <div className="af-workspace-step"><span>03</span><div><b>اربط رقم واتساب للأعمال</b><p>تحقق من اتصال Meta وصلاحيات الرقم.</p></div><a href="/settings/whatsapp" aria-label="إعدادات واتساب"><ArrowLeft size={15} /></a></div>
+            <div className="af-workspace-step"><span>04</span><div><b>راجع المحادثات والمتابعة</b><p>أبقِ الردود تحت المراجعة إلى أن تختبر الأتمتة وتفعّلها صراحة.</p></div><a href="/aqarflow-inbox" aria-label="صندوق المحادثات"><ArrowLeft size={15} /></a></div>
+          </div>
+
+          <aside className="af-workspace-principle">
+            <span className="af-workspace-principle-icon"><ShieldCheck size={22} /></span>
+            <span className="af-workspace-principle-kicker">قاعدة AqarFlow</span>
+            <h2>البيع الذكي لا يساوي الضغط.</h2>
+            <p>المساعد الجيد يحترم ميزانية العميل، ولا يخترع توافرًا أو خصمًا، ويقترح بديلًا مناسبًا بدل دفع العميل نحو عقار لا يناسبه.</p>
+            <div className="af-workspace-principle-footer"><CheckCircle2 size={17} /><span>الحقيقة والصلاحيات قبل إتمام الصفقة</span></div>
+          </aside>
+        </section>
+
+        <footer className="af-workspace-footer"><span>© 2026 AqarFlow AI</span><span><ShieldCheck size={13} /> بيانات دقيقة. مبيعات باحترام.</span><a href="/">زيارة الموقع التعريفي <ArrowLeft size={14} /></a></footer>
+      </div>
+    </main>
+  );
 }
