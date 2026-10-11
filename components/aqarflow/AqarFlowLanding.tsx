@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import {
-  ArrowLeft, ArrowDown, BadgeCheck, BrainCircuit, Check, ChevronDown, CircleHelp,
+  ArrowLeft, ArrowDown, BadgeCheck, BrainCircuit, Check, ChevronDown,
   Handshake, HeartHandshake, House, MessageCircle, MessageSquareText, ShieldCheck,
-  Sparkles, Target, UserRound, Wallet, Workflow, Zap, Menu, X, RefreshCw, Bot,
+  Sparkles, Target, UserRound, Wallet, Menu, X, RefreshCw, Bot,
 } from 'lucide-react';
 
 type DemoTurn = { role: 'customer' | 'assistant'; text: string };
