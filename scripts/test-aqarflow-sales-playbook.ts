@@ -55,6 +55,11 @@ const unspecifiedBudget = buildSalesPlaybookGuidance({
 });
 assert.ok(unspecifiedBudget.do.some((line) => line.includes("220 USD")), "an unspecified budget may receive one capped near-budget fallback after exact matches fail");
 assert.ok(unspecifiedBudget.do.some((line) => line.includes("لا بوصفه ضمن الميزانية")), "the alternative must not be misrepresented as within budget");
+const broadFlexBudget = buildSalesPlaybookGuidance({
+  customerMessage: "ميزانيتي مرنة وأستطيع النظر في خيارات أعلى.",
+  buyerProfile: { budgetMax: 200, currency: "USD" },
+});
+assert.ok(broadFlexBudget.do.some((line) => line.includes("240 USD")), "broad flexibility should use the configured 20% maximum");
 const flexiblePrice = buildSalesPlaybookGuidance({
   customerMessage: "أقدر أزيد قليلًا إذا كان الموقع فعلًا يستاهل.",
   buyerProfile: { budgetMax: 200, currency: "USD", budgetFlexibility: "slight" },
