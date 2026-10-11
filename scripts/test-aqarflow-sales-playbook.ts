@@ -47,6 +47,14 @@ const price = buildSalesPlaybookGuidance({
 assert.equal(price.moment, "price_objection");
 assert.ok(price.do.some((line) => line.includes("200 USD")), "hard budget must be added to contextual guidance");
 assert.ok(price.avoid.some((line) => line.includes("خصم")), "price guidance must forbid invented discounts");
+assert.ok(price.do.some((line) => line.includes("حد صارم")), "an explicitly final budget must be treated as a hard ceiling even if profile inference is missing");
+assert.ok(!price.do.some((line) => line.includes("كاقتراح اختياري")), "a hard budget must not receive an over-budget alternative");
+const unspecifiedBudget = buildSalesPlaybookGuidance({
+  customerMessage: "ميزانيتي 200 دولار وأبحث عن شقة مناسبة.",
+  buyerProfile: { budgetMax: 200, currency: "USD" },
+});
+assert.ok(unspecifiedBudget.do.some((line) => line.includes("220 USD")), "an unspecified budget may receive one capped near-budget fallback after exact matches fail");
+assert.ok(unspecifiedBudget.do.some((line) => line.includes("لا بوصفه ضمن الميزانية")), "the alternative must not be misrepresented as within budget");
 const flexiblePrice = buildSalesPlaybookGuidance({
   customerMessage: "أقدر أزيد قليلًا إذا كان الموقع فعلًا يستاهل.",
   buyerProfile: { budgetMax: 200, currency: "USD", budgetFlexibility: "slight" },
