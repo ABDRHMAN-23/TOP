@@ -456,6 +456,29 @@ export function buildPersonalizedSalesPrompt(input: {
 }
 
 /**
+ * Numeric buyer-context facts that a reply may repeat truthfully. The over-budget
+ * delta is allowed only when the buyer did not state a hard budget cap and currencies match.
+ */
+export function buildAllowedSalesContextNumbers(
+  buyer: BuyerProfile | null | undefined,
+  rawProperties: unknown,
+): number[] {
+  const profile = buyer || {};
+  const allowed = [profile.budgetMin, profile.budgetMax]
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0);
+  const currency = cleanText(profile.currency, 8).toUpperCase();
+  if (profile.budgetMax != null && currency && profile.budgetFlexibility !== "hard") {
+    for (const property of sanitizeVerifiedProperties(rawProperties)) {
+      if (property.price == null || !property.currency || property.currency.toUpperCase() !== currency) continue;
+      if (property.price > profile.budgetMax) {
+        allowed.push(Math.round((property.price - profile.budgetMax) * 100) / 100);
+      }
+    }
+  }
+  return [...new Set(allowed)];
+}
+
+/**
  * Conservative guard for numeric literals in customer-facing copy.
  * It only proves that each written number matches a structured property value;
  * it does not prove every natural-language claim (for example, "near the beach").
