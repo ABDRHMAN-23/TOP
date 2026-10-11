@@ -85,6 +85,14 @@ assert.equal(classifySalesMoment("أرسل لي رقم صاحب الشقة ال�
 assert.equal(classifySalesMoment("إذا دفعت مقدمًا، تقدروا تخصموا 30 دولار؟"), "discount_request");
 assert.equal(classifySalesMoment("هل الماء والكهرباء داخل الإيجار؟"), "property_fact_question");
 assert.equal(classifySalesMoment("هل الشقة ما زالت متاحة؟"), "availability_question");
+assert.equal(classifySalesMoment("هل أنت ذكاء اصطناعي أم موظف من المكتب؟"), "identity_question");
+assert.equal(classifySalesMoment("أنت إنسان حقيقي؟"), "identity_question");
+assert.equal(classifySalesMoment("Are you a real person or an AI assistant?"), "identity_question");
+assert.equal(classifySalesMoment("أريد أتحدث مع موظف من المكتب، مش مع روبوت."), "human_handoff");
+assert.ok(
+  getSalesKnowledgeCards("identity_question").some((card) => card.id === "transparent-identity"),
+  "direct identity questions should load truthful identity guidance",
+);
 
 assert.ok(
   getSalesKnowledgeCards("privacy_request").some((card) => card.id === "privacy"),
