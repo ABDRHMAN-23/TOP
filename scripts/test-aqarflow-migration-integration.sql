@@ -379,6 +379,11 @@ BEGIN
      OR NOT has_function_privilege('service_role','public.aqarflow_record_webhook_ai_usage(uuid,uuid,text,integer,integer,integer,boolean,text)','EXECUTE') THEN
     RAISE EXCEPTION 'Webhook usage recording is not service-role only';
   END IF;
+  IF has_function_privilege('authenticated','public.aqarflow_consume_public_demo_quota(text)','EXECUTE')
+     OR has_function_privilege('anon','public.aqarflow_consume_public_demo_quota(text)','EXECUTE')
+     OR NOT has_function_privilege('service_role','public.aqarflow_consume_public_demo_quota(text)','EXECUTE') THEN
+    RAISE EXCEPTION 'Public demo quota function is not service-role only';
+  END IF;
 END $auto_reply_privilege_check$;
 
 SET ROLE service_role;
@@ -386,6 +391,7 @@ DO $auto_reply_rpc_check$
 DECLARE
   request_id uuid;
   updated boolean;
+  attempt integer;
 BEGIN
   request_id := public.aqarflow_reserve_webhook_ai_request('00000000-0000-4000-8000-000000000001');
   IF request_id IS NULL THEN
@@ -401,6 +407,14 @@ BEGIN
     '00000000-0000-4000-8000-000000000002', request_id, 'test-model', 12, 3, 5, true, 'success'
   ) THEN
     RAISE EXCEPTION 'Webhook usage recording accepted a reservation belonging to another workspace';
+  END IF;
+  FOR attempt IN 1..6 LOOP
+    IF NOT public.aqarflow_consume_public_demo_quota('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') THEN
+      RAISE EXCEPTION 'Public demo quota rejected one of the first six requests';
+    END IF;
+  END LOOP;
+  IF public.aqarflow_consume_public_demo_quota('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') THEN
+    RAISE EXCEPTION 'Public demo quota allowed a seventh request within the same hour';
   END IF;
 END $auto_reply_rpc_check$;
 RESET ROLE;
