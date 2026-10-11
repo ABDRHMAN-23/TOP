@@ -161,7 +161,18 @@ const AREA_ALIAS_GROUPS = [
   ["عدن", "aden"],
 ];
 
-function inferInventoryHints(message: string, rows: PropertyRow[]): Partial<BuyerProfile> {
+export type InventoryHintRow = Pick<PropertyRow, "property_type" | "location_label" | "verified_features">;
+
+const PROPERTY_FAMILY_LABELS: Record<string, string> = {
+  apartment: "شقة",
+  villa: "فيلا",
+  house: "بيت",
+  land: "أرض",
+  office: "مكتب",
+  commercial: "محل تجاري",
+};
+
+export function inferInventoryHints(message: string, rows: InventoryHintRow[]): Partial<BuyerProfile> {
   const hints = inferBasicBuyerProfileHints(message);
   const normalizedMessage = normalizePhrase(message);
   const negativeIntent = /(?:ما ابغي|ما ابغى|ما اريد|لا اريد|مش عايز|مش عاوز|بدون|لا احتاج|لا احتج|do not want|don't want|without)/i.test(normalizedMessage);
@@ -171,7 +182,8 @@ function inferInventoryHints(message: string, rows: PropertyRow[]): Partial<Buye
     const requestedFamily = typeFamily(positiveTail) || (!negativeIntent ? typeFamily(normalizedMessage) : null);
     if (requestedFamily) {
       const record = rows.find((row) => row.property_type && typeFamily(row.property_type) === requestedFamily);
-      if (record?.property_type) hints.propertyType = record.property_type;
+      // Keep explicit property type even when this workspace has zero current listings of that type.
+      hints.propertyType = record?.property_type || PROPERTY_FAMILY_LABELS[requestedFamily] || null;
     } else if (!negativeIntent) {
       const types = rows.map((row) => row.property_type).filter((value): value is string => typeof value === "string" && value.trim().length > 0);
       const match = types.find((type) => {
@@ -185,6 +197,41 @@ function inferInventoryHints(message: string, rows: PropertyRow[]): Partial<Buye
 
   const areaMatches: string[] = [];
   let rejectedAreaMention = false;
+
+  // Parse known Aden area names from the customer's message independently of inventory.
+  // Otherwise a new request cannot be remembered when there are zero listings to compare.
+  for (const group of AREA_ALIAS_GROUPS) {
+    const mentions = group
+      .map((alias) => ({ alias, index: normalizedMessage.indexOf(normalizePhrase(alias)) }))
+      .filter((item) => item.index >= 0)
+      .sort((left, right) => left.index - right.index);
+    for (const mention of mentions) {
+      if (isNegatedAreaMention(normalizedMessage, mention.alias)) {
+        rejectedAreaMention = true;
+        continue;
+      }
+      const matchedListing = rows.find((row) => {
+        const label = typeof row.location_label === "string" ? normalizePhrase(row.location_label) : "";
+        return label && group.some((alias) => label.includes(normalizePhrase(alias)));
+      });
+      if (matchedListing?.location_label) {
+        const pieces = matchedListing.location_label.split(/[,،/|؛;–—-]+/)
+          .map((part) => part.trim()).filter((part) => part.length >= 3);
+        const propertyAlias = group.find((candidate) => normalizePhrase(matchedListing.location_label || "").includes(normalizePhrase(candidate)));
+        const labelPiece = propertyAlias
+          ? pieces.find((piece) => normalizePhrase(piece).includes(normalizePhrase(propertyAlias)))
+          : null;
+        areaMatches.push(labelPiece || mention.alias);
+      } else {
+        areaMatches.push(mention.alias);
+      }
+      // One alias is enough for this group; do not add spelling variants of the same place.
+      break;
+    }
+  }
+
+  // Also preserve a specific location label already present in inventory, including places
+  // not represented in the small common-area alias list.
   for (const row of rows) {
     const label = typeof row.location_label === "string" ? row.location_label.trim() : "";
     if (!label) continue;
@@ -196,24 +243,8 @@ function inferInventoryHints(message: string, rows: PropertyRow[]): Partial<Buye
         else areaMatches.push(piece);
       }
     }
-    for (const group of AREA_ALIAS_GROUPS) {
-      const mentioned = group.filter((alias) => normalizedMessage.includes(normalizePhrase(alias)));
-      for (const alias of mentioned) {
-        if (isNegatedAreaMention(normalizedMessage, alias)) {
-          rejectedAreaMention = true;
-          continue;
-        }
-        const propertyAlias = group.find((candidate) => normalizePhrase(label).includes(normalizePhrase(candidate)));
-        if (propertyAlias) {
-          const labelPiece = pieces.find((piece) => normalizePhrase(piece).includes(normalizePhrase(propertyAlias))) || propertyAlias;
-          areaMatches.push(labelPiece);
-        } else if (!areaMatches.length) {
-          // Preserve an explicitly named area even if the current inventory has no exact listing.
-          areaMatches.push(alias);
-        }
-      }
-    }
   }
+
   const cleanAreas = [...new Map(areaMatches.map((area) => [normalizePhrase(area), area])).values()].slice(0, 3);
   if (cleanAreas.length) hints.preferredAreas = cleanAreas;
   else if (rejectedAreaMention) hints.preferredAreas = [];
@@ -227,7 +258,7 @@ function inferInventoryHints(message: string, rows: PropertyRow[]): Partial<Buye
     if (!normalizedFeature || !normalizedMessage.includes(normalizedFeature)) continue;
     const featureIndex = normalizedMessage.indexOf(normalizedFeature);
     const prefix = normalizedMessage.slice(Math.max(0, featureIndex - 28), featureIndex);
-    if (/(?:بدون|ما ابغي|ما ابغى|ما اريد|لا اريد|مش عايز|مش عاوز|without|don't want|do not want)\s*$/i.test(prefix)) {
+    if (/(?:بدون|ما ابغي|ما ابغى|ما اريد|لا اريد|مش عايز|مش عاوز|without|don't want|do not want)\\s*$/.test(prefix)) {
       dealBreakers.push(feature);
     } else if (/(?:لازم|ضروري|اهم شيء|مهم عندي|احتاج|اريد|ابغى|ابي|must have|need|want|require)/i.test(normalizedMessage)) {
       mustHaves.push(feature);
