@@ -110,10 +110,11 @@ export async function POST(request: Request) {
     'اكتب الرد التالي الذي سيظهر للعميل فقط داخل الخاصية reply.',
   ].join('\n\n');
 
-  const apiKey = runtimeEnv('GEMINI_API_KEY');
+  const apiKey = runtimeEnv('GEMINI_API_KEY') || runtimeEnv('GOOGLE_GENERATIVE_AI_API_KEY') || runtimeEnv('GOOGLE_API_KEY');
   const model = runtimeEnv('AQARFLOW_GEMINI_MODEL') || runtimeEnv('GEMINI_MODEL') || 'gemini-3.5-flash-lite';
   if (!apiKey) {
-    return NextResponse.json({ error: 'المعاينة غير متاحة مؤقتًا. حاول مرة أخرى لاحقًا.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+    console.error('[aqarflow-demo-chat] provider key is not configured');
+    return NextResponse.json({ error: 'المحادثة غير مفعّلة حاليًا. يرجى المحاولة لاحقًا.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
   }
 
   try {
@@ -137,6 +138,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ reply }, { headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
   } catch (error) {
     const status = error instanceof GeminiRuntimeError && error.code === 'configuration' ? 503 : 502;
-    return NextResponse.json({ error: 'تعذر الرد في هذه اللحظة. حاول مرة أخرى بعد قليل.' }, { status, headers: { 'Cache-Control': 'no-store' } });
+    console.error('[aqarflow-demo-chat] generation failed', error instanceof GeminiRuntimeError ? error.code : 'unexpected_error');
+    return NextResponse.json({ error: 'ما قدرت أجهز الرد الآن، جرّب مرة ثانية بعد قليل.' }, { status, headers: { 'Cache-Control': 'no-store' } });
   }
 }
