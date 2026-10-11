@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import {
   ArrowLeft, ArrowDown, BadgeCheck, BrainCircuit, Check, ChevronDown,
   Handshake, HeartHandshake, House, MessageCircle, MessageSquareText, ShieldCheck,
@@ -111,11 +111,47 @@ export default function AqarFlowLanding() {
   const [selectedId, setSelectedId] = useState('budget');
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [liveInput, setLiveInput] = useState('');
+  const [liveQuestion, setLiveQuestion] = useState('');
+  const [liveReply, setLiveReply] = useState('');
+  const [liveNote, setLiveNote] = useState('');
+  const [liveError, setLiveError] = useState('');
+  const [liveLoading, setLiveLoading] = useState(false);
   const selected = scenarios.find((s) => s.id === selectedId) ?? scenarios[0];
 
   function chooseScenario(id: string) {
     setSelectedId(id);
     setShowDetails(false);
+  }
+
+  async function submitLiveDemo(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const question = liveInput.trim();
+    if (!question || liveLoading) return;
+    setLiveLoading(true);
+    setLiveError('');
+    setLiveReply('');
+    setLiveNote('');
+    setLiveQuestion(question);
+    try {
+      const response = await fetch('/api/aqarflow/demo-sales', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerMessage: question }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(typeof result.error === 'string' ? result.error : 'تعذرت المعاينة الحية الآن.');
+      if (typeof result.replyDraft !== 'string' || !result.replyDraft.trim()) {
+        throw new Error('لم يرجع المحرك ردًا يمكن عرضه. جرّب صياغة أخرى.');
+      }
+      setLiveReply(result.replyDraft);
+      setLiveNote(typeof result.demoNote === 'string' ? result.demoNote : 'رد توضيحي مبني على مخزون تجريبي فقط.');
+      setLiveInput('');
+    } catch (error) {
+      setLiveError(error instanceof Error ? error.message : 'تعذرت المعاينة الحية الآن.');
+    } finally {
+      setLiveLoading(false);
+    }
   }
 
   return (
@@ -222,7 +258,21 @@ export default function AqarFlowLanding() {
               <div className="space-y-4 bg-[#eef3ed] p-4 sm:p-6">
                 {selected.turns.map((turn, index) => <div key={selected.id + '-' + index} className={`flex ${turn.role === 'customer' ? 'justify-start' : 'justify-end'}`}><div className={`max-w-[92%] rounded-2xl px-4 py-3 sm:max-w-[85%] sm:px-5 ${turn.role === 'customer' ? 'rounded-tr-sm border border-[#e1e8df] bg-white text-[#3e4d41]' : 'rounded-tl-sm bg-[#d8f4c7] text-[#264735]'}`}><div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black opacity-65">{turn.role === 'customer' ? <><UserRound size={12} /> العميل</> : <><Bot size={12} /> المساعد في المعاينة</>}</div><p className="whitespace-pre-line text-sm leading-7">{turn.text}</p></div></div>)}
               </div>
-              <div className="flex flex-col gap-3 border-t border-[#e6ece4] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"><p className="text-xs leading-6 text-[#708073]">معاينة ثابتة للشرح فقط؛ لا تُرسل رسائل ولا تحفظ بيانات عميل.</p><button onClick={() => { const index = scenarios.findIndex((s) => s.id === selectedId); chooseScenario(scenarios[(index + 1) % scenarios.length].id); }} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[#d6e2d3] px-4 py-2 text-xs font-extrabold text-[#325642] transition hover:bg-[#f1f6ef]"><RefreshCw size={14} /> تجربة موقف آخر</button></div>
+              {liveQuestion && <div className="space-y-3 border-t border-[#e6ece4] bg-[#f9fbf8] p-4 sm:p-6">
+                <div className="flex justify-start"><div className="max-w-[92%] rounded-2xl rounded-tr-sm border border-[#e1e8df] bg-white px-4 py-3 text-sm leading-7 text-[#3e4d41]"><p className="mb-1 text-[10px] font-black opacity-60">سؤالك في المعاينة</p>{liveQuestion}</div></div>
+                {liveReply && <div className="flex justify-end"><div className="max-w-[92%] rounded-2xl rounded-tl-sm bg-[#d8f4c7] px-4 py-3 text-sm leading-7 text-[#264735] sm:max-w-[85%]"><p className="mb-1 flex items-center gap-1.5 text-[10px] font-black opacity-65"><Bot size={12} /> رد مولّد من محرك المبيعات</p>{liveReply}</div></div>}
+                {liveNote && <p className="rounded-xl bg-white px-3 py-2 text-[10px] leading-5 text-[#728073]">{liveNote}</p>}
+                {liveError && <p role="alert" className="rounded-xl border border-[#edd5c8] bg-[#fff8f4] px-3 py-2 text-xs leading-6 text-[#92532e]">{liveError}</p>}
+              </div>}
+              <form onSubmit={submitLiveDemo} className="border-t border-[#e6ece4] bg-white p-4 sm:p-5">
+                <label htmlFor="aqarflow-live-demo-question" className="mb-2 block text-sm font-black">جرّب سؤالًا من عندك</label>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input id="aqarflow-live-demo-question" value={liveInput} onChange={(event) => setLiveInput(event.target.value.slice(0, 500))} maxLength={500} placeholder="مثال: أريد شقة غرفتين بحدود 200 دولار..." className="min-h-12 min-w-0 flex-1 rounded-xl border border-[#dce5da] bg-[#fbfcfa] px-4 text-sm outline-none transition focus:border-[#80a68a] focus:ring-2 focus:ring-[#d8e9d3]" />
+                  <button type="submit" disabled={liveLoading || !liveInput.trim()} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#173d32] px-5 text-sm font-black text-white transition hover:bg-[#225442] disabled:cursor-not-allowed disabled:opacity-50">{liveLoading ? 'يكتب الرد...' : 'جرّب الرد الحي'} <ArrowLeft size={15} /></button>
+                </div>
+                <p className="mt-2 text-[10px] leading-5 text-[#758175]">إذا كانت المعاينة الحية مهيأة، سيولّد المحرك ردًا باستخدام عقارات خيالية. لا تُرسل أي رسالة واتساب ولا يُحفظ نص سؤالك ضمن قاعدة بيانات المكتب. لا تكتب بيانات شخصية.</p>
+              </form>
+              <div className="flex flex-col gap-3 border-t border-[#e6ece4] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"><p className="text-xs leading-6 text-[#708073]">أمثلة جاهزة + سؤال حي عند تهيئة الخدمة. جميع العقارات في المعاينة خيالية.</p><button type="button" onClick={() => { const index = scenarios.findIndex((s) => s.id === selectedId); chooseScenario(scenarios[(index + 1) % scenarios.length].id); }} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[#d6e2d3] px-4 py-2 text-xs font-extrabold text-[#325642] transition hover:bg-[#f1f6ef]"><RefreshCw size={14} /> تجربة موقف آخر</button></div>
             </div>
           </div>
         </div>
