@@ -35,13 +35,13 @@ const wrangler=readFileSync(new URL('../wrangler.jsonc',import.meta.url),'utf8')
 const props=readFileSync(new URL('../app/api/aqarflow/properties/route.ts',import.meta.url),'utf8');
 assert.match(autoReplyMigration,/ai_auto_reply_opted_out boolean not null default false/i);
 assert.ok(autoReplyMigration.includes("buyer_profile jsonb not null default '{}'::jsonb"));
-assert.match(autoReplyMigration,/create or replace function public\\.aqarflow_reserve_webhook_ai_request/i);
-assert.match(autoReplyMigration,/create or replace function public\\.aqarflow_record_webhook_ai_usage/i);
-assert.match(autoReplyMigration,/revoke all on function public\\.aqarflow_reserve_webhook_ai_request\\(uuid\\) from public, anon, authenticated/i);
-assert.match(autoReplyMigration,/grant execute on function public\\.aqarflow_reserve_webhook_ai_request\\(uuid\\) to service_role/i);
-assert.match(autoReplyMigration,/grant execute on function public\\.aqarflow_record_webhook_ai_usage\\(uuid,uuid,text,integer,integer,integer,boolean,text\\) to service_role/i);
-for(const match of autoReplyMigration.matchAll(/create or replace function\\s+([^\\s(]+)[\\s\\S]*?\\$function\\$;/gi)){
-  if(/security\\s+definer/i.test(match[0])) assert.match(match[0],/set search_path\\s*=\\s*''/i);
+assert.ok(autoReplyMigration.includes("create or replace function public.aqarflow_reserve_webhook_ai_request"));
+assert.ok(autoReplyMigration.includes("create or replace function public.aqarflow_record_webhook_ai_usage"));
+assert.ok(autoReplyMigration.includes("revoke all on function public.aqarflow_reserve_webhook_ai_request(uuid) from public, anon, authenticated"));
+assert.ok(autoReplyMigration.includes("grant execute on function public.aqarflow_reserve_webhook_ai_request(uuid) to service_role"));
+assert.ok(autoReplyMigration.includes("grant execute on function public.aqarflow_record_webhook_ai_usage(uuid,uuid,text,integer,integer,integer,boolean,text) to service_role"));
+for (const functionBlock of autoReplyMigration.split("$function$;")) {
+  if (functionBlock.includes("security definer")) assert.ok(functionBlock.includes("set search_path = ''"));
 }
 assert.match(sql,/create table if not exists public\.aqarflow_properties/i);
 assert.match(sql,/create table if not exists public\.aqarflow_workspace_memberships/i);
