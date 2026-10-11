@@ -298,10 +298,11 @@ export async function handleWhatsAppAutomaticReply(
   if (!recipientPhoneNumber) return { action: "skipped", reason: "missing_sender" };
 
   const { data: conversation, error: conversationError } = await admin.from("aqarflow_crm_conversations")
-    .select("buyer_profile,handoff_required")
+    .select("buyer_profile,handoff_required,status")
     .eq("owner_user_id", integration.owner_user_id).eq("id", input.conversationId).maybeSingle();
   if (conversationError || !conversation) return { action: "failed", reason: "conversation_context_unavailable" };
   if (conversation.handoff_required) return { action: "skipped", reason: "human_handoff_already_active" };
+  if (conversation.status !== "open") return { action: "skipped", reason: "conversation_not_open" };
 
   const text = event.messageText || "";
   const encryptionKey = runtimeEnv("META_TOKEN_ENCRYPTION_KEY");
@@ -453,6 +454,22 @@ export async function handleWhatsAppAutomaticReply(
     return setHandoff(admin, integration.owner_user_id, input.conversationId, "customer_service_window_expired");
   }
 
+  const { data: latestConversation, error: latestConversationError } = await admin.from("aqarflow_crm_conversations")
+    .select("status,handoff_required")
+    .eq("owner_user_id", integration.owner_user_id).eq("id", input.conversationId).maybeSingle();
+  if (latestConversationError || !latestConversation) {
+    await saveIncomingDraft(admin, integration.owner_user_id, event, draft);
+    return { action: "failed", reason: "conversation_state_recheck_failed" };
+  }
+  if (latestConversation.handoff_required) {
+    await saveIncomingDraft(admin, integration.owner_user_id, event, draft);
+    return { action: "skipped", reason: "human_handoff_activated_during_generation" };
+  }
+  if (latestConversation.status !== "open") {
+    await saveIncomingDraft(admin, integration.owner_user_id, event, draft);
+    return { action: "skipped", reason: "conversation_closed_during_generation" };
+  }
+
   const idempotencyKey = "ai_reply_" + (await sha256Hex(integration.id + ":" + event.messageId + ":v1")).slice(0, 48);
   const requestHash = await sha256Hex(integration.phone_number_id + "\n" + event.senderPhoneNumber + "\n" + draft.replyDraft + "\n" + input.conversationId);
   const { data: existing, error: existingError } = await admin.from("aqarflow_whatsapp_outbound_requests")
@@ -544,15 +561,22 @@ export async function handleWhatsAppAutomaticReply(
   }, { onConflict: "owner_user_id,provider_message_id", ignoreDuplicates: true });
   if (messageError) return setHandoff(admin, integration.owner_user_id, input.conversationId, "sent_but_crm_persist_failed");
 
+  const { data: conversationAfterSend, error: conversationReadError } = await admin.from("aqarflow_crm_conversations")
+    .select("last_message_at")
+    .eq("owner_user_id", integration.owner_user_id).eq("id", input.conversationId).maybeSingle();
+  if (conversationReadError || !conversationAfterSend) {
+    return { action: "failed", reason: "sent_but_conversation_state_unavailable" };
+  }
+  const conversationPatch: Record<string, unknown> = { updated_at: sentAt, buyer_profile: buyerProfile };
+  const latestMessageAt = conversationAfterSend.last_message_at ? Date.parse(conversationAfterSend.last_message_at) : Number.NaN;
+  if (!Number.isFinite(latestMessageAt) || Date.parse(sentAt) >= latestMessageAt) {
+    conversationPatch.last_message_at = sentAt;
+    conversationPatch.last_message_preview = draft.replyDraft.slice(0, 500);
+  }
+  // Never clear a handoff or reopen a conversation here: another inbound message
+  // may have required a human while the provider was processing this send.
   const { error: conversationUpdateError } = await admin.from("aqarflow_crm_conversations")
-    .update({
-      status: "open",
-      handoff_required: false,
-      last_message_at: sentAt,
-      last_message_preview: draft.replyDraft.slice(0, 500),
-      updated_at: sentAt,
-      buyer_profile: buyerProfile,
-    })
+    .update(conversationPatch)
     .eq("owner_user_id", integration.owner_user_id).eq("id", input.conversationId);
   if (conversationUpdateError) return { action: "failed", reason: "sent_but_conversation_update_failed" };
 
