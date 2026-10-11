@@ -11,6 +11,10 @@ export type SalesMoment =
   | "stop_contact"
   | "human_handoff"
   | "abusive_customer"
+  | "privacy_request"
+  | "discount_request"
+  | "availability_question"
+  | "property_fact_question"
   | "price_objection"
   | "competitor_comparison"
   | "hesitation"
@@ -67,7 +71,7 @@ export function resolveBudgetFlexibility(
 }
 
 /** Classify the customer's latest message with opt-out and handoff taking priority. */
-export function classifySalesMoment(message: string): SalesMoment {
+export function classifySalesMoment(message: string, conversationSummary?: string | null): SalesMoment {
   const text = normalizeArabic(message);
 
   if (
@@ -83,6 +87,22 @@ export function classifySalesMoment(message: string): SalesMoment {
   ) return "abusive_customer";
 
   if (
+    /(?:رقم صاحب (?:الشقة|العقار|البيت)|جوال صاحب (?:الشقة|العقار|البيت)|رقم المالك|رقم مالك العقار|رقم صاحب المكتب|الرقم الشخصي للمالك|رقم شخصي|بيانات عميل|رقم العميل|رقم هاتف العميل|بيانات المالك|owner(?:'s|s)? phone|personal phone number|customer(?:'s|s)? phone number)/i.test(text)
+  ) return "privacy_request";
+
+  if (
+    /(?:خصم|تخفيض|تخصم(?:وا)?|تنزل(?:وا)? من السعر|خفض السعر|تخفيض السعر|discount|reduce the price|lower the price)/i.test(text)
+  ) return "discount_request";
+
+  if (
+    /(?:هل|ما زالت|مازال|لسه|لا تزال|لا زال|is it|still).{0,45}(?:متاح(?:ة)?|متوفر(?:ة)?|موجود(?:ة)?|available)|(?:هل عندكم|عندكم).{0,25}(?:متاح(?:ة)?|متوفر(?:ة)?|موجود(?:ة)?)/i.test(text)
+  ) return "availability_question";
+
+  if (
+    /(?:(?:هل|ما|كم|هل يشمل|هل تشمل|هل يوجد|فيه|فيها).{0,45}(?:الماء|الكهرباء|الخدمات|الغاز|الانترنت|النت|المصعد|مصعد|موقف سيارة|مواقف|التأثيث|مفروش|التامين|التأمين|العمولة|رسوم|الصيانة)|(?:الماء|الكهرباء|الخدمات|الغاز|الانترنت|النت|المصعد|مصعد|موقف سيارة|مواقف|التأثيث|التامين|التأمين|العمولة|رسوم).{0,35}(?:داخل|ضمن|يشمل|شامل|مشمول|موجود|متوفر|included in|included with|part of the rent))/i.test(text)
+  ) return "property_fact_question";
+
+  if (
     /(?:مكتب ثاني|المكتب الثاني|مكتب اخر|مكتب غيركم|لقيت.{0,25}ارخص|وجدت.{0,25}ارخص|عند غيركم|عرض منافس|منافسكم|مكتب منافس|another office|found.{0,25}cheaper|competitor|other agent)/i.test(text)
   ) return "competitor_comparison";
 
@@ -95,7 +115,7 @@ export function classifySalesMoment(message: string): SalesMoment {
   ) return "hesitation";
 
   if (
-    /(?:نصب|احتيال|اثق فيكم|كيف اضمن|كيف اتاكد|موثوق|موثوقين|وثائق الملكية|صك الملكية|الوضع القانوني|قانوني|قانونية|مشكلة قانونية|مضمون|مضمونة|نسبة الربح|عائد الاستثمار|رقم العميل|رقم هاتف العميل|بيانات عميل|خصوصية|رقم المالك|بيانات المالك|scam|fraud|can i trust|prove it|legal status|ownership documents|guaranteed return)/i.test(text)
+    /(?:نصب|احتيال|اثق فيكم|كيف اضمن|كيف اتاكد|موثوق|موثوقين|وثائق الملكية|صك الملكية|الوضع القانوني|قانوني|قانونية|مشكلة قانونية|مضمون|مضمونة|نسبة الربح|عائد الاستثمار|خصوصية|scam|fraud|can i trust|prove it|legal status|ownership documents|guaranteed return)/i.test(text)
   ) return "trust_concern";
 
   if (
@@ -108,6 +128,20 @@ export function classifySalesMoment(message: string): SalesMoment {
 
   if (/(?:مش هذا اللي اريده|لا اريد هذا العقار|لا اريد هذه الشقة|ما ابغي هذه الشقة|ما ابغي الشقة|ما ابغى هذه الشقة|ما ابغى الشقة|هذه الشقة.{0,12}(?:ما تناسبني|لا تناسبني|مش مناسبة)|هذا العقار.{0,12}(?:ما يناسبني|لا يناسبني|مش مناسب)|هذا الخيار.{0,12}(?:ما يناسبني|لا يناسبني)|not right for me|not interested in this property)/i.test(text)) return "property_rejection";
   if (/(?:اليوم.{0,15}(?:ضروري|لازم|مستعجل)|خلال (?:يومين|ثلاثة ايام|يوم واحد)|خلال ثلاثة ايام|مستعجل|ضروري جدا|باسرع وقت|في اسرع وقت|urgent|within (?:one|two|three) days)/i.test(text)) return "urgent_timeline";
+  // Some replies are elliptical ("same area, but I don't know the details").
+  // Carry forward a competitor-comparison frame only when the latest message explicitly
+  // refers back to that comparison; never inherit opt-out, abuse, or handoff from history.
+  const isCompetitorFollowUp = /(?:نفس المنطقة|نفس المواصفات|باقي التفاصيل|عرضهم|عرض المكتب الثاني|مقارنة بين|نفس السعر|same area|same specifications|their offer|the other office|remaining details)/i.test(text);
+  if (isCompetitorFollowUp && typeof conversationSummary === "string") {
+    const priorCustomerText = conversationSummary.split(/\r?\n/)
+      .filter((line) => /^(?:العميل|customer)\s*:/i.test(line.trim()))
+      .map((line) => line.replace(/^(?:العميل|customer)\s*:\s*/i, ""))
+      .join(" ");
+    const prior = normalizeArabic(priorCustomerText);
+    if (/(?:مكتب ثاني|المكتب الثاني|مكتب اخر|مكتب غيركم|لقيت.{0,25}ارخص|وجدت.{0,25}ارخص|عند غيركم|عرض منافس|منافسكم|مكتب منافس|another office|found.{0,25}cheaper|competitor|other agent)/i.test(prior)) {
+      return "competitor_comparison";
+    }
+  }
   return "general_discovery";
 }
 
@@ -132,6 +166,50 @@ const GUIDANCE: Record<SalesMoment, Omit<SalesPlaybookGuidance, "moment" | "know
     avoid: [
       "لا تحاول إقناع العميل بالبقاء مع المساعد.",
       "لا تزعم أن موظفًا استلم المحادثة قبل تأكيد النظام ذلك.",
+    ],
+  },
+  privacy_request: {
+    objective: "حماية بيانات المالك والعملاء والتأكد من أن مشاركة أي وسيلة تواصل مصرح بها.",
+    do: [
+      "لا تكشف رقمًا شخصيًا أو بيانات عميل آخر في الرد الآلي.",
+      "اشرح أن المكتب يستطيع ترتيب التواصل عبر القنوات المعتمدة، ثم أحل الطلب إلى موظف عند الحاجة.",
+    ],
+    avoid: [
+      "لا تخترع موافقة المالك على مشاركة رقمه.",
+      "لا تعِد بإرسال بيانات خاصة أو تطلب من العميل البحث عنها بطرق غير مناسبة.",
+    ],
+  },
+  discount_request: {
+    objective: "فهم طلب الخصم من دون تجاوز صلاحيات المكتب أو تقديم موافقة غير مؤكدة.",
+    do: [
+      "أكد أنك فهمت طلب العميل، ووضّح أن أي خصم يحتاج إلى تأكيد من الشخص المخوّل.",
+      "حوّل الطلب إلى المسؤول مع ذكر العقار والمبلغ أو الشرط المطلوب بوضوح.",
+    ],
+    avoid: [
+      "لا تعد بخصم ولا تقدّم سعرًا جديدًا قبل وجود موافقة موثقة.",
+      "لا تجعل الدفعة المقدمة أو الاستعجال سببًا لافتراض موافقة المالك.",
+    ],
+  },
+  availability_question: {
+    objective: "إعطاء جواب عن التوافر يعتمد على تحقق حديث، لا على وجود إعلان قديم.",
+    do: [
+      "استخدم حالة التوافر التي اجتازت التحقق من حداثتها فقط.",
+      "إذا كانت الحالة مجهولة أو قديمة أو لا يمكن ربط السؤال بعقار محدد، قل إنك ستتحقق وأحل المحادثة إلى المكتب.",
+    ],
+    avoid: [
+      "لا تقل إن العقار متاح اعتمادًا على وجوده في قاعدة البيانات وحدها.",
+      "لا تخترع عقارًا بديلًا على أنه متاح أو تؤكد موعد معاينة دون تأكيد النظام.",
+    ],
+  },
+  property_fact_question: {
+    objective: "الإجابة عن تفاصيل العقار من السجل الموثق فقط.",
+    do: [
+      "تحقق مما إذا كانت المعلومة المطلوبة موجودة فعلًا ضمن المواصفات المؤكدة.",
+      "إذا كانت المعلومة غير مسجلة، اعترف بذلك واطلب من المكتب تأكيدها بدل التخمين.",
+    ],
+    avoid: [
+      "لا تستنتج أن المرافق أو الخدمات مشمولة من السعر أو الصور أو من المعتاد في المنطقة.",
+      "لا تحوّل غياب المعلومة إلى تأكيد أنها موجودة أو غير موجودة.",
     ],
   },
   abusive_customer: {
@@ -253,7 +331,7 @@ const GUIDANCE: Record<SalesMoment, Omit<SalesPlaybookGuidance, "moment" | "know
 };
 
 export function buildSalesPlaybookGuidance(input: SalesPlaybookInput): SalesPlaybookGuidance {
-  const moment = classifySalesMoment(input.customerMessage);
+  const moment = classifySalesMoment(input.customerMessage, input.conversationSummary);
   const base = GUIDANCE[moment];
   const doRules = [...base.do];
   const avoidRules = [...base.avoid];
