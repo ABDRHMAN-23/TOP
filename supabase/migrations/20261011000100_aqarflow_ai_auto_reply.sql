@@ -17,8 +17,8 @@ create index if not exists aqarflow_crm_contacts_auto_reply_opt_out_idx
 create or replace function public.aqarflow_reserve_webhook_ai_request(p_owner_user_id uuid)
 returns uuid
 language plpgsql
-security invoker
-set search_path = pg_catalog, public, pg_temp
+security definer
+set search_path = ''
 as $function$
 declare
   v_hour_count bigint;
@@ -29,15 +29,15 @@ begin
     raise exception 'invalid_workspace_owner' using errcode = '22023';
   end if;
 
-  perform pg_advisory_xact_lock(hashtextextended(p_owner_user_id::text, 0));
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(p_owner_user_id::text, 0));
 
   select
-    count(*) filter (where u.created_at >= now() - interval '1 hour'),
+    count(*) filter (where u.created_at >= pg_catalog.now() - interval '1 hour'),
     count(*)
   into v_hour_count, v_day_count
   from public.aqarflow_ai_usage u
   where u.owner_user_id = p_owner_user_id
-    and u.created_at >= now() - interval '24 hours';
+    and u.created_at >= pg_catalog.now() - interval '24 hours';
 
   if coalesce(v_hour_count, 0) >= 20 or coalesce(v_day_count, 0) >= 100 then
     return null;
@@ -63,8 +63,8 @@ create or replace function public.aqarflow_record_webhook_ai_usage(
 )
 returns boolean
 language plpgsql
-security invoker
-set search_path = pg_catalog, public, pg_temp
+security definer
+set search_path = ''
 as $function$
 declare
   v_updated integer;
@@ -78,13 +78,13 @@ begin
   end if;
 
   update public.aqarflow_ai_usage
-  set model = left(coalesce(nullif(p_model, ''), 'unselected'), 100),
+  set model = pg_catalog.left(pg_catalog.coalesce(pg_catalog.nullif(p_model, ''), 'unselected'), 100),
       latency_ms = p_latency_ms,
       input_tokens = p_input_tokens,
       output_tokens = p_output_tokens,
       result_validated = coalesce(p_result_validated, false),
       outcome = p_outcome,
-      completed_at = now()
+      completed_at = pg_catalog.now()
   where id = p_request_id
     and owner_user_id = p_owner_user_id
     and actor_user_id = p_owner_user_id
