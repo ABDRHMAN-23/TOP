@@ -28,6 +28,7 @@ const tailoredNoMatch=buildNoMatchSalesDraft(5,{intent:'rent',propertyType:'شق
 assert.match(tailoredNoMatch.replyDraft,/المنصورة/,'no-match reply should acknowledge the requested area');
 assert.match(tailoredNoMatch.replyDraft,/الميزانية/,'no-match reply should preserve an explicit budget');
 assert.equal(tailoredNoMatch.nextBestAction,'ask_one_question');
+assert.ok(tailoredNoMatch.replyDraft.includes(tailoredNoMatch.askOneQuestion||''),'no-match reply should contain the actual WhatsApp question');
 const sample = Array.from({length:9},(_,i)=>({id:'p'+i,title:'Property '+i,purpose:'sale',price:200000,currency:'USD',bedrooms:1,locationLabel:'Sanaa',factsLastVerifiedAt:new Date().toISOString()}));
 sample[8]={id:'p8',title:'Target Aden 3-bedroom',purpose:'sale',price:80000,currency:'USD',bedrooms:3,locationLabel:'Aden',factsLastVerifiedAt:new Date().toISOString()};
 const ranked=rankPropertyCandidates({intent:'buy',budgetMax:90000,currency:'USD',preferredAreas:['Aden'],bedroomsMin:3},sample);
