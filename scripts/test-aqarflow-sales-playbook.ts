@@ -47,6 +47,12 @@ const price = buildSalesPlaybookGuidance({
 assert.equal(price.moment, "price_objection");
 assert.ok(price.do.some((line) => line.includes("200 USD")), "hard budget must be added to contextual guidance");
 assert.ok(price.avoid.some((line) => line.includes("خصم")), "price guidance must forbid invented discounts");
+const flexiblePrice = buildSalesPlaybookGuidance({
+  customerMessage: "أقدر أزيد قليلًا إذا كان الموقع فعلًا يستاهل.",
+  buyerProfile: { budgetMax: 200, currency: "USD", budgetFlexibility: "slight" },
+});
+assert.ok(flexiblePrice.do.some((line) => line.includes("220 USD")), "slight flexibility should be explicitly capped at 10% over target");
+assert.ok(flexiblePrice.do.some((line) => line.includes("أعلى من الميزانية المرجعية")), "the assistant must disclose an above-target alternative");
 
 const optOut = buildSalesPlaybookGuidance({ customerMessage: "لا ترسلوا لي أي رسائل أخرى." });
 assert.equal(optOut.moment, "stop_contact");
