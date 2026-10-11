@@ -328,6 +328,24 @@ BEGIN
 END $analytics_check$;
 
 -- Level 5: per-contact opt-out and webhook quota RPC remain isolated to service_role.
+DO $webhook_lease_schema_check$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='aqarflow_whatsapp_events'
+      AND column_name='processing_started_at'
+  ) THEN
+    RAISE EXCEPTION 'Webhook event lease timestamp is missing';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_catalog.pg_indexes
+    WHERE schemaname='public' AND tablename='aqarflow_whatsapp_events'
+      AND indexname='aqarflow_whatsapp_events_lease_idx'
+  ) THEN
+    RAISE EXCEPTION 'Webhook event lease index is missing';
+  END IF;
+END $webhook_lease_schema_check$;
+
 DO $auto_reply_privilege_check$
 BEGIN
   IF NOT EXISTS (
