@@ -19,7 +19,7 @@ const bank = JSON.parse(readFileSync("data/aqarflow-sales/scenarios.v1.json", "u
 
 assert.equal(bank.version, 1, "scenario bank must have a version");
 assert.equal(bank.count, bank.scenarios.length, "declared scenario count must match contents");
-assert.ok(bank.scenarios.length >= 40, "seed bank should contain at least 40 reviewed cases");
+assert.ok(bank.scenarios.length >= 40, "seed bank should contain at least 40 seed cases");
 
 const ids = new Set<string>();
 const messages = new Set<string>();
