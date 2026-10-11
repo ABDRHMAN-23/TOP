@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { inferInventoryHints } from "../lib/aqarflow/sales-profile-inference.ts";
+import { mergeBuyerProfileForConversation } from "../lib/aqarflow/sales-engine.ts";
 
 const noInventory = inferInventoryHints(
   "أبحث عن شقة للإيجار في المنصورة وميزانيتي 200 دولار",
@@ -20,6 +21,18 @@ assert.deepEqual(rejectedOnly.preferredAreas, [], "explicitly rejected location 
 
 const noStockTypeCorrection = inferInventoryHints("لا أريد شقة، أريد فيلا", []);
 assert.equal(noStockTypeCorrection.propertyType, "فيلا", "the positive end of a correction should win over the rejected type");
+
+const rejectedTypeOnly = inferInventoryHints("لا أريد شقة", []);
+assert.equal(rejectedTypeOnly.propertyType, undefined, "a rejected property type must not become a positive preference");
+const rejectedPreviousType = mergeBuyerProfileForConversation(
+  { propertyType: "شقة", preferredAreas: ["المنصورة"] },
+  rejectedTypeOnly,
+  "لا أريد شقة",
+);
+assert.equal(rejectedPreviousType.propertyType, undefined, "rejecting the previously selected type must clear that stale preference");
+const featureNegationKeepsType = inferInventoryHints("لا أريد شقة فيها مسبح", []);
+assert.equal(featureNegationKeepsType.propertyType, "شقة", "a negated property feature must not erase the requested property type");
+assert.ok(featureNegationKeepsType.dealBreakers?.includes("مسبح"));
 
 const availableInventory = inferInventoryHints(
   "أريد شقة في المنصورة، مهم عندي موقف سيارة",
