@@ -73,7 +73,7 @@ export function classifySalesMoment(message: string): SalesMoment {
   ) return "price_objection";
 
   if (
-    /(?:بفكر|افكر|خليني افكر|بشوف|يمكن بعدين|مش متأكد|مو متأكد|متردد|احتاج وقت|سأفكر|ليس الان|ما اعرف اذا|ما ادري اذا|not sure|think about it|maybe later|need some time)/i.test(text)
+    /(?:بفكر|افكر|خليني افكر|بشوف|يمكن بعدين|مش متاكد|مو متاكد|متردد|احتاج وقت|سأفكر|ليس الان|ما اعرف اذا|ما ادري اذا|not sure|think about it|maybe later|need some time)/i.test(text)
   ) return "hesitation";
 
   if (
@@ -89,7 +89,7 @@ export function classifySalesMoment(message: string): SalesMoment {
   ) return "direct_price_question";
 
   if (/(?:لا يناسبني|ما يناسبني|مش مناسب لي|مش هذا اللي اريده|لا اريد هذا العقار|not right for me|not interested in this property)/i.test(text)) return "property_rejection";
-  if (/(?:اليوم.{0,15}(?:ضروري|لازم|مستعجل)|خلال (?:يومين|ثلاثة ايام|يوم واحد)|خلال ثلاثة ايام|مستعجل|ضروري جدا|بأسرع وقت|في اسرع وقت|urgent|within (?:one|two|three) days)/i.test(text)) return "urgent_timeline";
+  if (/(?:اليوم.{0,15}(?:ضروري|لازم|مستعجل)|خلال (?:يومين|ثلاثة ايام|يوم واحد)|خلال ثلاثة ايام|مستعجل|ضروري جدا|باسرع وقت|في اسرع وقت|urgent|within (?:one|two|three) days)/i.test(text)) return "urgent_timeline";
   return "general_discovery";
 }
 
