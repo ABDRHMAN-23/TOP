@@ -322,8 +322,6 @@ export function buildVerifiedFactTokens(properties: unknown): string[] {
     if (property.locationLabel) tokens.push(`${property.id}: location=${property.locationLabel}`);
     if (property.availability !== "unknown") tokens.push(`${property.id}: availability=${property.availability}`);
     for (const feature of property.verifiedFeatures || []) tokens.push(`${property.id}: feature=${feature}`);
-    for (const photo of property.propertyPhotos || []) tokens.push(`${property.id}: photo=${photo}`);
-    if (property.officeNotes) tokens.push(`${property.id}: office_note=${property.officeNotes}`);
   }
   return tokens;
 }
@@ -413,6 +411,13 @@ export function findUnsupportedNumericClaims(reply: string, verifiedProperties: 
         allowed.add(normalizeNumericLiteral(String(value)));
       }
     }
+  }
+
+  // Owner-entered office notes may include explicitly stated deposits, commissions, and other fees.
+  // Permit those numbers in replies, while the prompt separately prevents exposing private negotiation instructions.
+  for (const property of properties) {
+    const noteNumbers = (property.officeNotes || "").match(/[0-9٠-٩۰-۹]+(?:[.,，،٬٫][0-9٠-٩۰-۹]+)*/g) || [];
+    for (const value of noteNumbers) allowed.add(normalizeNumericLiteral(value));
   }
 
   const candidates = reply.match(/[0-9٠-٩۰-۹]+(?:[.,，،٬٫][0-9٠-٩۰-۹]+)*/g) || [];
