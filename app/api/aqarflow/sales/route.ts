@@ -20,7 +20,7 @@ const MODEL_OUTPUT_SCHEMA: Record<string, unknown> = {
 type PropertyRow = {
   id:string; title:string; property_type:string|null; purpose:string|null; price:number|string|null; currency:string|null;
   area:number|string|null; bedrooms:number|null; bathrooms:number|null; location_label:string|null;
-  verified_features:string[]|null; availability:'available'|'unavailable'|'unknown'; facts_last_verified_at:string|null;
+  verified_features:string[]|null; availability:'available'|'unavailable'|'unknown'; facts_last_verified_at:string|null; property_photos:string[]|null; office_notes:string|null;
 };
 function numberOrNull(v:number|string|null|undefined):number|null {
   if(v===null||v===undefined||v==='')return null; const n=Number(v);return Number.isFinite(n)&&n>=0?n:null;
@@ -28,7 +28,8 @@ function numberOrNull(v:number|string|null|undefined):number|null {
 function mapProperty(row:PropertyRow):VerifiedProperty {
   return {id:row.id,title:row.title,propertyType:row.property_type,purpose:row.purpose,price:numberOrNull(row.price),currency:row.currency,
     area:numberOrNull(row.area),bedrooms:row.bedrooms,bathrooms:row.bathrooms,locationLabel:row.location_label,
-    verifiedFeatures:Array.isArray(row.verified_features)?row.verified_features:[],availability:row.availability,factsLastVerifiedAt:row.facts_last_verified_at};
+    verifiedFeatures:Array.isArray(row.verified_features)?row.verified_features:[],availability:row.availability,factsLastVerifiedAt:row.facts_last_verified_at,
+    propertyPhotos:Array.isArray(row.property_photos)?row.property_photos:[],officeNotes:row.office_notes};
 }
 function safeError(status=503) {
   return NextResponse.json({error:'خدمة المساعد غير مهيأة بالكامل. يرجى المحاولة لاحقًا.'},{status,headers:{'Cache-Control':'no-store'}});
@@ -67,7 +68,7 @@ export async function POST(req:Request) {
   if(reservationError)return safeError(503);
   if(typeof reservationId!=='string'||!reservationId)return NextResponse.json({error:'وصلت إلى حد استخدام المساعد مؤقتًا. حاول لاحقًا.'},{status:429,headers:{'Cache-Control':'no-store'}});
   const {data:rows,error:propertyError}=await supabase.from('aqarflow_properties')
-    .select('id,title,property_type,purpose,price,currency,area,bedrooms,bathrooms,location_label,verified_features,availability,facts_last_verified_at')
+    .select('id,title,property_type,purpose,price,currency,area,bedrooms,bathrooms,location_label,verified_features,availability,facts_last_verified_at,property_photos,office_notes')
     .eq('owner_user_id',workspaceOwnerId).eq('is_active',true).order('updated_at',{ascending:false}).limit(50);
   if(propertyError) {
     await recordUsage(supabase,reservationId,{model,latencyMs:0,inputTokens:null,outputTokens:null,resultValidated:false,outcome:'provider_error'});
