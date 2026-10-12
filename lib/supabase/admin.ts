@@ -6,7 +6,10 @@ export function createAdminClient() {
   const key = runtimeEnv('SUPABASE_SECRET_KEY') || runtimeEnv('SUPABASE_SERVICE_ROLE_KEY');
   if (!key) throw new Error('Server Supabase secret is not configured.');
 
-  return createClient(QUVOTO_SUPABASE_URL, key, {
+  // Prefer the Supabase project configured for this deployment; retain the legacy
+  // project URL only as a fallback for deployments that have not set the URL.
+  const url = runtimeEnv('NEXT_PUBLIC_SUPABASE_URL') || QUVOTO_SUPABASE_URL;
+  return createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 }
