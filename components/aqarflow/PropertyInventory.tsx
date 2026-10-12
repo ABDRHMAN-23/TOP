@@ -47,7 +47,7 @@ export default function PropertyInventory({canManageInitial}:{canManageInitial:b
       const supabase=createClient();
       const {data:{user},error:authError}=await supabase.auth.getUser();
       if(authError||!user)throw new Error('انتهت جلسة الدخول. سجّل الدخول ثم حاول مجددًا.');
-      const current=form.propertyPhotos.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean);
+      const current=form.propertyPhotos.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
       if(current.length+selected.length>12)throw new Error('الحد الأقصى 12 صورة للعقار. احذف رابطًا قديمًا أولًا.');
       const urls:string[]=[];
       for(const file of selected){
@@ -58,7 +58,7 @@ export default function PropertyInventory({canManageInitial}:{canManageInitial:b
         const {data}=supabase.storage.from('aqarflow-property-photos').getPublicUrl(path);
         urls.push(data.publicUrl);
       }
-      set('propertyPhotos',[...current,...urls].join('\\n'));
+      set('propertyPhotos',[...current,...urls].join('\n'));
     }catch(e){setError(e instanceof Error?e.message:'تعذر رفع الصور.');}
     finally{setUploadingPhotos(false);}
   }
@@ -93,7 +93,7 @@ export default function PropertyInventory({canManageInitial}:{canManageInitial:b
           </label>
           <p className="mt-1 text-xs font-normal text-slate-500">{uploadingPhotos?'جارٍ رفع الصور…':'JPG وPNG وWebP وAVIF، بحد أقصى 8 ميغابايت للصورة و12 صورة للعقار. تُرفع الصور إلى مساحة تخزين المكتب.'}</p>
           <textarea maxLength={30000} rows={3} value={form.propertyPhotos} onChange={e=>set('propertyPhotos',e.target.value)} className="mt-3 w-full rounded-xl border p-3 text-sm font-normal" placeholder="روابط الصور المرفوعة (يمكنك إزالة أي سطر لحذف الصورة من هذا العقار)"/>
-          {(form.propertyPhotos.split(/\\r?\\n/).filter(x=>x.trim()).length>0)&&<div className="mt-2 flex flex-wrap gap-2">{form.propertyPhotos.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean).map((url,i)=><img key={url+i} src={url} alt={'معاينة صورة '+(i+1)} className="h-16 w-24 rounded-lg border object-cover"/>)}</div>}
+          {(form.propertyPhotos.split(/\r?\n/).filter(x=>x.trim()).length>0)&&<div className="mt-2 flex flex-wrap gap-2">{form.propertyPhotos.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map((url,i)=><img key={url+i} src={url} alt={'معاينة صورة '+(i+1)} className="h-16 w-24 rounded-lg border object-cover"/>)}</div>}
         </div>
         <label className="text-sm font-bold sm:col-span-2">ملاحظات خاصة بالمكتب — لا تظهر للعميل حرفيًا
           <textarea maxLength={3000} rows={4} value={form.officeNotes} onChange={e=>set('officeNotes',e.target.value)} className="mt-1 w-full rounded-xl border p-3 font-normal" placeholder="مثال: التأمين 150 دولار، العمولة نصف إيجار شهر، توجد رسوم تنظيف 20 دولار. يمكن طلب تفاوض حتى 5% لكن لا يُوعد العميل قبل موافقة المسؤول. اكتب أي تفاصيل إضافية تريد للمساعد الاستناد إليها."/>
