@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { readBoundedUtf8Body } from '@/lib/aqarflow/http-body';
 export const dynamic='force-dynamic';
-const COLUMNS='id,title,property_type,purpose,price,currency,area,bedrooms,bathrooms,location_label,verified_features,availability,facts_last_verified_at,is_active,created_at,updated_at';
+const COLUMNS='id,title,property_type,purpose,price,currency,area,bedrooms,bathrooms,location_label,verified_features,availability,facts_last_verified_at,property_photos,office_notes,is_active,created_at,updated_at';
 const PURPOSES=new Set(['sale','rent','invest','unknown']);
 const AVAILABILITY=new Set(['available','unavailable','unknown']);
 function response(body:unknown,status=200){return NextResponse.json(body,{status,headers:{'Cache-Control':'no-store'}});}
@@ -35,12 +35,23 @@ function parse(v:unknown){
     if(features.length>12)return null;
   }
   const availability=typeof r.availability==='string'&&AVAILABILITY.has(r.availability)?r.availability:null;if(!availability)return null;
+  const photosRaw=r.propertyPhotos===undefined?[]:r.propertyPhotos;
+  if(!Array.isArray(photosRaw)||photosRaw.length>12)return null;
+  const property_photos:string[]=[];
+  for(const rawUrl of photosRaw){
+    if(typeof rawUrl!=='string')return null;
+    const url=clean(rawUrl,2048);
+    if(!url)continue;
+    try{const parsedUrl=new URL(url);if(parsedUrl.protocol!=='https:'||parsedUrl.username||parsedUrl.password)return null;}catch{return null;}
+    if(!property_photos.includes(url))property_photos.push(url);
+  }
+  const office_notes=clean(r.officeNotes,3000)||null;
   if(r.availabilityVerified!==undefined&&typeof r.availabilityVerified!=='boolean')return null;
   // A selected availability value is not proof by itself. Require an explicit owner attestation.
   if(availability!=='unknown'&&r.availabilityVerified!==true)return null;
   if(r.isActive!==undefined&&typeof r.isActive!=='boolean')return null;
   return {title,property_type:clean(r.propertyType,80)||null,purpose,price,currency,area,bedrooms,bathrooms,
-    location_label:clean(r.locationLabel,180)||null,verified_features:features,availability,
+    location_label:clean(r.locationLabel,180)||null,verified_features:features,availability,property_photos,office_notes,
     facts_last_verified_at:r.availabilityVerified===true?new Date().toISOString():null,is_active:typeof r.isActive==='boolean'?r.isActive:true,updated_at:new Date().toISOString()};
 }
 async function body(req:Request):Promise<{ok:true;value:unknown}|{ok:false;status:number;error:string}>{
