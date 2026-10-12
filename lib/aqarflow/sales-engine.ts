@@ -380,7 +380,7 @@ export function buildPersonalizedSalesPrompt(input: {
       preferred_tone: profile.preferredTone || "warm",
       timeline: cleanText(profile.timeline, 80) || null,
     },
-    verified_properties: properties.map((property) => ({...property, office_notes: property.officeNotes, officeNotes: undefined})),
+    verified_properties: properties.map(({officeNotes, ...property}) => ({...property, office_notes: officeNotes})),
     verified_fact_tokens: buildVerifiedFactTokens(properties),
   });
 }
