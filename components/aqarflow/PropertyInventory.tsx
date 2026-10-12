@@ -4,9 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 type Property = {
   id:string;title:string;property_type:string|null;purpose:string|null;price:number|null;currency:string|null;
   area:number|null;bedrooms:number|null;bathrooms:number|null;location_label:string|null;
-  verified_features:string[];availability:'available'|'unavailable'|'unknown';facts_last_verified_at:string|null;is_active:boolean;
+  verified_features:string[];availability:'available'|'unavailable'|'unknown';facts_last_verified_at:string|null;property_photos:string[];office_notes:string|null;is_active:boolean;
 };
-const initial={title:'',propertyType:'',purpose:'sale',price:'',currency:'USD',area:'',bedrooms:'',bathrooms:'',locationLabel:'',features:'',availability:'unknown',availabilityVerified:false,isActive:true};
+const initial={title:'',propertyType:'',purpose:'sale',price:'',currency:'USD',area:'',bedrooms:'',bathrooms:'',locationLabel:'',features:'',propertyPhotos:'',officeNotes:'',availability:'unknown',availabilityVerified:false,isActive:true};
 export default function PropertyInventory({canManageInitial}:{canManageInitial:boolean}) {
   const [properties,setProperties]=useState<Property[]>([]);
   const [canManage,setCanManage]=useState(canManageInitial);
@@ -28,7 +28,7 @@ export default function PropertyInventory({canManageInitial}:{canManageInitial:b
     setEditingId(p.id);
     setForm({title:p.title,propertyType:p.property_type||'',purpose:p.purpose||'unknown',price:p.price===null?'':String(p.price),
       currency:p.currency||'USD',area:p.area===null?'':String(p.area),bedrooms:p.bedrooms===null?'':String(p.bedrooms),
-      bathrooms:p.bathrooms===null?'':String(p.bathrooms),locationLabel:p.location_label||'',features:(p.verified_features||[]).join(','),
+      bathrooms:p.bathrooms===null?'':String(p.bathrooms),locationLabel:p.location_label||'',features:(p.verified_features||[]).join(','),propertyPhotos:(p.property_photos||[]).join('\n'),officeNotes:p.office_notes||'',
       availability:p.availability,availabilityVerified:p.availability!=='unknown'&&fresh,isActive:p.is_active});
     setError('');
     if(typeof window!=='undefined')window.scrollTo({top:0,behavior:'smooth'});
@@ -37,7 +37,7 @@ export default function PropertyInventory({canManageInitial}:{canManageInitial:b
     e.preventDefault();setBusy(true);setError('');
     const payload={...(editingId?{id:editingId}:{}),title:form.title,propertyType:form.propertyType,purpose:form.purpose,price:form.price===''?null:Number(form.price),currency:form.currency,
       area:form.area===''?null:Number(form.area),bedrooms:form.bedrooms===''?null:Number(form.bedrooms),bathrooms:form.bathrooms===''?null:Number(form.bathrooms),
-      locationLabel:form.locationLabel,verifiedFeatures:form.features.split(',').map(x=>x.trim()).filter(Boolean),availability:form.availability,availabilityVerified:form.availabilityVerified,isActive:form.isActive};
+      locationLabel:form.locationLabel,verifiedFeatures:form.features.split(',').map(x=>x.trim()).filter(Boolean),propertyPhotos:form.propertyPhotos.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),officeNotes:form.officeNotes,availability:form.availability,availabilityVerified:form.availabilityVerified,isActive:form.isActive};
     try{const r=await fetch('/api/aqarflow/properties',{method:editingId?'PATCH':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر الحفظ.');cancelEdit();await refresh();}
     catch(e){setError(e instanceof Error?e.message:'تعذر حفظ العقار.');}finally{setBusy(false);}
   }
@@ -58,6 +58,14 @@ export default function PropertyInventory({canManageInitial}:{canManageInitial:b
         <label className="text-sm font-bold">الحمامات<input type="number" min="0" max="100" value={form.bathrooms} onChange={e=>set('bathrooms',e.target.value)} className="mt-1 w-full rounded-xl border p-3 font-normal"/></label>
         <label className="text-sm font-bold">الموقع<input maxLength={180} value={form.locationLabel} onChange={e=>set('locationLabel',e.target.value)} className="mt-1 w-full rounded-xl border p-3 font-normal" placeholder="المدينة أو الحي"/></label>
         <label className="text-sm font-bold sm:col-span-2">المزايا المؤكدة، مفصولة بفواصل<input maxLength={1000} value={form.features} onChange={e=>set('features',e.target.value)} className="mt-1 w-full rounded-xl border p-3 font-normal" placeholder="موقف سيارة، شرفة، مصعد…"/></label>
+        <label className="text-sm font-bold sm:col-span-2">صور العقار — رابط HTTPS لكل صورة في سطر مستقل
+          <textarea maxLength={12000} rows={3} value={form.propertyPhotos} onChange={e=>set('propertyPhotos',e.target.value)} className="mt-1 w-full rounded-xl border p-3 font-normal" placeholder="https://.../living-room.jpg&#10;https://.../bedroom.jpg"/>
+          <span className="mt-1 block text-xs font-normal text-slate-500">حتى 12 صورة. هذه النسخة تحفظ روابط الصور الآمنة؛ رفع الملفات مباشرة إلى مساحة تخزين يحتاج إعداد حاوية التخزين وسياساتها.</span>
+        </label>
+        <label className="text-sm font-bold sm:col-span-2">ملاحظات خاصة بالمكتب — لا تظهر للعميل حرفيًا
+          <textarea maxLength={3000} rows={4} value={form.officeNotes} onChange={e=>set('officeNotes',e.target.value)} className="mt-1 w-full rounded-xl border p-3 font-normal" placeholder="مثال: التأمين 150 دولار، العمولة نصف إيجار شهر، توجد رسوم تنظيف 20 دولار. يمكن طلب تفاوض حتى 5% لكن لا يُوعد العميل قبل موافقة المسؤول. اكتب أي تفاصيل إضافية تريد للمساعد الاستناد إليها."/>
+          <span className="mt-1 block text-xs font-normal text-slate-500">أضف هنا الرسوم الإضافية، التأمين، العمولة، شروط الدفع، تفاصيل غير ظاهرة في الإعلان، وما يمكن عرضه للتفاوض. سيستخدمها المساعد عند سؤال العميل عنها، ولن يخترع موافقات أو خصومات.</span>
+        </label>
         <label className="text-sm font-bold">التوفر<select value={form.availability} onChange={e=>set('availability',e.target.value)} className="mt-1 w-full rounded-xl border bg-white p-3 font-normal"><option value="unknown">غير مؤكد</option><option value="available">متاح</option><option value="unavailable">غير متاح</option></select></label>
         <label className="flex items-center gap-2 self-end py-3 text-sm font-bold"><input type="checkbox" checked={form.availabilityVerified} onChange={e=>set('availabilityVerified',e.target.checked)}/> أؤكد أن حالة التوفر أعلاه تم التحقق منها الآن</label>
         <label className="flex items-center gap-2 self-end py-3 text-sm font-bold"><input type="checkbox" checked={form.isActive} onChange={e=>set('isActive',e.target.checked)}/> عقار نشط في نتائج البحث</label>
@@ -66,7 +74,7 @@ export default function PropertyInventory({canManageInitial}:{canManageInitial:b
     </form>}
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="border-b p-4"><h2 className="font-black">العقارات المسجلة ({properties.length})</h2><p className="mt-1 text-sm text-slate-500">تُعرض الأسعار والتوفر من قاعدة البيانات، ولا يخترعها المساعد.</p></div>
-      {properties.length===0?<p className="p-8 text-center text-sm text-slate-500">لا توجد عقارات مسجلة حتى الآن.</p>:<div className="divide-y">{properties.map(p=><article key={p.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-bold">{p.title}</h3><p className="mt-1 text-sm text-slate-500">{p.location_label||'الموقع غير محدد'} · {p.purpose==='sale'?'للبيع':p.purpose==='rent'?'للإيجار':'استثمار/غير محدد'}</p><p className="mt-1 text-sm">{p.price===null?'السعر غير مسجل':new Intl.NumberFormat('ar',{maximumFractionDigits:2}).format(Number(p.price))+' '+p.currency} · {p.bedrooms??'—'} غرف · {p.area??'—'} م²</p><p className="mt-1 text-xs text-slate-500">التوفر: {p.availability==='available'?'متاح':p.availability==='unavailable'?'غير متاح':'غير مؤكد'} · {p.is_active?'نشط':'غير نشط'}</p></div>{canManage&&<div className="flex gap-2 self-start"><button onClick={()=>beginEdit(p)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold text-slate-700">تعديل</button><button onClick={()=>remove(p.id)} className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700">حذف</button></div>}</article>)}</div>}
+      {properties.length===0?<p className="p-8 text-center text-sm text-slate-500">لا توجد عقارات مسجلة حتى الآن.</p>:<div className="divide-y">{properties.map(p=><article key={p.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-bold">{p.title}</h3>{(p.property_photos||[]).length>0&&<div className="mt-2 flex gap-2 overflow-x-auto">{p.property_photos.slice(0,4).map((url,i)=><a key={url+i} href={url} target="_blank" rel="noreferrer" className="shrink-0"><img src={url} alt={p.title+' — صورة '+(i+1)} loading="lazy" className="h-20 w-28 rounded-lg border object-cover"/></a>)}</div>}{p.office_notes&&<p className="mt-1 text-xs text-slate-500">توجد ملاحظات داخلية للمساعد</p>}<p className="mt-1 text-sm text-slate-500">{p.location_label||'الموقع غير محدد'} · {p.purpose==='sale'?'للبيع':p.purpose==='rent'?'للإيجار':'استثمار/غير محدد'}</p><p className="mt-1 text-sm">{p.price===null?'السعر غير مسجل':new Intl.NumberFormat('ar',{maximumFractionDigits:2}).format(Number(p.price))+' '+p.currency} · {p.bedrooms??'—'} غرف · {p.area??'—'} م²</p><p className="mt-1 text-xs text-slate-500">التوفر: {p.availability==='available'?'متاح':p.availability==='unavailable'?'غير متاح':'غير مؤكد'} · {p.is_active?'نشط':'غير نشط'}</p></div>{canManage&&<div className="flex gap-2 self-start"><button onClick={()=>beginEdit(p)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold text-slate-700">تعديل</button><button onClick={()=>remove(p.id)} className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700">حذف</button></div>}</article>)}</div>}
     </section>
   </div>;
 }
