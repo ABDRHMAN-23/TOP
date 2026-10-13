@@ -162,7 +162,7 @@ test('real audio capture is unavailable unless consent and a valid patient are p
   assert.match(recordingStartRoute, /consent_confirmed: z\.literal\(true\)/);
 });
 
-test('mobile navigation has an explicit trigger and dismissible backdrop', () => {
+test('mobile navigation has an explicit trigger and dismissible backdrop', async () => {
   const css = await readFile(new URL('../app/globals.css', import.meta.url), 'utf8');
   assert.match(app, /className="mobile-menu-trigger icon-button"/);
   assert.match(app, /className="sidebar-backdrop"/);
@@ -170,7 +170,7 @@ test('mobile navigation has an explicit trigger and dismissible backdrop', () =>
   assert.match(css, /\.sidebar-backdrop\{display:block;position:fixed/);
 });
 
-test('appointment timeline uses a responsive grid to keep time, patient and status apart', () => {
+test('appointment timeline uses a responsive grid to keep time, patient and status apart', async () => {
   const css = await readFile(new URL('../app/globals.css', import.meta.url), 'utf8');
   assert.match(css, /\.timeline-item\{[\s\S]*?grid-template-areas:"time track avatar info status"/);
   assert.match(css, /grid-template-areas:"time track avatar info" "\. track \. status"/);
