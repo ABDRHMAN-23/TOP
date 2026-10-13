@@ -24,6 +24,9 @@ jobs:
           set -euo pipefail
           mkdir -p "${RUNNER_TEMP}/sinan"
           : > "${RUNNER_TEMP}/archive.b64"
+          for f in sinan_bundle/part01.txt sinan_bundle/part02.txt sinan_bundle/part03.txt sinan_bundle/part04.txt sinan_bundle/part05.txt sinan_bundle/part06.txt; do
+            cat "$f" >> "${RUNNER_TEMP}/archive.b64"
+          done
           blobs=(
             fb5442ce7e7d409c73956f33e3d11169e6b9d9e6
             b17d00c06909bb598c41ea6a0be958abc58bc8d2
