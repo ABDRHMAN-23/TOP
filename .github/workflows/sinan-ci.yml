@@ -1,0 +1,42 @@
+name: Sinan CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run safety and invariant tests
+        run: npm test
+      - name: Validate runtime configuration
+        run: npm run preflight
+      - name: Type-check
+        run: npm run typecheck
+      - name: Production build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          NEXT_PUBLIC_DEMO_MODE: "true"
+      - name: Commit the generated npm lockfile
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f package-lock.json ]; then
+            git add package-lock.json
+            if ! git diff --cached --quiet; then
+              git -c user.name='github-actions[bot]' \
+                  -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+                  commit -m "Add npm lockfile for reproducible installs"
+              git push origin HEAD:main
+            fi
+          fi
