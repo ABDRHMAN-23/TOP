@@ -31,6 +31,26 @@ function getInitials(fullName: string | null | undefined): string {
   return first + (Array.from(parts[parts.length - 1])[0] || '');
 }
 
+function maskPhoneForDisplay(phone: string | null | undefined): string {
+  const raw = String(phone || '').trim();
+  if (!raw || raw === '—') return '—';
+  const digits = Array.from(raw).filter(character => /[0-9٠-٩۰-۹]/u.test(character));
+  if (digits.length === 0) return '—';
+  let countryCode = '';
+  let localDigits = digits;
+  if (raw.startsWith('+967') || raw.startsWith('٩٦٧') || raw.startsWith('967')) {
+    countryCode = '+967';
+    localDigits = digits.slice(3);
+  } else if (raw.startsWith('00967') || raw.startsWith('٠٠٩٦٧')) {
+    countryCode = '+967';
+    localDigits = digits.slice(5);
+  }
+  if (localDigits.length === 0) localDigits = digits;
+  const leading = localDigits.slice(0, Math.min(3, Math.max(1, localDigits.length - 2))).join('');
+  const ending = localDigits.slice(-2).join('');
+  return `${countryCode ? countryCode + ' ' : ''}${leading} ••• •• ${ending}`;
+}
+
 type Patient = typeof samplePatients[number] & { displayId?: string };
 const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE !== 'false';
 function dateInputForAden(value = new Date()) {
@@ -110,7 +130,7 @@ export default function HomePage() {
     const patientBody = await patientResponse.json().catch(() => ({}));
     if (!patientResponse.ok) throw new Error(patientBody.error || 'تعذر تحميل بيانات العيادة.');
     const rows = Array.isArray(patientBody.patients) ? patientBody.patients : [];
-    const mapped: Patient[] = rows.map((p: any, i: number) => ({ id: p.id, displayId: p.patient_number || String(p.id).slice(0, 8), name: p.full_name, age: p.date_of_birth ? `${Math.max(0,new Date().getFullYear() - new Date(p.date_of_birth).getFullYear())} سنة` : 'العمر غير مسجل', phone: p.phone || '—', visit: 'راجع سجل الزيارات', reason: p.chief_complaint || 'لم تسجل الشكوى بعد', state: p.record_status === 'active' ? 'ملف نشط' : 'ملف مؤرشف', initials: getInitials(p.full_name || 'م'), color: ['mint','blue','peach','lilac'][i%4] }));
+    const mapped: Patient[] = rows.map((p: any, i: number) => ({ id: p.id, displayId: p.patient_number || String(p.id).slice(0, 8), name: p.full_name, age: p.date_of_birth ? `${Math.max(0,new Date().getFullYear() - new Date(p.date_of_birth).getFullYear())} سنة` : 'العمر غير مسجل', phone: maskPhoneForDisplay(p.phone), visit: 'راجع سجل الزيارات', reason: p.chief_complaint || 'لم تسجل الشكوى بعد', state: p.record_status === 'active' ? 'ملف نشط' : 'ملف مؤرشف', initials: getInitials(p.full_name || 'م'), color: ['mint','blue','peach','lilac'][i%4] }));
     setPatients(mapped); setSelectedPatient(current => current && mapped.some(p=>p.id===current.id) ? mapped.find(p=>p.id===current.id) || null : mapped[0] || null); setLoadError('');
     const [appointmentsResult, settingsResult, reportsResult] = await Promise.allSettled([
       fetch('/api/appointments', { cache: 'no-store' }).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'appointments unavailable');return b;}),
@@ -172,7 +192,7 @@ export default function HomePage() {
       const next: Patient = { id: `SN-${1050 + patients.length}`, displayId: `SN-${1050 + patients.length}`, name: name.trim(), age: 'غير مسجل', phone: '—', visit: 'لم يحدد موعد', reason: complaint.trim() || 'لم تسجل الشكوى بعد', state: 'مسودة', initials: getInitials(name.trim()), color: 'mint' };
       setPatients([next, ...patients]); setSelectedPatient(next); setName(''); setComplaint(''); setShowNewPatient(false); setActive('patients'); notify('أُضيف المريض إلى بيانات العرض المحلية فقط.'); return;
     }
-    try { const response = await fetch('/api/patients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ full_name: name.trim(), chief_complaint: complaint.trim() || null }) }); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || 'تعذر إنشاء ملف المريض.'); const p = body.patient; const next: Patient = { id: p.id, displayId: p.patient_number || String(p.id).slice(0,8), name: p.full_name, age: 'العمر غير مسجل', phone: p.phone || '—', visit: 'لا توجد زيارة مسجلة', reason: p.chief_complaint || 'لم تسجل الشكوى بعد', state: 'مسودة', initials: getInitials(p.full_name || 'م'), color: 'mint' }; setPatients([next,...patients]); setSelectedPatient(next); setName(''); setComplaint(''); setShowNewPatient(false); setActive('patients'); notify('تم إنشاء ملف المريض في قاعدة البيانات.'); } catch (error) { notify(error instanceof Error ? error.message : 'تعذر إنشاء ملف المريض.'); }
+    try { const response = await fetch('/api/patients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ full_name: name.trim(), chief_complaint: complaint.trim() || null }) }); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || 'تعذر إنشاء ملف المريض.'); const p = body.patient; const next: Patient = { id: p.id, displayId: p.patient_number || String(p.id).slice(0,8), name: p.full_name, age: 'العمر غير مسجل', phone: maskPhoneForDisplay(p.phone), visit: 'لا توجد زيارة مسجلة', reason: p.chief_complaint || 'لم تسجل الشكوى بعد', state: 'مسودة', initials: getInitials(p.full_name || 'م'), color: 'mint' }; setPatients([next,...patients]); setSelectedPatient(next); setName(''); setComplaint(''); setShowNewPatient(false); setActive('patients'); notify('تم إنشاء ملف المريض في قاعدة البيانات.'); } catch (error) { notify(error instanceof Error ? error.message : 'تعذر إنشاء ملف المريض.'); }
   }
 
   async function createManualVisit() {
