@@ -170,3 +170,98 @@ svg{flex-shrink:0}
   .toast,.toast-message{left:12px;right:12px;bottom:88px;max-width:none}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+
+/* UX fixes: drawer, collision-free appointment rows, and persistent settings save */
+.mobile-menu-trigger{display:none}
+.sidebar-backdrop{display:none}
+.timeline-list{display:flex;flex-direction:column;min-width:0}
+.timeline-item{
+  display:grid;
+  grid-template-areas:"time track avatar info status";
+  grid-template-columns:minmax(48px,58px) 12px 34px minmax(0,1fr) max-content;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+  padding:13px 0;
+  border-bottom:1px solid #e8eef1;
+}
+.timeline-item:last-child{border-bottom:0}
+.timeline-time{grid-area:time;display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;font-variant-numeric:tabular-nums}
+.timeline-time strong{font-size:12px;line-height:1.4;white-space:nowrap;color:#294653}
+.timeline-time span{font-size:10px;line-height:1.4;color:#8498a2;white-space:nowrap}
+.timeline-track{grid-area:track;align-self:stretch;position:relative;display:flex;align-items:center;justify-content:center;min-height:42px;width:12px}
+.timeline-track:before{content:"";position:absolute;top:-14px;bottom:-14px;right:5px;width:1px;background:#e0e9ed}
+.timeline-item:first-child .timeline-track:before{top:50%}
+.timeline-item:last-child .timeline-track:before{bottom:50%}
+.timeline-track i{position:relative;display:block;flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:#bdcfd7;border:2px solid white;box-shadow:0 0 0 1px #c5d5dc}
+.timeline-track i.track-active{background:#2db99b;box-shadow:0 0 0 3px #daf4ec}
+.timeline-item>.avatar{grid-area:avatar;align-self:center}
+.appointment-info{grid-area:info;display:flex;flex-direction:column;gap:4px;min-width:0;overflow-wrap:anywhere}
+.appointment-info strong{font-size:11px;line-height:1.5;color:#294653;font-weight:700}
+.appointment-info span{font-size:10px;line-height:1.6;color:#8296a0;overflow-wrap:anywhere}
+.appointment-info small{display:flex;align-items:center;gap:4px;font-size:10px;line-height:1.5;color:#8b9da6}
+.appointment-state{grid-area:status;justify-self:end;align-self:center;max-width:130px;white-space:nowrap;font-size:10px;line-height:1.4;text-align:center;border-radius:999px;padding:6px 9px;background:#edf3f5;color:#5e7885}
+.appointment-state.checked-in{background:#e2f5ed;color:#177a62}
+.appointment-state.waiting{background:#fff3df;color:#a56d24}
+.settings-sticky-save{
+  position:fixed;
+  z-index:35;
+  right:284px;
+  left:24px;
+  bottom:16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:13px 16px;
+  background:rgba(255,255,255,.97);
+  border:1px solid #d7e8e3;
+  border-radius:16px;
+  box-shadow:0 18px 48px rgba(23,53,68,.16);
+  backdrop-filter:blur(10px);
+}
+.settings-sticky-save>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.settings-sticky-save strong{font-size:12px;color:#254753}
+.settings-sticky-save span{font-size:10px;line-height:1.5;color:#7a9099}
+.settings-sticky-save .primary-button{flex:none}
+.empty-reports .primary-button{margin-top:9px}
+.empty-endo-state{display:flex;align-items:flex-start;gap:12px}
+.empty-endo-state>div{display:flex;flex:1;min-width:0;flex-direction:column;align-items:flex-start;gap:8px}
+.empty-endo-state .primary-button{margin-top:6px;white-space:normal;text-align:center}
+.consent-check{display:flex;align-items:flex-start;gap:10px}
+.consent-check input{flex:none;margin-top:4px;width:17px;height:17px;accent-color:#087f78}
+.consent-check label{display:flex;flex:1;min-width:0;flex-direction:column;gap:5px;cursor:pointer}
+.scribe-guardrail{display:flex;align-items:flex-start;gap:8px;line-height:1.8}
+@media(max-width:760px){
+  .mobile-menu-trigger{display:grid;place-items:center;flex:none;width:38px;height:38px}
+  .topbar{justify-content:flex-start}
+  .breadcrumb{flex:1;min-width:0;overflow:hidden}
+  .breadcrumb>span{max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .top-actions{flex:none}
+  .sidebar-backdrop{display:block;position:fixed;inset:0;z-index:55;margin:0;padding:0;border:0;border-radius:0;background:rgba(10,29,39,.52);backdrop-filter:blur(3px)}
+  .sidebar{z-index:60}
+  .timeline-item{
+    grid-template-areas:"time track avatar info" ". track . status";
+    grid-template-columns:43px 8px 30px minmax(0,1fr);
+    grid-template-rows:auto auto;
+    gap:5px 8px;
+    padding:13px 0;
+  }
+  .timeline-time{grid-area:time;align-self:start;padding-top:2px}
+  .timeline-time strong{font-size:11px}
+  .timeline-time span{font-size:9px}
+  .timeline-track{grid-area:track;grid-row:1 / span 2;width:8px;min-height:46px}
+  .timeline-track:before{right:3px;top:-13px;bottom:-13px}
+  .timeline-item>.avatar{grid-area:avatar;align-self:start;width:30px;height:30px}
+  .appointment-info{grid-area:info;align-self:start}
+  .appointment-info strong{font-size:10px}
+  .appointment-info span,.appointment-info small{font-size:9px}
+  .appointment-state{grid-area:status;justify-self:start;align-self:start;margin:1px 0 0;max-width:100%;font-size:9px;padding:4px 8px}
+  .settings-sticky-save{right:12px;left:12px;bottom:12px;gap:10px;padding:11px 12px;border-radius:14px}
+  .settings-sticky-save strong{font-size:11px}
+  .settings-sticky-save span{font-size:9px}
+  .settings-sticky-save .primary-button{padding:0 11px;min-height:39px;font-size:10px}
+  .empty-endo-state{gap:9px}
+  .empty-endo-state .primary-button{width:100%;white-space:normal}
+}
