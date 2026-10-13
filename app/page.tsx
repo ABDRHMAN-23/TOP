@@ -24,7 +24,7 @@ const toothTop = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
 const toothBottom = [48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38];
 
 function getInitials(fullName: string | null | undefined): string {
-  const parts = String(fullName || '').trim().split(/\\s+/u).filter(Boolean);
+  const parts = String(fullName || '').trim().split(/\s+/u).filter(Boolean);
   if (parts.length === 0) return 'م';
   const first = Array.from(parts[0])[0] || 'م';
   if (parts.length === 1) return Array.from(parts[0]).slice(0, 2).join('');
@@ -44,6 +44,7 @@ function arabicDateForAden(value = new Date()) {
 
 export default function HomePage() {
   const [active, setActive] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [todayLabel, setTodayLabel] = useState('');
   const [search, setSearch] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(demoMode ? samplePatients[0] : null);
@@ -66,6 +67,7 @@ export default function HomePage() {
   const [savedReports, setSavedReports] = useState<any[]>([]);
   const [clinicSettings, setClinicSettings] = useState({ clinic_name_ar: '', clinic_name_en: '', address_ar: '', address_en: '', phone: '', email: '', website: '', default_report_language: 'ar', paper_size: 'A4', tooth_notation: 'FDI', recording_policy_version: 'clinic-policy-v1', audio_retention_days: 30 });
   const [settingsBusy, setSettingsBusy] = useState(false);
+  const [settingsDirty, setSettingsDirty] = useState(false);
   const [showToothEntry, setShowToothEntry] = useState(false);
   const [toothStatus, setToothStatus] = useState('');
   const [toothNote, setToothNote] = useState('');
@@ -96,6 +98,11 @@ export default function HomePage() {
   const [historyValue, setHistoryValue] = useState('');
   const [historyState, setHistoryState] = useState('needs_review');
   const [historySaving, setHistorySaving] = useState(false);
+
+  function updateClinicSetting<K extends keyof typeof clinicSettings>(key: K, value: typeof clinicSettings[K]) {
+    setClinicSettings(current => ({ ...current, [key]: value }));
+    setSettingsDirty(true);
+  }
 
   function organizationName(item: any) { const linked = Array.isArray(item?.organizations) ? item.organizations[0] : item?.organizations; return linked?.name || linked?.name_en || 'عيادة'; }
   async function loadLiveCollections() {
@@ -270,19 +277,20 @@ export default function HomePage() {
   }
 
   return <div className="app-shell">
-    <aside className="sidebar">
+    {sidebarOpen && <button className="sidebar-backdrop" type="button" aria-label="إغلاق القائمة الجانبية" onClick={() => setSidebarOpen(false)} />}
+    <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`} aria-label="قائمة التنقل الرئيسية">
       <div className="brand"><div className="brand-symbol"><Stethoscope size={21} strokeWidth={2.1}/></div><div><div className="brand-name">سِنان</div><div className="brand-sub">مساحة العمل السريرية</div></div><span className="brand-dot"/></div>
       <button className="clinic-switch" type="button" onClick={()=>{if(!demoMode&&organizations.length>1)setShowOrganizationPicker(true);else notify(demoMode?'عيادة تجريبية — بيانات العرض فقط.':'مساحة العيادة الحالية.')}}><div className="clinic-mark">{clinicName.slice(0,1)||'س'}</div><div className="clinic-meta"><strong>{clinicName}</strong><span>{demoMode?'مساحة تجريبية':activeOrganizationId?'مساحة متصلة':'تحميل المساحة...'}</span></div><ChevronDown size={15}/></button>
       <div className="nav-label">مساحة العيادة</div>
-      <nav className="main-nav">{nav.map(item => <button key={item.key} className={`nav-item ${active === item.key ? 'active' : ''}`} onClick={() => { setActive(item.key); if (item.key === 'scribe') setShowScribe(true); }}><item.icon size={18}/><span>{item.label}</span>{item.key === 'scribe' && <span className="nav-live"/>}</button>)}</nav>
+      <nav className="main-nav">{nav.map(item => <button key={item.key} className={`nav-item ${active === item.key ? 'active' : ''}`} onClick={() => { setActive(item.key); setSidebarOpen(false); if (item.key === 'scribe') setShowScribe(true); }}><item.icon size={18}/><span>{item.label}</span>{item.key === 'scribe' && <span className="nav-live"/>}</button>)}</nav>
       <div className="nav-label nav-lower">الأدوات السريرية</div>
-      <nav className="main-nav"><button className="nav-item" onClick={() => {setActive('odontogram'); notify('اختر مريضاً لفتح مخطط الأسنان التفاعلي.')}}><HeartPulse size={18}/><span>مخطط الأسنان</span></button><button className="nav-item" onClick={() => {setActive('endodontics'); notify('ملف علاج العصب متاح من سجل المريض.')}}><Activity size={18}/><span>علاج العصب</span></button><button className="nav-item" onClick={() => {setActive('reports'); notify('قائمة التقارير والسجلات.')}}><ClipboardList size={18}/><span>سجل الزيارات</span></button></nav>
-      <div className="sidebar-bottom"><button className="nav-item" onClick={() => setActive('settings')}><Settings size={18}/><span>إعدادات العيادة</span></button><div className="privacy-card"><ShieldCheck size={18}/><div><strong>الخصوصية أولاً</strong><p>يجب اعتماد الصلاحيات والموافقة قبل استخدام بيانات مرضى حقيقية.</p></div></div><div className="profile-row"><div className="avatar doctor-avatar">د</div><div className="profile-text"><strong>{demoMode ? 'د. أحمد محمد' : 'حساب العيادة'}</strong><span>{demoMode ? 'طبيب أسنان — بيانات تجريبية' : 'جلسة موثقة'}</span></div><button className="icon-button subtle" aria-label="إعدادات الحساب" onClick={() => notify('إدارة الحساب تحتاج إلى تفعيل المصادقة.') }><ChevronLeft size={16}/></button></div></div>
+      <nav className="main-nav"><button className="nav-item" onClick={() => {setActive('odontogram');setSidebarOpen(false);if(!selectedPatient)notify('اختر مريضاً لفتح مخطط الأسنان التفاعلي.')}}><HeartPulse size={18}/><span>مخطط الأسنان</span></button><button className="nav-item" onClick={() => {setActive('endodontics');setSidebarOpen(false);if(!selectedPatient)notify('اختر ملف مريض أولاً لفتح علاج العصب.')}}><Activity size={18}/><span>علاج العصب</span></button><button className="nav-item" onClick={() => {setActive('reports');setSidebarOpen(false)}}><ClipboardList size={18}/><span>سجل الزيارات</span></button></nav>
+      <div className="sidebar-bottom"><button className="nav-item" onClick={() => {setActive('settings');setSidebarOpen(false)}}><Settings size={18}/><span>إعدادات العيادة</span></button><div className="privacy-card"><ShieldCheck size={18}/><div><strong>الخصوصية أولاً</strong><p>يجب اعتماد الصلاحيات والموافقة قبل استخدام بيانات مرضى حقيقية.</p></div></div><div className="profile-row"><div className="avatar doctor-avatar">د</div><div className="profile-text"><strong>{demoMode ? 'د. أحمد محمد' : 'حساب العيادة'}</strong><span>{demoMode ? 'طبيب أسنان — بيانات تجريبية' : 'جلسة موثقة'}</span></div><button className="icon-button subtle" aria-label="إعدادات الحساب" onClick={() => notify('إدارة الحساب تحتاج إلى تفعيل المصادقة.') }><ChevronLeft size={16}/></button></div></div>
     </aside>
 
     <main className="main-content">
-      <header className="topbar"><div className="breadcrumb"><span>{clinicName}</span><ChevronLeft size={14}/><strong>{nav.find(n=>n.key===active)?.label || (active==='odontogram'?'مخطط الأسنان':active==='endodontics'?'علاج العصب':'إعدادات العيادة')}</strong></div><div className="top-actions"><span className="status-pill"><span className="status-dot"/> {demoMode ? 'وضع عرض تجريبي' : activeOrganizationId ? 'مساحة العيادة' : 'غير متصل'}</span><a href="/sign-in" className="sign-in-link">تسجيل الدخول</a><button className="icon-button" aria-label="التنبيهات" onClick={()=>notify('لا توجد تنبيهات جديدة في بيانات العرض.')}><Bell size={18}/><i className="notification-dot"/></button><div className="top-divider"/><div className="top-date"><CalendarDays size={16}/><span>{todayLabel || 'تاريخ اليوم'}</span></div></div></header>
-      {demoMode ? <div className="demo-notice"><AlertCircle size={17}/><div><strong>بيانات تجريبية — ليست سجلات مرضى حقيقية.</strong><span>هذا العرض لا يحفظ البيانات بشكل دائم. فعّل Supabase وGemini لاستخدام المسارات الحقيقية بعد اختبارها.</span></div><button aria-label="إغلاق التنبيه" onClick={e=>e.currentTarget.parentElement?.remove()}><X size={16}/></button></div> : loadError ? <div className="demo-notice"><AlertCircle size={17}/><div><strong>تعذر تحميل مساحة العيادة</strong><span>{loadError}</span></div>{loadError.includes('لا توجد عيادة')&&<a className="text-link" href="/onboarding">إعداد العيادة</a>}<a className="text-link" href="/sign-in">تسجيل الدخول</a>{organizations.length>1&&<button className="text-link" onClick={()=>setShowOrganizationPicker(true)}>اختيار العيادة</button>}</div> : null}
+      <header className="topbar"><button className="mobile-menu-trigger icon-button" type="button" aria-label="فتح القائمة" aria-expanded={sidebarOpen} onClick={() => setSidebarOpen(value => !value)}><Menu size={19}/></button><div className="breadcrumb"><span>{clinicName}</span><ChevronLeft size={14}/><strong>{nav.find(n=>n.key===active)?.label || (active==='odontogram'?'مخطط الأسنان':active==='endodontics'?'علاج العصب':'إعدادات العيادة')}</strong></div><div className="top-actions"><span className="status-pill"><span className="status-dot"/> {demoMode ? 'وضع عرض تجريبي' : activeOrganizationId ? 'مساحة العيادة' : 'غير متصل'}</span><a href="/sign-in" className="sign-in-link">تسجيل الدخول</a><button className="icon-button" aria-label="التنبيهات" onClick={()=>notify('لا توجد تنبيهات جديدة في بيانات العرض.')}><Bell size={18}/><i className="notification-dot"/></button><div className="top-divider"/><div className="top-date"><CalendarDays size={16}/><span>{todayLabel || 'تاريخ اليوم'}</span></div></div></header>
+      {demoMode ? <div className="demo-notice"><AlertCircle size={17}/><div><strong>بيانات تجريبية — ليست سجلات مرضى حقيقية.</strong><span>البيانات المعروضة للتجربة فقط، ولا تُحفظ بشكل دائم في هذه النسخة.</span></div><button aria-label="إغلاق التنبيه" onClick={e=>e.currentTarget.parentElement?.remove()}><X size={16}/></button></div> : loadError ? <div className="demo-notice"><AlertCircle size={17}/><div><strong>تعذر تحميل مساحة العيادة</strong><span>{loadError}</span></div>{loadError.includes('لا توجد عيادة')&&<a className="text-link" href="/onboarding">إعداد العيادة</a>}<a className="text-link" href="/sign-in">تسجيل الدخول</a>{organizations.length>1&&<button className="text-link" onClick={()=>setShowOrganizationPicker(true)}>اختيار العيادة</button>}</div> : null}
 
       {active === 'dashboard' && <>
         <section className="welcome-row"><div><div className="eyebrow">{todayLabel || 'تاريخ اليوم'}</div><h1>{demoMode ? 'صباح الخير، دكتور أحمد' : 'مرحباً بعودتك'} <span className="wave">✦</span></h1><p>إليك ملخص العيادة وما يحتاج انتباهك اليوم.</p></div><button className="primary-button" onClick={()=>setShowScribe(true)}><Mic size={17}/> بدء توثيق زيارة <span className="key-hint">⌘ K</span></button></section>
