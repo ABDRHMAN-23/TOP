@@ -37,3 +37,164 @@
 .app-error-footnote svg{flex-shrink:0;color:#52927e;margin-top:2px}
 @keyframes sinan-pulse{0%,100%{opacity:.55;transform:scale(.96)}50%{opacity:1;transform:scale(1.04)}}
 @media(prefers-reduced-motion:reduce){.app-loading-pulse{animation:none}}
+
+
+/* SINAN 2026 — Modern clinical workspace redesign */
+:root{--ink:#172b3a;--ink-2:#30485a;--muted:#7c8d9b;--teal:#087f78;--teal-dark:#06655f;--teal-soft:#e5f7f2;--mint:#c7f2e6;--canvas:#f4f7fb;--white:#fff;--line:#e5ebf2;--amber:#a96816;--amber-soft:#fff4df;--red:#bd4d57;--red-soft:#fff0f1;--shadow:0 12px 36px rgba(28,48,73,.055)}
+html{background:#f4f7fb;scroll-behavior:smooth}body{color:var(--ink);background:#f4f7fb;font-size:14px;letter-spacing:-.08px}.app-shell{background:linear-gradient(145deg,#f7f9fc,#f2f6fa);min-height:100dvh}
+.sidebar{width:264px;min-width:264px;background:#101f2e;color:#dce8ef;border:0;padding:27px 17px 18px;box-shadow:8px 0 35px #0c20300a}.brand{padding:0 8px 30px;gap:12px}.brand-symbol{width:43px;height:43px;border-radius:15px;background:linear-gradient(145deg,#5be0bd,#159e91);color:#102c3a;box-shadow:0 7px 22px #28c9a32e}.brand-name{font-size:22px;font-weight:800;color:#f8fbfd;letter-spacing:-.7px}.brand-subtitle,.brand small{color:#91a8b8}
+.clinic-switch{background:#1a3041;border:1px solid #294252;border-radius:15px;padding:12px;margin-bottom:26px;color:#eff7fb}.clinic-switch:hover{background:#21394b;border-color:#3a5b6c}.clinic-mark{border-radius:12px;background:#2b4b5b;color:#76e5c9}.clinic-meta strong{font-size:12px;color:#f5fafc}.clinic-meta span{color:#9bb1c0}.main-nav{gap:5px}.nav-item{min-height:47px;border-radius:12px;padding:0 13px;color:#a8bdcb;font-size:12px;transition:background .18s ease,color .18s ease,transform .18s ease}.nav-item svg{color:#8ea8b7;stroke-width:1.8}.nav-item:hover{background:#1b3446;color:#fff;transform:translateX(-2px)}.nav-item.active{background:linear-gradient(100deg,#1c554f,#204a50);color:#a3f4d9;box-shadow:inset 0 0 0 1px #3d8278}.nav-item.active svg{color:#81e9cb}.nav-item.active:before{right:auto;left:0;width:3px;height:22px;border-radius:4px;background:#66e4bd}.nav-live{background:#68e6bd;box-shadow:0 0 0 4px #68e6bd20}.nav-section-label{color:#698596;letter-spacing:1px;font-size:9px;font-weight:800}.nav-lower{border-top:1px solid #29404f}.sidebar-bottom{margin-top:auto}.privacy-card{background:#172e3d;border:1px solid #294454;border-radius:14px;padding:13px}.privacy-card svg{color:#6fe1bd}.privacy-card strong{color:#d7f5eb}.privacy-card span{color:#90a9b8;line-height:1.8}.profile-row{border-top:1px solid #29404f;color:#f3f8fb;padding:16px 5px 0}.profile-avatar{background:#294b59;color:#90f0d1;border-radius:12px}.profile-text strong{color:#f5fafc}.profile-text span{color:#91a8b8}
+.main-content{padding:0 36px 28px;min-width:0;max-width:1800px;width:100%;margin-inline:auto}.topbar{height:76px;border-bottom:1px solid #e3eaf1;margin-bottom:25px}.breadcrumb{color:#8a9aa8;font-size:11px}.breadcrumb strong{color:#243d4d;font-weight:700}.top-actions{gap:12px}.top-date{color:#617789;background:#fff;border:1px solid #e4eaf0;border-radius:11px;padding:9px 12px}.top-date svg{color:#0b9284}.top-divider{height:28px;background:#dfe7ee}.icon-button{width:39px;height:39px;border:1px solid #e2e9ef;background:#fff;border-radius:12px;color:#60798a;box-shadow:0 2px 5px #213f5505}.icon-button:hover{background:#f0faf7;border-color:#bde9dd;color:#087f78}.status-pill{background:#e6f8f0;border:1px solid #c8ecdd;color:#16785f;border-radius:999px;padding:7px 11px;font-weight:700}
+.demo-notice{border:1px solid #d9e9f7;background:linear-gradient(100deg,#edf6ff,#f5fbff);border-radius:15px;padding:14px 17px;box-shadow:0 3px 12px #315d8108}.demo-notice>svg{color:#337fa9}.demo-notice strong{color:#2b5c7c;font-size:12px}.demo-notice span{color:#6d8da2;font-size:11px;line-height:1.8}.welcome-row{margin:31px 0 23px;align-items:flex-end}.welcome-row h1,.page-heading h1{font-size:clamp(25px,2.2vw,34px);line-height:1.35;font-weight:800;color:#152d3d;letter-spacing:-.9px;margin:0}.welcome-row p,.page-heading p{font-size:12px;color:#8091a0;line-height:1.9;margin-top:7px}.welcome-eyebrow,.eyebrow{display:inline-flex;align-items:center;gap:7px;color:#078779;font-size:10px;font-weight:800;letter-spacing:.4px;margin-bottom:9px}.welcome-eyebrow:before,.eyebrow:before{content:"";width:18px;height:2px;background:#35c5a2;border-radius:4px}
+.primary-button{background:#087f78;color:white;border:1px solid #087f78;border-radius:12px;padding:11px 17px;min-height:43px;font-size:11px;font-weight:700;box-shadow:0 6px 16px #087f781b;transition:transform .18s ease,box-shadow .18s ease,background .18s ease}.primary-button:hover{background:#06675f;box-shadow:0 10px 22px #087f7828;transform:translateY(-1px)}.secondary-button{background:#fff;color:#365466;border:1px solid #dfe7ee;border-radius:12px;padding:10px 14px;min-height:40px;font-size:11px;font-weight:700;transition:all .18s ease}.secondary-button:hover{border-color:#a7ded2;background:#f4fcf9;color:#087f78}.danger-button{border-radius:11px}
+.stats-grid{gap:15px;margin-bottom:19px}.stat-card{position:relative;overflow:hidden;min-height:151px;background:#fff;border:1px solid #e5ebf1;border-radius:18px;padding:19px 20px;box-shadow:0 4px 16px #1a3a5405;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}.stat-card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:#cfe8e2}.stat-card:after{content:"";position:absolute;left:-30px;bottom:-45px;width:105px;height:105px;border-radius:50%;background:var(--stat-glow,#e4f7f1);opacity:.7}.stat-card:nth-child(2){--stat-glow:#e6efff}.stat-card:nth-child(3){--stat-glow:#fff1df}.stat-card:nth-child(4){--stat-glow:#f2eaff}.stat-icon{width:39px;height:39px;border-radius:13px;background:#e3f7f1;color:#087f78;margin-bottom:13px;position:relative;z-index:1}.stat-card:nth-child(2) .stat-icon{background:#e9f0ff;color:#426fbe}.stat-card:nth-child(3) .stat-icon{background:#fff1df;color:#b57925}.stat-card:nth-child(4) .stat-icon{background:#f2eaff;color:#8664c3}.stat-label{color:#778b9b;font-size:11px;font-weight:600;position:relative;z-index:1}.stat-number{font-size:31px;font-weight:800;letter-spacing:-1px;color:#1a3546;line-height:1.35;margin-top:6px;position:relative;z-index:1}.stat-foot{font-size:10px;color:#8b9ca9;position:relative;z-index:1}.stat-trend{color:#178c70;font-weight:700}
+.dashboard-grid{gap:18px;align-items:start}.panel{background:#fff;border:1px solid #e4ebf1;border-radius:19px;box-shadow:0 4px 17px #1c3c5105;overflow:hidden}.appointments-panel,.review-panel,.patients-panel{padding:21px 22px 0}.panel-heading{margin-bottom:18px;gap:14px}.panel-heading h2{font-size:15px;font-weight:800;color:#203a4a;letter-spacing:-.3px}.panel-heading p{font-size:10px;color:#8b9ba8;line-height:1.7;margin-top:5px}.text-link{color:#07877b;font-size:10px;font-weight:800}.text-link:hover{color:#045e57}
+.timeline-item{grid-template-columns:58px 10px 38px minmax(0,1fr);gap:12px;min-height:79px;border-bottom:1px solid #eef2f6}.timeline-item:last-child{border-bottom:0}.timeline-time strong{font-size:12px;color:#294354;font-weight:800}.timeline-time span{font-size:9px;color:#9aa9b5}.timeline-dot{width:8px;height:8px;background:#48c5a2;box-shadow:0 0 0 4px #e0f7ef;border:0}.timeline-avatar,.patient-avatar{width:38px;height:38px;border-radius:13px;background:#e2f5ee;color:#167c6b;font-weight:800}.timeline-avatar.blue,.patient-avatar.blue{background:#e7efff;color:#4b72b8}.timeline-avatar.peach,.patient-avatar.peach{background:#fff0e1;color:#b87632}.timeline-avatar.lilac,.patient-avatar.lilac{background:#f1eaff;color:#8265b9}.appointment-info strong{font-size:11px;color:#284353;font-weight:800}.appointment-info span{font-size:10px;color:#8799a7}.appointment-state{font-size:9px;border-radius:999px;padding:5px 9px;background:#eaf8f2;color:#18816a;font-weight:700}.review-list{gap:0}.review-item{padding:14px 0;border-bottom:1px solid #edf2f6;gap:12px}.review-item:last-child{border-bottom:0}.review-item>svg{color:#bd8a38}.review-info strong{font-size:11px;color:#2a4353}.review-info span{font-size:9px;color:#8b9ba7;line-height:1.7}.review-count{min-width:26px;height:26px;border-radius:9px;background:#fff4df;color:#ad7424;font-size:11px;font-weight:800}
+.patient-tools{gap:10px}.search-box{border:1px solid #e1e9ef;background:#f9fbfd;border-radius:12px;min-height:40px}.search-box:focus-within{border-color:#83d3c0;box-shadow:0 0 0 3px #dff7ef}.search-box svg{color:#90a1ae}.search-box input{font-size:11px;color:#294657}.patient-table{border-collapse:separate;border-spacing:0;width:100%}.patient-table thead th{background:#f7f9fc;color:#8394a2;font-size:9px;font-weight:800;letter-spacing:.3px;border-block:1px solid #e8edf3;padding:13px 12px}.patient-table thead th:first-child{border-radius:10px 0 0 10px}.patient-table thead th:last-child{border-radius:0 10px 10px 0}.patient-table tbody tr{transition:background .16s ease}.patient-table tbody tr:hover{background:#f6fbfa}.patient-table td{padding:14px 12px;border-bottom:1px solid #edf1f5;font-size:10px;color:#647b8b}.patient-table td strong{font-size:11px;color:#294354}.patient-table .patient-number{color:#8296a4;font:600 10px Inter,sans-serif}.state-badge{border-radius:999px;padding:5px 9px;font-size:9px;font-weight:700}.state-badge.review{background:#fff3dc;color:#a16d1e}.state-badge.approved{background:#e5f7ef;color:#167b63}.state-badge.draft{background:#eaf0ff;color:#4a6fb2}
+.app-footer{border-top:1px solid #e2eaf0;color:#91a0ad;font-size:9px;padding:18px 0 0;margin-top:28px}.app-footer strong{color:#627b8a}.workspace-page{padding-top:10px}.page-heading{margin:0 0 23px}.patient-workspace{gap:17px}.patient-list-panel{background:#fff;border:1px solid #e3eaf1;border-radius:18px;box-shadow:0 4px 16px #18364b05}.patient-list-head{padding:18px;border-bottom:1px solid #edf1f5}.patient-list-head h2{font-size:14px;color:#203a4b}.patient-list-item{padding:12px 14px;border-bottom:1px solid #f0f3f6;transition:background .16s ease}.patient-list-item:hover,.patient-list-item.active{background:#effaf6}.patient-list-item.active{box-shadow:inset -3px 0 #16a58b}.patient-detail{background:#fff;border:1px solid #e3eaf1;border-radius:19px;box-shadow:0 4px 16px #18364b05;padding:23px}.patient-profile-head{padding-bottom:21px;border-bottom:1px solid #edf1f5}.patient-profile-meta h2{font-size:21px;font-weight:800;color:#1e3849}.patient-profile-meta p{font-size:10px;color:#8799a7}.detail-tabs{border-bottom:1px solid #e8eef3;margin-top:20px;gap:23px}.detail-tab{padding:11px 0;color:#8093a1;font-size:11px;font-weight:700;border-bottom:2px solid transparent}.detail-tab.active{color:#087f78;border-color:#12a58c}.detail-fields{gap:12px}.detail-field{background:#f8fafc;border:1px solid #edf1f5;border-radius:13px;padding:14px}.detail-field span{font-size:9px;color:#899aa7}.detail-field strong{font-size:12px;color:#2c4657}
+.settings-grid{gap:17px}.settings-panel,.odontogram-panel,.endo-panel{background:#fff;border:1px solid #e3eaf1;border-radius:18px;box-shadow:0 4px 16px #18364b05;padding:21px}.settings-panel h2,.odontogram-panel h2,.endo-panel h2{font-size:15px;color:#203b4c;font-weight:800}.form-field>label,.form-field>span{font-size:10px;color:#647c8d;font-weight:700}.form-field input,.form-field textarea,.form-field select,.password-field{border:1px solid #e0e8ef;border-radius:11px;background:#fafcfe;color:#294758;min-height:42px;padding:10px 12px}.form-field input:focus,.form-field textarea:focus,.form-field select:focus{border-color:#76cdbb;box-shadow:0 0 0 3px #e2f8f0}
+.dental-chart{background:linear-gradient(180deg,#f8fbfd,#f2f7f9);border:1px solid #e7eef3;border-radius:16px;padding:26px 18px}.tooth{border-radius:9px;transition:transform .16s ease}.tooth:hover{transform:translateY(-3px)}.tooth span{background:#fff;border:1px solid #dbe6ec;border-radius:10px 10px 8px 8px;color:#496475;box-shadow:0 3px 7px #26495d08}.tooth.selected span{background:#d9f7ed;border-color:#2db899;color:#076c60;box-shadow:0 0 0 3px #d9f7ed}.tooth small{color:#8c9eaa}.jaw-divider{color:#8195a4}.jaw-divider:before,.jaw-divider:after{background:#e0e8ee}.tooth-detail{background:#f2faf7;border:1px solid #d9f0e7;border-radius:14px;padding:14px}.legend{color:#7f929f}.legend span:before{border-radius:4px}
+.modal-backdrop{background:rgba(11,27,41,.52);backdrop-filter:blur(9px);padding:22px}.modal{border:1px solid #e2eaf0;border-radius:23px;box-shadow:0 30px 90px #091d2b40;padding:26px;background:#fff}.modal-head h2{font-size:21px;color:#1b3748;font-weight:800;letter-spacing:-.4px}.modal-intro{font-size:11px;color:#8194a2;line-height:1.9}.modal-actions{border-color:#e8eef3}.scribe-modal{width:min(100%,580px)}.scribe-patient{border-bottom-color:#e9eff3}.consent-check{background:#f4faf8;border:1px solid #dcefe8;border-radius:13px;padding:14px}.consent-check strong{color:#315b57}.recording-console{border:1px solid #dcebe7;border-radius:18px;background:linear-gradient(160deg,#f8fcfb,#eff9f6);padding:28px 14px}.microphone-circle{width:64px;height:64px;border-radius:21px;background:#d9f7ed;color:#078777}.record-timer{color:#1c3b4c}.toast{background:#142e3d;border:1px solid #2d4e5d;border-radius:14px;box-shadow:0 22px 55px #18344a25;padding:14px 18px}
+.auth-page{background:radial-gradient(ellipse at 10% 0%,#dff7ef 0%,transparent 38%),radial-gradient(ellipse at 100% 100%,#e6efff 0%,transparent 42%),#f4f7fb}.auth-card{border:1px solid #e2eaf0;border-radius:24px;box-shadow:0 30px 90px #173e570f;padding:34px}.auth-brand strong{font-weight:800;letter-spacing:-.6px;color:#1b3748}.auth-card h1{color:#1b3748;font-weight:800;letter-spacing:-.5px}.auth-submit{border-radius:12px}.app-loading,.app-error{background:#f4f7fb;color:#1d394a}.app-loading-symbol,.app-error-icon{border-radius:18px;background:#dff8ef;color:#087f78}.app-error-card{border:1px solid #e2eaf0;border-radius:22px;box-shadow:var(--shadow);padding:34px}.app-error-card h1{color:#1c3748}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #65cdb5;outline-offset:2px}
+@media(max-width:1200px){.main-content{padding-inline:25px}.sidebar{width:244px;min-width:244px}.stat-card{padding:16px}.stats-grid{gap:12px}}
+@media(max-width:980px){.sidebar{width:78px;min-width:78px;background:#101f2e;padding-inline:9px}.brand-symbol{width:44px;height:44px}.main-content{padding-inline:21px}.nav-item{border-radius:13px}}
+@media(max-width:700px){body{font-size:13px}.app-shell{background:#f4f7fb}.sidebar{background:#101f2e;box-shadow:0 -8px 28px #10263822;border-top:1px solid #2b4351;height:69px;padding:8px 10px calc(7px + env(safe-area-inset-bottom))}.nav-item{height:49px;min-height:49px;width:55px;border-radius:12px;color:#a7bdc9}.nav-item span{font-size:8px;color:inherit}.nav-item.active{background:#1e504d;color:#a1f4d8}.nav-item.active:before{top:0;right:calc(50% - 12px);left:auto;width:24px;height:2px;background:#67e4bd}.main-content{padding:0 14px calc(94px + env(safe-area-inset-bottom))}.topbar{height:62px;margin-bottom:17px}.welcome-row{margin:24px 0 19px;gap:13px}.welcome-row h1,.page-heading h1{font-size:25px}.welcome-row p,.page-heading p{font-size:11px}.welcome-row .primary-button{width:100%;justify-content:center}.stats-grid{gap:10px}.stat-card{min-height:139px;padding:13px;border-radius:16px}.stat-icon{width:34px;height:34px;border-radius:11px;margin-bottom:10px}.stat-label{font-size:10px}.stat-number{font-size:27px}.stat-foot{font-size:9px}.panel{border-radius:17px}.appointments-panel,.review-panel,.patients-panel{padding:16px 13px 0}.panel-heading h2{font-size:14px}.panel-heading p{font-size:9px}.timeline-item{grid-template-columns:44px 8px 31px minmax(0,1fr);gap:7px;min-height:72px}.timeline-avatar{width:31px;height:31px;border-radius:11px}.appointment-info strong{font-size:10px}.appointment-info span{font-size:9px}.review-item{padding:13px 0}.patient-tools{gap:8px}.search-box{min-height:42px}.patient-table{min-width:620px}.workspace-page{padding-top:12px}.page-heading{gap:12px}.patient-workspace{gap:12px}.patient-list-panel,.patient-detail{border-radius:16px}.patient-detail{padding:15px}.patient-profile-meta h2{font-size:17px}.settings-panel,.odontogram-panel,.endo-panel{border-radius:16px;padding:15px}.dental-chart{padding:17px 6px;border-radius:13px}.modal-backdrop{padding:10px}.modal{padding:19px;border-radius:20px}.auth-card{padding:25px;border-radius:21px}.toast{bottom:calc(79px + env(safe-area-inset-bottom));left:12px;right:12px}.app-footer{margin-top:22px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+
+/* SINAN DESIGN CONSISTENCY PATCH — align remaining legacy components */
+:root{
+  --ink:#172b3a;--ink-2:#30485a;--muted:#7c8d9b;--teal:#087f78;--teal-dark:#06655f;
+  --teal-soft:#e5f7f2;--mint:#c7f2e6;--canvas:#f4f7fb;--white:#fff;--line:#e5ebf2;
+  --amber:#a96816;--amber-soft:#fff4df;--red:#bd4d57;--red-soft:#fff0f1;
+  --shadow:0 12px 36px rgba(28,48,73,.055)
+}
+html,body{background:#f4f7fb;color:#172b3a}
+.app-shell{background:#f4f7fb}
+.sidebar{background:#101f2e!important;color:#dce8ef;border:0}
+.brand-sub,.brand small{color:#91a8b8}
+.clinic-switch{background:#1a3041;border-color:#294252;color:#eff7fb}
+.clinic-switch>svg{color:#9bb1c0}
+.nav-label,.nav-section-label{color:#7892a3}
+.nav-item{color:#a8bdcb}
+.nav-item svg{color:#8ea8b7}
+.nav-item:hover{background:#1b3446;color:#fff}
+.nav-item.active{background:#1c514d;color:#a3f4d9;box-shadow:inset 0 0 0 1px #3d8278}
+.nav-item.active svg{color:#81e9cb}
+.privacy-card{background:#172e3d;border-color:#294454}
+.privacy-card p,.privacy-card span{color:#90a9b8}
+.profile-row{border-color:#29404f;color:#f3f8fb}
+.profile-avatar{background:#294b59;color:#90f0d1}
+.main-content{background:transparent}
+.topbar{border-bottom-color:#e3eaf1}
+.breadcrumb,.top-actions{color:#718596}
+.breadcrumb strong{color:#243d4d}
+.avatar{border-radius:13px;background:#e3f7f1;color:#087f78}
+.avatar.mint{background:#e3f7f1;color:#087f78}
+.avatar.blue{background:#e9f0ff;color:#426fbe}
+.avatar.peach{background:#fff1df;color:#b57925}
+.avatar.lilac{background:#f2eaff;color:#8664c3}
+.avatar.doctor-avatar{background:#087f78;color:#fff}
+.icon-button.subtle{background:transparent;border-color:transparent;box-shadow:none}
+.eyebrow{color:#078779}
+.wave{color:#b57925}
+.primary-button,.secondary-button,.danger-button{border-radius:12px;min-height:41px}
+.primary-button{background:#087f78;border-color:#087f78;color:#fff}
+.primary-button:hover{background:#06675f}
+.secondary-button{background:#fff;color:#365466;border:1px solid #dfe7ee}
+.danger-button{background:#fff0f1;color:#bd4d57;border-color:#f0d2d7}
+.stat-icon.teal{background:#e3f7f1;color:#087f78}
+.stat-icon.blue{background:#e9f0ff;color:#426fbe}
+.stat-icon.amber{background:#fff1df;color:#b57925}
+.stat-icon.mint{background:#e3f7f1;color:#087f78}
+.alert-number{color:#a96816}
+.tiny-alert{background:#d49b4d}
+.appointments-panel,.review-panel,.patients-panel{padding:21px 22px 0}
+.panel-heading h2,.settings-panel h2{color:#203a4a}
+.timeline-track:before{background:#e7edf3}
+.timeline-track i{background:#c5d4df;border-color:#fff;box-shadow:0 0 0 1px #c5d4df}
+.timeline-track i.track-active{background:#48c5a2;box-shadow:0 0 0 3px #d9f6ed}
+.appointment-info small{color:#8b9ba8}
+.appointment-state.checked-in{background:#e5f7ef;color:#167b63}
+.appointment-state.waiting{background:#fff4df;color:#a96816}
+.full-link{border-top-color:#e8eef3;color:#7b91a0}
+.full-link:hover{color:#087f78}
+.count-badge{background:#fff4df;color:#a96816;border-radius:9px}
+.review-item:hover .review-info strong{color:#087f78}
+.review-info small{color:#a96816}
+.patient-table th,.patient-table thead th{background:#f7f9fc;color:#8394a2;border-color:#e8edf3}
+.patient-table td{border-bottom-color:#edf1f5;color:#647b8b}
+.patient-cell strong{color:#294354}
+.patient-cell span{color:#8799a7}
+.state-pill,.state-badge{border-radius:999px}
+.state-pill.approved{background:#e5f7ef;color:#167b63}
+.state-pill.draft{background:#eaf0ff;color:#4a6fb2}
+.state-pill.review{background:#fff4df;color:#a96816}
+.state-pill.neutral{background:#f0f4f7;color:#718596}
+.row-arrow{color:#8295a4}
+.empty-state{color:#8194a2}
+.footer-sep{color:#c1ccd6}
+.patient-select{border-color:transparent;border-radius:13px;background:#fff}
+.patient-select:hover{background:#f6fbfa}
+.patient-select.selected{background:#effaf6;border-color:#d5eee5;box-shadow:inset -3px 0 #16a58b}
+.patient-select-main span,.patient-select-main small,.patient-id{color:#8799a7}
+.patient-select>svg{color:#90a1ae}
+.detail-section h3{color:#2b4657}
+.detail-field strong.muted-field{color:#a96816}
+.missing-notice{background:#fff7e9;border-color:#f1e0c1;color:#a96816;border-radius:12px}
+.missing-notice strong{color:#865a1c}
+.missing-notice span{color:#98764b}
+.record-line{background:#f8fafc;border:1px solid #edf1f5;border-radius:12px}
+.record-icon{background:#e3f7f1;color:#087f78;border-radius:11px}
+.record-line span{color:#8799a7}
+.native-select,.settings-grid select{border-color:#e0e8ef;border-radius:11px;color:#294758}
+.chart-label,.detail-kicker{color:#8799a7}
+.tooth.picked span,.tooth.selected span{border:2px solid #2db899;background:#d9f7ed;color:#076c60;box-shadow:0 0 0 3px #d9f7ed}
+.tooth.picked small,.tooth.selected small{color:#087f78;font-weight:700}
+.tooth.flagged span{border-color:#dfa856;background:#fff4df}
+.jaw-divider i{background:#e0e8ee}
+.tooth-detail h3{color:#203a4a}
+.tooth-detail p{color:#8799a7}
+.legend-dot.normal{background:#c5d4df}
+.legend-dot.flagged{background:#dfa856}
+.legend-dot.selected{background:#087f78}
+.scribe-launch,.empty-reports{background:#fff;border:1px solid #e3eaf1;border-radius:19px}
+.scribe-orb,.empty-icon{background:#e3f7f1;color:#087f78;box-shadow:none}
+.scribe-launch h2,.empty-reports h2{color:#203a4a}
+.scribe-launch p,.empty-reports p{color:#8194a2}
+.month-switch button{border-color:#e0e8ef;border-radius:10px;color:#718596}
+.settings-grid label,.form-field{color:#647c8d}
+.settings-grid input,.settings-grid select,.form-field input,.form-field textarea,.form-field select{border-color:#e0e8ef;border-radius:11px;background:#fafcfe;color:#294758}
+.settings-grid input::placeholder,.settings-grid select::placeholder,.form-field input::placeholder,.form-field textarea::placeholder{color:#9aa9b5}
+.settings-footnote{color:#718596;background:#f4faf8;border:1px solid #e1f0e9;border-radius:12px}
+.form-field>span{color:#647c8d}
+.modal-warning{background:#fff7e9;color:#98703a;border:1px solid #f1e0c1;border-radius:11px}
+.scribe-patient span{color:#8799a7}
+.consent-check{background:#f4faf8;border-color:#dcefe8}
+.consent-check span{color:#718596}
+.recording-console.recording-on{background:#eff9f5;border-color:#bce3d5}
+.recording-on .microphone-circle{background:#d9f7ed;color:#087f78}
+.record-state-caption{color:#8799a7}
+.scribe-guardrail{color:#8194a2}
+.inline-error{background:#fff0f1;border-color:#f0d2d7;color:#bd4d57}
+.inline-success{background:#e5f7ef;border-color:#ccebdd;color:#167b63}
+.top-actions .status-pill{background:#e5f7ef;border-color:#ccebdd;color:#167b63}
+.auth-page{background:radial-gradient(ellipse at 10% 0%,#e3f7f1 0%,transparent 38%),radial-gradient(ellipse at 100% 100%,#e9f0ff 0%,transparent 42%),#f4f7fb}
+.auth-brand span,.auth-sub,.auth-note{color:#8194a2}
+.auth-eyebrow,.auth-back,.sign-in-link{color:#087f78}
+.password-field{border-color:#e0e8ef;background:#fafcfe;border-radius:11px}
+.password-field button{color:#718596}
+.live-empty{color:#8194a2}
+.live-empty svg{color:#087f78}
+.live-empty strong{color:#294354}
+.app-loading,.app-error{background:#f4f7fb;color:#1d394a}
+.app-loading-brand small,.app-loading-body,.app-error-card>p,.app-error-footnote{color:#8194a2}
+.app-error-reference{background:#f8fafc}
+@media(max-width:980px){.sidebar{background:#101f2e!important}}
+@media(max-width:700px){
+  .sidebar{background:#101f2e!important}
+  .patient-table{min-width:620px}
+  .patient-select{padding:11px 8px}
+  .appointments-panel,.review-panel,.patients-panel{padding:16px 13px 0}
+}
