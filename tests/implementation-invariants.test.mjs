@@ -148,3 +148,47 @@ test('finish race returns the already-created processing job when the active-job
   assert.match(finishRoute, /if \(concurrentJob\)/);
   assert.match(finishRoute, /reused: true/);
 });
+
+
+test('patient initials use the first character of the first and last name tokens', () => {
+  assert.match(app, /function getInitials\(fullName: string \| null \| undefined\): string/);
+  assert.match(app, /const parts = String\(fullName \|\| ''\)\.trim\(\)\.split\(\/\\s\+\/u\)/);
+  assert.match(app, /initials: getInitials\(p\.full_name \|\| 'م'\)/);
+});
+
+test('real audio capture is unavailable unless consent and a valid patient are present', () => {
+  assert.match(app, /disabled=\{!consent \|\| !patient\?\.id \|\| isDemo\}/);
+  assert.match(app, /if\(!consent\)\{setRecordingError\('يجب توثيق الموافقة قبل تشغيل الميكروفون\.'/);
+  assert.match(recordingStartRoute, /consent_confirmed: z\.literal\(true\)/);
+});
+
+test('mobile navigation has an explicit trigger and dismissible backdrop', async () => {
+  const css = await readFile(new URL('../app/globals.css', import.meta.url), 'utf8');
+  assert.match(app, /className="mobile-menu-trigger icon-button"/);
+  assert.match(app, /className="sidebar-backdrop"/);
+  assert.match(app, /aria-label="إغلاق القائمة الجانبية"/);
+  assert.match(css, /\.sidebar-backdrop\{display:block;position:fixed/);
+});
+
+test('appointment timeline uses a responsive grid to keep time, patient and status apart', async () => {
+  const css = await readFile(new URL('../app/globals.css', import.meta.url), 'utf8');
+  assert.match(css, /\.timeline-item\{[\s\S]*?grid-template-areas:"time track avatar info status"/);
+  assert.match(css, /grid-template-areas:"time track avatar info" "\. track \. status"/);
+});
+
+test('clinic settings show an unsaved-change save bar and clear dirty state after success', () => {
+  assert.match(app, /function updateClinicSetting<[\s\S]*?setSettingsDirty\(true\)/);
+  assert.match(app, /className="settings-sticky-save"/);
+  assert.match(app, /setSettingsDirty\(false\); notify\('تم حفظ إعدادات العيادة\.'/);
+});
+
+test('reports and endodontics empty states provide a direct next action', () => {
+  assert.match(app, /فتح السجلات السريرية/);
+  assert.match(app, /إضافة أول ملف علاج عصب لهذا المريض/);
+  assert.match(app, /الوحدة ومصدرها وحالة التحقق/);
+});
+
+test('patient phone values are consistently masked in the UI layer', () => {
+  assert.match(app, /function maskPhoneForDisplay\(phone: string \| null \| undefined\): string/);
+  assert.match(app, /phone: maskPhoneForDisplay\(p\.phone\)/);
+});
