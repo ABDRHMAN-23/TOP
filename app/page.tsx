@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import SinanMark from '@/components/SinanMark';
 import {
   Activity, AlertCircle, Bell, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight,
   ClipboardList, Clock3, FileText, HeartPulse, Mic, Plus, Search, Settings, ShieldCheck,
-  Stethoscope, Users, X, ArrowUpLeft, FilePlus2, Play, Sparkles, CircleCheck, Menu
+  Users, X, ArrowUpLeft, FilePlus2, Play, Sparkles, CircleCheck, Menu
 } from 'lucide-react';
 
 const samplePatients = [
@@ -263,7 +264,7 @@ export default function HomePage() {
 
   return <div className="app-shell">
     <aside className="sidebar">
-      <div className="brand"><div className="brand-symbol"><Stethoscope size={21} strokeWidth={2.1}/></div><div><div className="brand-name">سِنان</div><div className="brand-sub">مساحة العمل السريرية</div></div><span className="brand-dot"/></div>
+      <div className="brand"><div className="brand-symbol"><SinanMark className="sinan-mark" /></div><div><div className="brand-name">سِنان</div><div className="brand-sub">مساحة العمل السريرية</div></div><span className="brand-dot"/></div>
       <button className="clinic-switch" type="button" onClick={()=>{if(!demoMode&&organizations.length>1)setShowOrganizationPicker(true);else notify(demoMode?'عيادة تجريبية — بيانات العرض فقط.':'مساحة العيادة الحالية.')}}><div className="clinic-mark">{clinicName.slice(0,1)||'س'}</div><div className="clinic-meta"><strong>{clinicName}</strong><span>{demoMode?'مساحة تجريبية':activeOrganizationId?'مساحة متصلة':'تحميل المساحة...'}</span></div><ChevronDown size={15}/></button>
       <div className="nav-label">مساحة العيادة</div>
       <nav className="main-nav">{nav.map(item => <button key={item.key} className={`nav-item ${active === item.key ? 'active' : ''}`} onClick={() => { setActive(item.key); if (item.key === 'scribe') setShowScribe(true); }}><item.icon size={18}/><span>{item.label}</span>{item.key === 'scribe' && <span className="nav-live"/>}</button>)}</nav>
@@ -278,6 +279,34 @@ export default function HomePage() {
 
       {active === 'dashboard' && <>
         <section className="welcome-row"><div><div className="eyebrow">{todayLabel || 'تاريخ اليوم'}</div><h1>{demoMode ? 'صباح الخير، دكتور أحمد' : 'مرحباً بعودتك'} <span className="wave">✦</span></h1><p>إليك ملخص العيادة وما يحتاج انتباهك اليوم.</p></div><button className="primary-button" onClick={()=>setShowScribe(true)}><Mic size={17}/> بدء توثيق زيارة <span className="key-hint">⌘ K</span></button></section>
+        <section className="clinical-pathway" aria-label="المسار السريري">
+          <div className="pathway-heading">
+            <div className="pathway-heading-copy">
+              <div className="pathway-kicker">سير العمل السريري <span>·</span> SINAN WORKFLOW</div>
+              <h2>من الاستماع إلى سجلّ موثّق</h2>
+              <p>خطوات واضحة تحفظ مصدر المعلومة وتجعل القرار النهائي بيد الطبيب.</p>
+            </div>
+            <div className="pathway-approval"><span className="pathway-approval-icon"><ShieldCheck size={17}/></span><span><strong>اعتماد سريري مسؤول</strong><small>لا اعتماد تلقائي للمسودات</small></span></div>
+          </div>
+          <div className="pathway-steps">
+            <button className="pathway-step" type="button" onClick={()=>setActive('patients')} aria-label="فتح ملفات المرضى">
+              <span className="pathway-number">01</span><span className="pathway-icon"><Users size={18}/></span>
+              <span className="pathway-copy"><strong>ملف المريض</strong><small>الهوية والتاريخ الصحي</small></span><ChevronLeft size={15} className="pathway-arrow"/>
+            </button>
+            <button className="pathway-step" type="button" onClick={()=>{if(!selectedPatient){setActive('patients');notify('اختر ملف مريض محفوظاً قبل بدء توثيق الزيارة.');return;}setShowScribe(true)}} aria-label="بدء توثيق الزيارة">
+              <span className="pathway-number">02</span><span className="pathway-icon"><Mic size={18}/></span>
+              <span className="pathway-copy"><strong>توثيق الزيارة</strong><small>صوت أو إدخال يدوي</small></span><ChevronLeft size={15} className="pathway-arrow"/>
+            </button>
+            <button className="pathway-step" type="button" onClick={()=>{setActive('patients');setPatientTab('visits');notify('افتح الزيارة المطلوبة لمراجعة المسودة ومطابقتها مع المصدر.')}} aria-label="الانتقال إلى مراجعة الزيارات">
+              <span className="pathway-number">03</span><span className="pathway-icon review"><ClipboardList size={18}/></span>
+              <span className="pathway-copy"><strong>مراجعة المسودة</strong><small>تحقق من كل معلومة</small></span><ChevronLeft size={15} className="pathway-arrow"/>
+            </button>
+            <button className="pathway-step" type="button" onClick={()=>{setActive('patients');setPatientTab('visits');notify('اعتماد السجل لا يتم إلا من طبيب مخوّل بعد مراجعة نسخة الزيارة.')}} aria-label="عرض مسار اعتماد السجل">
+              <span className="pathway-number">04</span><span className="pathway-icon approved"><Check size={18}/></span>
+              <span className="pathway-copy"><strong>اعتماد السجل</strong><small>ثم إنشاء التقرير النهائي</small></span><ChevronLeft size={15} className="pathway-arrow"/>
+            </button>
+          </div>
+        </section>
         {demoMode && <section className="stats-grid"><StatCard icon={<CalendarDays size={19}/>} tone="teal" label="مواعيد اليوم" number="٨" foot="٢ خلال الساعة القادمة"/><StatCard icon={<Users size={19}/>} tone="blue" label="إجمالي المرضى" number="١٢٨" foot="٦ ملفات أُضيفت هذا الأسبوع"/><StatCard icon={<ClipboardList size={19}/>} tone="amber" label="تحتاج مراجعتك" number="٣" foot="مسودات بانتظار الاعتماد" alert/><StatCard icon={<Check size={19}/>} tone="mint" label="سجلات معتمدة" number="١٤" foot="هذا الأسبوع"/></section>}
         {demoMode ? <section className="dashboard-grid"><div className="panel appointments-panel"><div className="panel-heading"><div><h2>مواعيد اليوم</h2><p>المرضى المتوقع حضورهم في العيادة</p></div><button className="text-link" onClick={()=>setActive('appointments')}>عرض الجدول <ArrowUpLeft size={14}/></button></div><div className="timeline-list"><Appointment time="٩:٠٠" period="ص" patient="عمر خالد صالح" type="متابعة علاج العصب" duration="٤٥ دقيقة" status="وصل" color="blue"/><Appointment time="١٠:٣٠" period="ص" patient="سارة محمد علي" type="فحص ألم الضرس" duration="٣٠ دقيقة" status="قيد الانتظار" color="mint" active/><Appointment time="١١:١٥" period="ص" patient="مروان يحيى" type="تنظيف وفحص دوري" duration="٣٠ دقيقة" status="مؤكد" color="peach"/><Appointment time="١٢:٠٠" period="م" patient="هند عبدالله" type="استشارة علاجية" duration="٤٥ دقيقة" status="مؤكد" color="lilac"/></div><button className="full-link" onClick={()=>setActive('appointments')}>فتح كل المواعيد <ChevronLeft size={15}/></button></div>
         <div className="panel review-panel"><div className="panel-heading"><div><h2>بانتظار مراجعتك</h2><p>المسودات التي تحتاج إلى قرار الطبيب</p></div><span className="count-badge">٣</span></div><div className="review-list"><ReviewItem name="سارة محمد علي" detail="شكوى ألم · اليوم ١٠:٤٥" state="٢ نقاط غير مؤكدة" color="mint" onClick={()=>{setSelectedPatient(samplePatients[0]);setShowScribe(true)}}/><ReviewItem name="عمر خالد صالح" detail="متابعة عصب · اليوم ١٠:١٠" state="مراجعة القياسات" color="blue" onClick={()=>{setSelectedPatient(samplePatients[1]);setActive('patients')}}/><ReviewItem name="هند عبدالله" detail="استشارة · اليوم ٨:٤٥" state="مسودة جديدة" color="peach" onClick={()=>{setShowScribe(true)}}/></div><button className="full-link" onClick={()=>{setActive('reports');notify('يمكن فتح تفاصيل كل مسودة من ملف الزيارة.')}}>مراجعة السجلات <ChevronLeft size={15}/></button></div></section> : <section className="dashboard-grid"><div className="panel appointments-panel"><div className="panel-heading"><div><h2>مواعيد العيادة</h2><p>تظهر المواعيد عند توصيل جدول العيادة.</p></div></div><div className="timeline-list">{todayAppointments.map(a=>{const pat=Array.isArray(a.patients)?a.patients[0]:a.patients;return <Appointment key={a.id} time={new Date(a.scheduled_start).toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'})} period="" patient={pat?.full_name||'مريض'} type={a.appointment_type||'زيارة أسنان'} duration={`${Math.max(1,Math.round((Date.parse(a.scheduled_end)-Date.parse(a.scheduled_start))/60000))} دقيقة`} status={appointmentStatus(a.status)} color="mint"/>})}{todayAppointments.length===0&&<div className="live-empty"><CalendarDays size={22}/><strong>لا توجد مواعيد قادمة مسجلة</strong><span>أضف موعداً من شاشة المواعيد. لن نعرض أرقاماً تقديرية على أنها بيانات حقيقية.</span></div>}</div><button className="full-link" onClick={()=>setActive('appointments')}>فتح كل المواعيد <ChevronLeft size={15}/></button></div><div className="panel review-panel"><div className="panel-heading"><div><h2>المسودات السريرية</h2><p>تحتاج المراجعة إلى تحميل قائمة الزيارات.</p></div></div><div className="live-empty"><FileText size={22}/><strong>لم يتم تحميل مسودات للمراجعة</strong><span>تبقى كل مسودة آلية غير معتمدة حتى توقيع الطبيب.</span></div></div></section>}
