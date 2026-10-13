@@ -1,0 +1,150 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const migration = await readFile(new URL('../supabase/migrations/202610120001_initial_clinical_workspace.sql', import.meta.url), 'utf8');
+const app = await readFile(new URL('../app/page.tsx', import.meta.url), 'utf8');
+const finishRoute = await readFile(new URL('../app/api/recordings/[recordingId]/finish/route.ts', import.meta.url), 'utf8');
+const pauseRoute = await readFile(new URL('../app/api/recordings/[recordingId]/pause/route.ts', import.meta.url), 'utf8');
+const resumeRoute = await readFile(new URL('../app/api/recordings/[recordingId]/resume/route.ts', import.meta.url), 'utf8');
+const aiRoute = await readFile(new URL('../app/api/ai/process-recording/route.ts', import.meta.url), 'utf8');
+
+test('every public application table created by the migration enables row-level security', () => {
+  const tables = [...migration.matchAll(/create table if not exists public\.([a-z_]+)/gi)].map(m => m[1]);
+  const rls = new Set([...migration.matchAll(/alter table public\.([a-z_]+) enable row level security/gi)].map(m => m[1]));
+  assert.ok(tables.length >= 20, `expected the clinical schema to cover core entities, got ${tables.length}`);
+  assert.deepEqual(tables.filter(name => !rls.has(name)), []);
+});
+
+test('private audio bucket is configured as non-public and constrains upload content types', () => {
+  assert.match(migration, /values\s*\('clinical-audio-private','clinical-audio-private',false,/i);
+  assert.match(migration, /create policy sinan_audio_insert_clinical on storage\.objects/i);
+  assert.match(migration, /storage\.foldername\(name\)\)\[1\]/i);
+});
+
+test('clinical record cannot be treated as final without a clinician approval transition', () => {
+  assert.match(finishRoute, /job_type: 'transcribe_and_structure'/);
+  assert.match(aiRoute, /clinician_approval_required: true/);
+  assert.match(aiRoute, /status: 'needs_review'/);
+  assert.doesNotMatch(aiRoute, /status:\s*'approved'/);
+});
+
+test('recording UI creates a server session before capture and streams fragments instead of waiting until stop', () => {
+  const serverSessionAt = app.indexOf("fetch('/api/recordings'");
+  const recorderStartAt = app.indexOf('rec.start(5000)');
+  assert.ok(serverSessionAt >= 0 && recorderStartAt > serverSessionAt, 'server session should be created before MediaRecorder starts');
+  assert.match(app, /ondataavailable=/);
+  assert.match(app, /uploadQueueRef\.current/);
+  assert.match(app, /pendingChunksRef\.current/);
+});
+
+test('pause/resume have server-side state transition routes', () => {
+  assert.match(pauseRoute, /transitionRecording\(request, ctx, 'paused'\)/);
+  assert.match(resumeRoute, /transitionRecording\(request, ctx, 'capturing'\)/);
+});
+
+test('finish endpoint reuses an existing active job to reduce duplicate transcription jobs', () => {
+  assert.match(finishRoute, /Idempotency: a repeated finish request returns the existing active job/);
+  assert.match(finishRoute, /reused: true/);
+});
+
+const patientRoute = await readFile(new URL('../app/api/patients/route.ts', import.meta.url), 'utf8');
+const patientDetailRoute = await readFile(new URL('../app/api/patients/[patientId]/route.ts', import.meta.url), 'utf8');
+const appointmentRoute = await readFile(new URL('../app/api/appointments/route.ts', import.meta.url), 'utf8');
+const recordingStartRoute = await readFile(new URL('../app/api/recordings/route.ts', import.meta.url), 'utf8');
+const chunkRoute = await readFile(new URL('../app/api/recordings/[recordingId]/chunks/route.ts', import.meta.url), 'utf8');
+
+test('patient directory for reception is a reduced view without clinical complaint fields', () => {
+  assert.match(migration, /create or replace view public\.patient_directory as[\s\S]*?where public\.is_org_member\(organization_id\)/i);
+  const viewSql = migration.match(/create or replace view public\.patient_directory as([\s\S]*?);/i)?.[1] || '';
+  assert.doesNotMatch(viewSql, /chief_complaint|medical_history|diagnos/i);
+  assert.match(migration, /create policy patients_clinical_select[\s\S]*?has_org_role\(organization_id, array\['owner','clinic_admin','dentist','clinician','assistant'\]\)/i);
+  assert.match(patientRoute, /patient_directory/);
+  assert.match(patientRoute, /canReadClinicalFields/);
+});
+
+test('clinical details and reports reject front-desk roles at the API boundary', () => {
+  assert.match(patientDetailRoute, /تفاصيل التاريخ الصحي والزيارات متاحة للفريق السريري المخوّل فقط/);
+  assert.match(migration, /create policy history_clinical_read[\s\S]*?has_org_role\(organization_id, array\['owner','clinic_admin','dentist','clinician','assistant'\]\)/i);
+  assert.match(migration, /create policy reports_clinical_read[\s\S]*?has_org_role\(organization_id, array\['owner','clinic_admin','dentist','clinician'\]\)/i);
+});
+
+test('recording, consent, encounter and audit entry are created through one transactional database function', () => {
+  const functionBody = migration.match(/create or replace function public\.start_clinical_recording\([\s\S]*?\$\$;/i)?.[0] || '';
+  assert.match(functionBody, /insert into public\.encounters/);
+  assert.match(functionBody, /insert into public\.recording_consents/);
+  assert.match(functionBody, /insert into public\.recording_sessions/);
+  assert.match(functionBody, /insert into public\.audit_events/);
+  assert.match(recordingStartRoute, /rpc\('start_clinical_recording'/);
+  assert.match(migration, /revoke all on function public\.start_clinical_recording\(uuid,uuid,text,text\) from public, anon/i);
+});
+
+test('audio chunks normalize MIME types before storage and reject unsupported types', () => {
+  assert.match(chunkRoute, /split\(';'\)\[0\]/);
+  assert.match(chunkRoute, /allowedMimeTypes/);
+  assert.match(chunkRoute, /contentType: rawMimeType/);
+});
+
+test('receptionist scheduling uses the restricted directory for patient validation and labels', () => {
+  assert.match(appointmentRoute, /from\('patient_directory'\)/);
+  assert.doesNotMatch(appointmentRoute, /select\([^)]*patients\(full_name/i);
+  assert.match(migration, /create policy appointments_staff_insert[\s\S]*?receptionist/i);
+  assert.match(migration, /create policy appointments_admin_delete[\s\S]*?array\['owner','clinic_admin','dentist'\]/i);
+});
+
+test('AI recording processing uses compare-and-set job claiming to reject concurrent workers', () => {
+  assert.match(aiRoute, /Compare-and-set claim/);
+  assert.match(aiRoute, /\.eq\('attempts', Number\(job\.attempts \|\| 0\)\)/);
+  assert.match(aiRoute, /const claimableStatuses = \['queued', 'failed'\]/);
+  assert.match(aiRoute, /claimableStatuses\.push\(job\.status\)/);
+  assert.match(aiRoute, /\.in\('status', claimableStatuses\)/);
+  assert.match(aiRoute, /if \(claimError \|\| !claimedJob\)/);
+  assert.match(aiRoute, /Number\(job\.attempts \|\| 0\) >= 5/);
+});
+
+test('approved notes and historical versions cannot be directly mutated by authenticated clients', () => {
+  assert.match(migration, /revoke all on public\.clinical_notes from anon, authenticated/i);
+  assert.match(migration, /grant select, insert on public\.clinical_notes to authenticated/i);
+  assert.match(migration, /create policy notes_clinical_insert[\s\S]*?status in \('draft','needs_review'\)[\s\S]*?approved_by is null/i);
+  assert.match(migration, /create or replace function public\.approve_clinical_note[\s\S]*?insert into public\.approvals[\s\S]*?insert into public\.audit_events/i);
+  assert.match(migration, /create or replace function public\.revise_clinical_note[\s\S]*?for update[\s\S]*?status='superseded'[\s\S]*?insert into public\.clinical_notes/i);
+});
+
+test('approval and revisions call atomic database functions rather than updating note state in separate requests', async () => {
+  const approvalRoute = await readFile(new URL('../app/api/encounters/[encounterId]/approve/route.ts', import.meta.url), 'utf8');
+  const noteRoute = await readFile(new URL('../app/api/clinical-notes/[noteId]/route.ts', import.meta.url), 'utf8');
+  assert.match(approvalRoute, /rpc\('approve_clinical_note'/);
+  assert.match(noteRoute, /rpc\('revise_clinical_note'/);
+  assert.doesNotMatch(approvalRoute, /from\('clinical_notes'\)\.update/);
+  assert.doesNotMatch(noteRoute, /from\('clinical_notes'\)\.update/);
+});
+
+test('encounter cannot be marked approved unless a final note with approver and timestamp exists', () => {
+  assert.match(migration, /create or replace function public\.guard_encounter_approval[\s\S]*?status = 'approved'[\s\S]*?n\.status = 'approved'[\s\S]*?n\.approved_by is not null[\s\S]*?n\.approved_at is not null/i);
+  assert.match(migration, /create trigger guard_encounter_approval_before_write/i);
+});
+
+
+test('abandoned processing workers can be reclaimed only after the stale-worker threshold and attempts stay bounded', () => {
+  assert.match(aiRoute, /Date\.parse\(job\.started_at \|\| ''\) < Date\.now\(\) - 10 \* 60 \* 1000/);
+  assert.match(aiRoute, /Number\(job\.attempts \|\| 0\) >= 5/);
+  assert.match(aiRoute, /claimableStatuses\.push\(job\.status\)/);
+});
+
+test('same approval/revision retry is idempotent and one successor per note is enforced', () => {
+  assert.match(migration, /clinical_notes_one_successor_idx on public\.clinical_notes\(supersedes_note_id\) where supersedes_note_id is not null/i);
+  assert.match(migration, /v_note\.status = 'approved'[\s\S]*?already_approved/i);
+  assert.match(migration, /v_old\.status = 'superseded'[\s\S]*?supersedes_note_id=v_old\.id[\s\S]*?already_revised/i);
+});
+
+test('private audio objects are linked to the recording creator rather than any clinician in the same tenant', () => {
+  const policies = migration.slice(migration.indexOf('create policy sinan_audio_select_member'));
+  assert.match(policies, /rs\.created_by = auth\.uid\(\)/);
+  assert.match(policies, /rs\.capture_state in \('capturing','paused','uploading'\)/);
+});
+
+test('finish race returns the already-created processing job when the active-job uniqueness constraint wins', () => {
+  assert.match(finishRoute, /If another finish request won the unique-index race/);
+  assert.match(finishRoute, /if \(concurrentJob\)/);
+  assert.match(finishRoute, /reused: true/);
+});

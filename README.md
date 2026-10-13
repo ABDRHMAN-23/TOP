@@ -1,54 +1,40 @@
-# AqarFlow AI
+# سِنان | Sinan Dental Clinical Workspace
 
-AqarFlow AI is a real-estate sales workspace for property owners and real-estate offices. Its product goal is not to be a public listing marketplace; it helps an office maintain its property inventory, manage customer conversations, and prepare context-aware sales replies grounded in the office's own verified information.
+واجهة عمل سريرية عربية أولاً لأطباء الأسنان، مصممة حول سجل المريض والزيارة والاستماع والتفريغ السريري ومسودة الطبيب ومراجعتها واعتمادها، مع مخطط الأسنان وعلاج العصب والتقارير.
 
-## Public website experience
+## ما يحتويه هذا الإصدار
 
-- The homepage explains the sales-intelligence value proposition and includes an interactive, illustrative conversation demo.
-- Demo scenarios use sample content only. They do not contact WhatsApp, query an office inventory, or represent live assistant output.
-- The office sign-in interface currently keeps the existing Supabase email magic-link and configured Google/Apple methods. WhatsApp phone OTP is not implemented by the UI redesign.
-- The authenticated workspace surfaces inventory, the sales assistant, the inbox, CRM, operations, analytics, and WhatsApp connection settings.
+- تطبيق Next.js عربي RTL ومتجاوب مع وضع عرض تجريبي واضح البيانات.
+- تسجيل دخول Supabase Auth وتأسيس مساحة العيادة وتحديد العيادة النشطة.
+- مخطط PostgreSQL متعدد العيادات مع RLS وملفات المرضى والمواعيد والزيارات والموافقات والتفريغ والسجلات السريرية ومخطط الأسنان وحالات علاج العصب وقياسات القنوات والتقارير وسجل التدقيق.
+- مسارات API لحفظ المرضى والمواعيد والإعدادات والتسجيل الصوتي وتخزين المقاطع الخاصة والمعالجة عبر Gemini وإنشاء مسودات ومراجعتها واعتمادها وإنشاء لقطة تقرير.
+- اختبارات سلامة تمنع نموذج اللغة من اعتماد معلوماته بنفسه وتفحص حدود حجم التسجيل وحالات المعلومات المفقودة.
 
-## Product capabilities in this repository
+## الإعداد
 
-- Real-estate inventory CRUD and verified-property data.
-- AI-assisted sales response drafts grounded in the current workspace inventory.
-- CRM/inbox and lead-follow-up workflows.
-- Operations for tasks and viewings.
-- Sales analytics.
-- WhatsApp Cloud API connection, signed webhook ingestion, and controlled/manual outbound messaging workflows.
-
-## Technology
-
-- Next.js App Router, React, and TypeScript
-- Supabase Auth, Postgres, and Storage
-- Gemini API for grounded AI response generation
-- WhatsApp Cloud API integration components
-- Cloudflare OpenNext deployment configuration
-
-## Local development and checks
-
-Install the locked dependencies:
+انظر [دليل البنية والتشغيل](docs/ARCHITECTURE.md) وراجع ملف `.env.example`.
 
 ```bash
-npm ci
-```
-
-Run the application:
-
-```bash
-npm run dev
-```
-
-Production checks:
-
-```bash
+npm install
+cp .env.example .env.local
+npm run preflight
+npm run check
+npm test
 npm run build
-npm run build:cloudflare
-npm run test:aqarflow:sales
-npm run test:aqarflow:runtime
-npm run test:aqarflow:migration
-npm run test:aqarflow:whatsapp-cloud
 ```
 
-The new UI is implemented on a feature branch for review. It is not live in production until the pull request is reviewed/merged and a deployment succeeds. A successful build also does not establish that Meta credentials, live WhatsApp messaging, phone OTP, or automatic replies are configured end-to-end.
+قبل تشغيل البيانات الحقيقية، استخدم مشروع Supabase منفصلاً وفارغاً وراجع migration `supabase/migrations/202610120001_initial_clinical_workspace.sql`. لا تطبقه على قاعدة مشروع آخر أو قاعدة تحتوي بيانات مهمة.
+
+## حالة الربط الحالية
+
+انظر [تقرير حالة الإعداد بتاريخ 12 أكتوبر 2026](docs/SETUP_STATUS_2026-10-12.md
+- [Latest remote setup check (13 Oct 2026)](docs/REMOTE_SETUP_CHECK_2026-10-13.md))؛ يوضح ما اجتاز الاختبارات وما لا يزال منتظرًا صلاحيات النشر وقاعدة البيانات.
+
+## حدود يجب عدم إخفائها
+
+- وضع العرض التجريبي لا يحفظ مرضى حقيقيين ولا يرفع التسجيلات.
+- عند تفعيل الوضع الحقيقي، يتطلب التسجيل موافقة مسجلة ومريضاً موجوداً في قاعدة البيانات.
+- معالجة الصوت الحالية للملفات المجمعة التي لا تتجاوز 15 MiB؛ التسجيل الأكبر يبقى محفوظاً لكنه يحتاج مسار رفع/معالجة كبيرة.
+- مسودة الذكاء الاصطناعي لا تُعد سجلاً نهائياً حتى اعتماد الطبيب.
+- إنشاء التقرير يحفظ لقطة من سجل معتمد؛ PDF القابل للتنزيل من الخادم، معالجة الخلفية طويلة الأمد، اختبارات الاختراق والتقييم السريري لا تزال خطوات لازمة قبل الإنتاج.
+- لا توجد ادعاءات امتثال قانوني أو طبي رسمي.

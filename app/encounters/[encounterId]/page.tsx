@@ -1,0 +1,166 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { AlertCircle, ArrowRight, Check, ChevronLeft, ClipboardCheck, FileText, LoaderCircle, Save, ShieldCheck } from 'lucide-react';
+
+type StateValue = 'patient_reported'|'observed'|'ai_suggested'|'clinician_confirmed'|'explicitly_negative'|'unknown'|'not_collected'|'not_applicable'|'needs_review';
+type Note = { id: string; status: string; version: number; draft_json: Record<string, unknown>; transcript_text: string | null; approved_at?: string | null; provenance?: Record<string, unknown> | null };
+type FieldValue = { value: unknown; state: StateValue; source?: string | null; confidence?: number | null; [key: string]: unknown };
+const fields = [
+  ['chiefComplaint','الشكوى الرئيسية','ما ذكره المريض سبباً للزيارة.'],
+  ['historyOfPresentIllness','تاريخ الحالة الحالية','وصف الأعراض وتسلسلها كما ورد في الزيارة.'],
+  ['medicalHistory','التاريخ الصحي','حالات أو معلومات صحية وردت في الحوار.'],
+  ['allergies','الحساسية','لا تفسر عدم ذكر الحساسية على أنها عدم وجودها.'],
+  ['medications','الأدوية الحالية','تحقق من الاسم والجرعة إن ذُكرا.'],
+  ['examinationFindings','نتائج الفحص','لا تعتمد إلا ما شاهده الطبيب وأكده.'],
+  ['assessment','التقييم السريري المقترح','كل استنتاج آلي يبقى بحاجة إلى المراجعة.'],
+  ['proposedPlan','الخطة المقترحة','ميّز بين المخطط والمنفذ فعلاً.'],
+  ['proceduresDiscussed','إجراءات نوقشت','ذكر الإجراء لا يعني أنه نُفّذ.'],
+  ['proceduresCompleted','إجراءات مكتملة','تحقق من الإكمال قبل التأكيد.'],
+  ['prescriptionsSuggested','أدوية أو وصفات مقترحة','لا تتحول إلى وصفة صادرة من دون اعتماد منفصل.'],
+  ['followUp','المتابعة','المواعيد والمدة كما ذُكرت، مع تأكيد الطبيب.'],
+] as const;
+const states: {value: StateValue; label: string}[] = [
+  {value:'ai_suggested',label:'اقتراح آلي — يحتاج مراجعة'}, {value:'patient_reported',label:'ذكره المريض'}, {value:'observed',label:'ملاحظة فحص'}, {value:'clinician_confirmed',label:'أكدها الطبيب'}, {value:'explicitly_negative',label:'نفي صريح'}, {value:'unknown',label:'غير معلوم'}, {value:'not_collected',label:'لم تُجمع المعلومة'}, {value:'not_applicable',label:'لا ينطبق'}, {value:'needs_review',label:'مطلوب مراجعة'},
+];
+function asField(value: unknown): FieldValue {
+  if (value && typeof value === 'object' && !Array.isArray(value) && 'value' in value) {
+    const f = value as Record<string, unknown>;
+    const state = states.some(item => item.value === f.state) ? f.state as StateValue : 'ai_suggested';
+    return { ...f, value: f.value, state } as FieldValue;
+  }
+  if (value === null || value === undefined) return { value: '', state: 'not_collected', source: null, confidence: null };
+  return { value, state: 'ai_suggested', source: null, confidence: null };
+}
+function valueToText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return JSON.stringify(value, null, 2);
+}
+function parseInput(value: string): unknown {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+    try { return JSON.parse(trimmed); } catch { return value; }
+  }
+  return value;
+}
+function unwrapPatient(raw: any) { return Array.isArray(raw) ? raw[0] : raw; }
+
+export default function EncounterReviewPage() {
+  const params = useParams<{ encounterId: string }>();
+  const encounterId = params.encounterId;
+  const router = useRouter();
+  const [data, setData] = useState<any>(null);
+  const [note, setNote] = useState<Note | null>(null);
+  const [transcript, setTranscript] = useState('');
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [fieldStates, setFieldStates] = useState<Record<string, StateValue>>({});
+  const [busy, setBusy] = useState(false);
+  const [approvedConfirmation, setApprovedConfirmation] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+
+  const hydrate = useCallback((payload: any) => {
+    setData(payload.encounter);
+    setNote(payload.note);
+    setTranscript(payload.note?.transcript_text || (payload.transcript_segments || []).map((s: any) => s.text).join('\n\n'));
+    const nextValues: Record<string, string> = {};
+    const nextStates: Record<string, StateValue> = {};
+    for (const [key] of fields) {
+      const field = asField(payload.note?.draft_json?.[key]);
+      nextValues[key] = valueToText(field.value);
+      nextStates[key] = field.state;
+    }
+    setValues(nextValues);
+    setFieldStates(nextStates);
+  }, []);
+
+  const load = useCallback(async () => {
+    setError('');
+    const response = await fetch(`/api/encounters/${encounterId}`, { cache: 'no-store' });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || 'تعذر تحميل الزيارة.');
+    hydrate(payload);
+  }, [encounterId, hydrate]);
+
+  useEffect(() => { load().catch(e => setError(e instanceof Error ? e.message : 'تعذر تحميل الزيارة.')); }, [load]);
+
+  const uncertaintyFlags = useMemo(() => {
+    const flags = note?.draft_json?.uncertaintyFlags;
+    return Array.isArray(flags) ? flags.filter((v): v is string => typeof v === 'string') : [];
+  }, [note]);
+  const isApproved = note?.status === 'approved';
+
+  async function saveDraft() {
+    if (!note) return;
+    setBusy(true); setError(''); setMessage('');
+    try {
+      const draft = structuredClone(note.draft_json);
+      for (const [key] of fields) {
+        const oldField = asField(draft[key]);
+        draft[key] = { ...oldField, value: parseInput(values[key] ?? ''), state: fieldStates[key] || oldField.state, source: oldField.source ?? null };
+      }
+      const response = await fetch(`/api/clinical-notes/${note.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expected_version: note.version, draft_json: draft, transcript_text: transcript }) });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || 'تعذر حفظ النسخة الجديدة.');
+      await load();
+      setMessage('حُفظت نسخة جديدة من المسودة. ما زالت بحاجة إلى اعتماد منفصل.');
+      setApprovedConfirmation(false);
+    } catch (e) { setError(e instanceof Error ? e.message : 'تعذر الحفظ.'); }
+    finally { setBusy(false); }
+  }
+
+  async function approve() {
+    if (!note || !approvedConfirmation) return;
+    setBusy(true); setError(''); setMessage('');
+    try {
+      const response = await fetch(`/api/encounters/${encounterId}/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clinical_note_id: note.id, expected_version: note.version, confirmation: true, method: 'clinician_review' }) });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || 'تعذر اعتماد السجل.');
+      await load();
+      setMessage('اعتمد الطبيب هذه النسخة. أصبح التقرير متاحاً للإنشاء.');
+    } catch (e) { setError(e instanceof Error ? e.message : 'تعذر اعتماد السجل.'); }
+    finally { setBusy(false); }
+  }
+
+  async function createReport() {
+    if (!note || note.status !== 'approved') return;
+    setBusy(true); setError('');
+    try {
+      const response = await fetch('/api/reports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clinical_note_id: note.id, language: 'ar', report_type: 'encounter_summary' }) });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || 'تعذر إنشاء التقرير.');
+      router.push(`/reports/${payload.report.id}`);
+    } catch (e) { setError(e instanceof Error ? e.message : 'تعذر إنشاء التقرير.'); }
+    finally { setBusy(false); }
+  }
+
+  const patient = unwrapPatient(data?.patients);
+  return <main className="review-page" dir="rtl">
+    <header className="review-header"><a href="/" className="review-back"><ArrowRight size={17}/> العودة لمساحة العيادة</a><div className="review-brand"><div className="brand-symbol"><ClipboardCheck size={21}/></div><div><strong>سِنان</strong><span>مراجعة السجل السريري</span></div></div><span className={`review-status ${isApproved?'approved':''}`}>{isApproved?'معتمد من الطبيب':note?.status==='needs_review'?'بانتظار المراجعة':note?.status||'جارٍ التحميل'}</span></header>
+    {error && <div className="review-error"><AlertCircle size={17}/><span>{error}</span><button onClick={() => load().catch(e => setError(String(e)))}>إعادة المحاولة</button></div>}
+    {message && <div className="review-success"><Check size={17}/>{message}</div>}
+    {!data && !error && <div className="review-loading"><LoaderCircle size={24}/> جارٍ تحميل الزيارة...</div>}
+    {data && <>
+      <section className="review-intro"><div><div className="eyebrow">زيارة سريرية · {data.id.slice(0,8)}</div><h1>{patient?.full_name || 'ملف الزيارة'}</h1><p>{patient?.patient_number ? `رقم الملف ${patient.patient_number} · ` : ''}الحالة الحالية: {data.status} · {data.started_at ? new Date(data.started_at).toLocaleString('ar') : 'وقت البدء غير مسجل'}</p></div><div className="review-actions"><button className="review-btn secondary" onClick={() => load().catch(e => setError(String(e)))} disabled={busy}><LoaderCircle size={16}/> تحديث</button><button className="review-btn primary" onClick={saveDraft} disabled={busy || !note || isApproved}><Save size={16}/> {busy?'جارٍ الحفظ...':'حفظ نسخة مراجعة'}</button></div></section>
+      {!note ? <section className="review-card"><h2>لا توجد مسودة بعد</h2><p>قد يكون التسجيل لا يزال قيد المعالجة أو أن المعالجة توقفت. لن ينشئ النظام سجلاً سريرياً من دون نتيجة معالجة فعلية.</p><div className="review-actions"><button className="review-btn secondary" onClick={() => router.push('/')}>العودة للعيادة</button></div></section> : <>
+        <section className="review-safety"><ShieldCheck size={20}/><div><strong>{isApproved?'هذه نسخة معتمدة':'المسودة لم تعتمد بعد'}</strong><p>راجع الوقائع ومصدرها وحالتها. لا تعني المعلومة غير المسجلة أن الحالة غير موجودة، وذكر إجراء لا يعني أنه نُفّذ.</p></div><span>النسخة {note.version}</span></section>
+        {uncertaintyFlags.length > 0 && <section className="review-card uncertainty-card"><h2><AlertCircle size={18}/> نقاط تحتاج انتباهك</h2><ul>{uncertaintyFlags.map((flag,i)=><li key={i}>{flag}</li>)}</ul></section>}
+        <section className="review-card"><div className="review-section-head"><div><div className="eyebrow">محتوى المسودة</div><h2>مراجعة المعلومات السريرية</h2><p>يمكن تعديل النص وتغيير حالة كل معلومة. لا تحوّل أي اقتراح إلى حقيقة مؤكدة إلا بعد التحقق منه.</p></div><span className="review-ai-tag">{note?.provenance?.source === 'manual_entry' ? 'إدخال يدوي يحتاج مراجعة' : 'مسودة آلية تحتاج مراجعة'}</span></div>
+          <div className="clinical-review-grid">{fields.map(([key,label,hint])=><div className="clinical-field" key={key}><label htmlFor={`field-${key}`}>{label}</label><p>{hint}</p><textarea id={`field-${key}`} value={values[key] ?? ''} onChange={e=>setValues(v=>({...v,[key]:e.target.value}))} rows={3} disabled={isApproved} placeholder="غير مسجل — لا تستنتج قيمة غير مذكورة"/><div className="clinical-state"><span>حالة المعلومة</span><select value={fieldStates[key]||'not_collected'} disabled={isApproved} onChange={e=>setFieldStates(v=>({...v,[key]:e.target.value as StateValue}))}>{states.map(state=><option key={state.value} value={state.value}>{state.label}</option>)}</select></div>{asField(note.draft_json[key]).source && <details className="source-evidence"><summary>العبارة المصدرية</summary><p>{String(asField(note.draft_json[key]).source)}</p></details>}</div>)}</div>
+        </section>
+        <section className="review-card"><div className="review-section-head"><div><div className="eyebrow">مصدر المسودة</div><h2>التفريغ النصي</h2><p>نص مستخرج من الصوت؛ راجع الكلام غير الواضح أو أسماء الأدوية والقياسات قبل الاعتماد.</p></div><span className="review-status">{transcript?'متاح للمراجعة':'لا يوجد تفريغ محفوظ'}</span></div><textarea className="transcript-editor" value={transcript} onChange={e=>setTranscript(e.target.value)} rows={8} disabled={isApproved} placeholder="لا يوجد تفريغ محفوظ لهذه الزيارة."/><div className="transcript-meta">نص التفريغ يحتفظ بنص المصدر الذي يحتاج مراجعته، ولا يعني أن إسناد الجمل للمتحدثين قد تم التحقق منه.</div></section>
+        {!isApproved ? <section className="review-approval"><label><input type="checkbox" checked={approvedConfirmation} onChange={e=>setApprovedConfirmation(e.target.checked)}/><span><strong>أؤكد أنني راجعت هذه النسخة سريرياً.</strong><small>الاعتماد مسؤولية الطبيب؛ تحقق من هوية المريض والتاريخ الصحي والحساسية والأدوية والتشخيصات والخطة قبل المتابعة.</small></span></label><button className="review-btn approve" onClick={approve} disabled={busy || !approvedConfirmation || !note}><Check size={17}/> اعتماد النسخة الحالية</button><p>الاعتماد يخص النسخة {note.version} فقط، ويُحفظ في سجل التدقيق.</p></section> : <section className="review-approval approved-panel"><div><Check size={20}/><strong>تم اعتماد النسخة {note.version}</strong><p>يمكن إنشاء لقطة تقرير للطباعة أو الحفظ كـ PDF.</p></div><button className="review-btn primary" onClick={createReport} disabled={busy}><FileText size={17}/> إنشاء التقرير</button></section>}
+      </>}
+    </>}
+    <style jsx>{`
+      .review-page{--ink:#19373a;--muted:#718586;--teal:#087f8c;--line:#e4ecea;min-height:100vh;background:#f6f9f8;color:var(--ink);padding:0 22px 50px;font-family:'IBM Plex Sans Arabic',system-ui,sans-serif}
+      .review-header{height:72px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:22px;justify-content:space-between;max-width:1180px;margin:auto}.review-back{display:flex;align-items:center;gap:8px;color:#65817f;text-decoration:none;font-size:12px}.review-brand{display:flex;align-items:center;gap:10px;margin-right:auto}.review-brand>div:last-child{display:flex;flex-direction:column;gap:3px}.review-brand strong{font-size:17px}.review-brand span{font-size:10px;color:var(--muted)}.review-status{font-size:10px;color:#8b7770;background:#fff5e9;border:1px solid #f1e3cc;border-radius:30px;padding:7px 11px;white-space:nowrap}.review-status.approved{background:#e9f7ef;border-color:#d4eade;color:#237758}.review-intro{max-width:1120px;margin:30px auto 18px;display:flex;justify-content:space-between;gap:20px;align-items:flex-end}.review-intro h1{font-size:26px;margin:0;color:#193b3c}.review-intro p{font-size:12px;line-height:1.8;color:#819594;margin:7px 0 0}.review-actions{display:flex;gap:9px;align-items:center}.review-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;border-radius:9px;min-height:39px;padding:0 14px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}.review-btn:disabled{opacity:.45;cursor:not-allowed}.review-btn.primary{background:#087f8c;color:white}.review-btn.secondary{background:white;color:#55706e;border-color:#dce7e4}.review-btn.approve{background:#0b827d;color:white;min-height:45px;padding-inline:20px}.review-card,.review-safety,.review-approval{max-width:1120px;margin:13px auto 0;background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:0 5px 18px #2b52520a}.review-card h2{font-size:16px;margin:0;color:#294849}.review-card p{font-size:11px;color:#829593;line-height:1.8}.review-safety{display:flex;align-items:flex-start;gap:12px;background:#eef8f4;border-color:#d7ece4}.review-safety>svg{color:#148778;flex-shrink:0}.review-safety>div{flex:1}.review-safety strong{font-size:12px}.review-safety p{font-size:11px;color:#678984;line-height:1.8;margin:5px 0 0}.review-safety>span{font-size:10px;color:#678984;white-space:nowrap}.review-section-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:20px}.review-section-head h2{margin:0}.review-section-head p{margin:6px 0 0}.review-ai-tag{font-size:10px;color:#95733f;background:#fff7e9;border:1px solid #f3e5c9;border-radius:25px;padding:7px 10px;white-space:nowrap}.clinical-review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.clinical-field{min-width:0;border:1px solid #e7efec;border-radius:10px;padding:14px}.clinical-field>label{font-size:12px;font-weight:700;color:#365958}.clinical-field>p{font-size:10px;margin:5px 0 10px;min-height:27px}.clinical-field textarea,.transcript-editor{width:100%;border:1px solid #dfe9e6;background:#fbfdfc;border-radius:8px;padding:10px;color:#28494a;line-height:1.8;font:12px inherit;resize:vertical;min-height:75px}.clinical-field textarea:focus,.transcript-editor:focus{outline:2px solid #8cd3c8;outline-offset:1px}.clinical-field textarea:disabled,.transcript-editor:disabled{background:#f7faf8;color:#637b79}.clinical-state{display:flex;align-items:center;gap:10px;margin-top:9px}.clinical-state>span{font-size:10px;color:#8a9c99;white-space:nowrap}.clinical-state select{min-width:0;flex:1;border:1px solid #dfe9e6;background:white;border-radius:7px;min-height:34px;padding:5px 7px;font:10px inherit;color:#416362}.clinical-state select:disabled{opacity:.7}.source-evidence{margin-top:8px;font-size:10px;color:#588580}.source-evidence summary{cursor:pointer}.source-evidence p{background:#f6faf8;padding:9px;border-radius:7px;white-space:pre-wrap}.uncertainty-card{background:#fffaf0;border-color:#f0e5cc}.uncertainty-card h2{display:flex;align-items:center;gap:8px;color:#87632c}.uncertainty-card ul{margin:13px 0 0;padding-right:19px;color:#765f3a;font-size:11px;line-height:2}.transcript-editor{min-height:180px;font-family:inherit;white-space:pre-wrap}.transcript-meta{font-size:10px;color:#8ba09c;line-height:1.8;margin-top:8px}.review-approval{display:flex;align-items:center;justify-content:space-between;gap:20px;background:#f8fbfa}.review-approval>label{display:flex;align-items:flex-start;gap:10px;flex:1;cursor:pointer}.review-approval input{accent-color:#087f8c;margin-top:4px}.review-approval label span{display:flex;flex-direction:column;gap:5px}.review-approval label strong,.review-approval>div strong{font-size:12px}.review-approval label small,.review-approval p{font-size:10px;line-height:1.8;color:#879b98}.review-approval p{margin:8px 0 0}.approved-panel{background:#edf8f2;border-color:#d9ece2}.approved-panel>div>svg{color:#1b8d73;vertical-align:middle;margin-left:8px}.review-error,.review-success{display:flex;gap:9px;align-items:center;max-width:1120px;margin:13px auto 0;padding:12px 14px;border-radius:9px;font-size:11px;line-height:1.7}.review-error{background:#fff0ef;color:#a23e3c;border:1px solid #f1d5d2}.review-error span{flex:1}.review-error button{background:transparent;border:0;text-decoration:underline;color:inherit}.review-success{background:#eaf7ef;color:#2d7e5b;border:1px solid #d6ecdf}.review-loading{max-width:1120px;margin:40px auto;display:flex;gap:10px;align-items:center;color:#708b88}.review-loading svg{animation:spin 1.4s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+      @media(max-width:760px){.review-page{padding:0 12px 30px}.review-header{height:auto;min-height:62px;gap:10px;flex-wrap:wrap;padding:12px 0}.review-back{font-size:10px}.review-brand{margin-right:0}.review-brand span{display:none}.review-intro{align-items:flex-start;flex-direction:column;margin-top:22px}.review-intro h1{font-size:22px}.review-actions{width:100%}.review-actions>*{flex:1}.review-card,.review-safety,.review-approval{padding:15px;border-radius:11px}.clinical-review-grid{grid-template-columns:1fr}.clinical-field>p{min-height:0}.review-safety{flex-wrap:wrap}.review-safety>span{margin-right:32px}.review-section-head{gap:8px;flex-wrap:wrap}.review-approval{align-items:stretch;flex-direction:column}.review-approval .review-btn{width:100%}}
+      @media print{.review-page{padding:0;background:white}.review-header,.review-actions,.review-approval,.review-error,.review-success,.review-loading{display:none!important}.review-intro{margin:0 auto 15px}.review-card,.review-safety{box-shadow:none;border:1px solid #ddd;break-inside:avoid;padding:12px;margin-top:9px}.clinical-review-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.clinical-field textarea{border:0;background:white;min-height:0}.clinical-field{break-inside:avoid}.transcript-editor{border:0;background:white}.review-intro h1{font-size:20px}}
+    `}</style>
+  </main>;
+}
