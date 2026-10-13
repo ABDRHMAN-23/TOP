@@ -425,3 +425,7 @@ body{background:linear-gradient(135deg,#f0f5f2 0%,#edf2f2 52%,#f7f5ef 100%);colo
 @media(prefers-reduced-motion:reduce){
   .pathway-step,.nav-item,.primary-button,.secondary-button,.timeline-item,.tooth span{transition:none!important}
 }
+
+
+/* Consistent dental brand mark across loading and workspace shells. */
+.brand-symbol .sinan-mark,.app-loading-symbol .sinan-mark{width:25px;height:25px;color:currentColor;display:block}
