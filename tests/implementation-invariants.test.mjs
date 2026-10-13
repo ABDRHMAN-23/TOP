@@ -187,3 +187,8 @@ test('reports and endodontics empty states provide a direct next action', () => 
   assert.match(app, /إضافة أول ملف علاج عصب لهذا المريض/);
   assert.match(app, /الوحدة ومصدرها وحالة التحقق/);
 });
+
+test('patient phone values are consistently masked in the UI layer', () => {
+  assert.match(app, /function maskPhoneForDisplay\(phone: string \| null \| undefined\): string/);
+  assert.match(app, /phone: maskPhoneForDisplay\(p\.phone\)/);
+});
