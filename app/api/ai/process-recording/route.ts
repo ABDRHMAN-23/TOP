@@ -10,12 +10,12 @@ const schema = z.object({ recording_id: z.string().uuid(), job_id: z.string().uu
 
 type AudioChunk = { chunk_index: number; storage_key: string; mime_type: string };
 function geminiUrl(model: string, key: string) { return `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`; }
-async function geminiGenerate(model: string, key: string, parts: Array<Record<string, unknown>>, json = false) {
+async function geminiGenerate(model: string, key: string, parts: Array<Record<string, unknown>>, json = false): Promise<string> {
   const body = { contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.1, ...(json ? { responseMimeType: 'application/json' } : {}) } };
   const response = await fetch(geminiUrl(model, key), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), cache: 'no-store' });
   const payload = await response.json().catch(() => null);
   if (!response.ok) throw new Error(`تعذرت معالجة الذكاء الاصطناعي (HTTP ${response.status}). تحقق من مفتاح Gemini وحدود الاستخدام.`);
-  const text = payload?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('')?.trim();
+  const text: string | undefined = payload?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('')?.trim();
   if (!text) throw new Error('أعاد مزود الذكاء الاصطناعي نتيجة فارغة.');
   return text;
 }
@@ -101,8 +101,8 @@ export async function POST(request: Request) {
     if (recordingError || !recording) throw new Error('تعذر ربط المسودة بالزيارة.');
     const { error: segmentDeleteError } = await supabase.from('transcript_segments').delete().eq('encounter_id', recording.encounter_id).eq('organization_id', context.organizationId).eq('source_job_id', job.id);
     if (segmentDeleteError) throw new Error('تعذر تجهيز مقاطع التفريغ للحفظ.');
-    const transcriptSegments = transcript.split(/\n{2,}/).map((text) => text.trim()).filter(Boolean);
-    const segments = (transcriptSegments.length ? transcriptSegments : [transcript]).map((text, i) => ({ organization_id: context.organizationId, encounter_id: recording.encounter_id, source_job_id: job.id, segment_index: i, text, speaker_label: 'غير محدد', speaker_confidence: null, transcription_confidence: null, state: 'needs_review' }));
+    const transcriptSegments = transcript.split(/\n{2,}/).map((text: string) => text.trim()).filter(Boolean);
+    const segments = (transcriptSegments.length ? transcriptSegments : [transcript]).map((text: string, i: number) => ({ organization_id: context.organizationId, encounter_id: recording.encounter_id, source_job_id: job.id, segment_index: i, text, speaker_label: 'غير محدد', speaker_confidence: null, transcription_confidence: null, state: 'needs_review' }));
     const { error: segmentError } = await supabase.from('transcript_segments').insert(segments);
     if (segmentError) throw new Error('تعذر حفظ نص التفريغ.');
     const noteRecord = { organization_id: context.organizationId, encounter_id: recording.encounter_id, patient_id: recording.patient_id, created_by: user.id, status: 'needs_review', version: 1, draft_json: draft, transcript_text: transcript, model_provider: 'google_gemini', model_name: model, provenance: { job_id: job.id, source: 'recording_transcription', clinician_approval_required: true } };
