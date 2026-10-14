@@ -210,7 +210,10 @@ test('Sinan dashboard uses a data-led workbench, real counts, and a global comma
   assert.match(app, /setShowCommandPalette\(open => !open\)/);
   assert.match(app, /commandPatientResults/);
   assert.match(app, /const reviewCount = demoMode \? attentionPatients\.length : reviewQueue\.length/);
-  assert.match(app, /createDemoAppointments\(\)/);
+  assert.match(app, /const \[patients, setPatients\] = useState<Patient\[\]>\(\[\]\)/);
+  assert.doesNotMatch(app, /createInitialAppointments|createDemoAppointments/);
+  assert.doesNotMatch(app, /سارة محمد علي|عمر خالد صالح|ليلى عبدالكريم|عبدالله ياسر/);
+  assert.match(app, /لا توجد ملفات مرضى بعد/);
   assert.doesNotMatch(app, /number="١٢٨"/);
   assert.doesNotMatch(app, /time="٩:٠٠" period="ص" patient=/);
 });
@@ -243,4 +246,28 @@ test('appointment status updates are validated, clinic-scoped, role-checked, and
   assert.match(appointmentStatusRoute, /action: 'appointment\.status_changed'/);
   assert.match(app, /async function updateAppointmentStatus\(appointmentId: string, status: string\)/);
   assert.match(app, /className="appointment-state-select"/);
+});
+
+const signInUi = await readFile(new URL('../app/sign-in/page.tsx', import.meta.url), 'utf8');
+const uiStyles = await readFile(new URL('../app/globals.css', import.meta.url), 'utf8');
+const uiLocales = await readFile(new URL('../app/i18n.tsx', import.meta.url), 'utf8');
+
+const onboardingUi = await readFile(new URL('../app/onboarding/page.tsx', import.meta.url), 'utf8');
+const encounterUi = await readFile(new URL('../app/encounters/[encounterId]/page.tsx', import.meta.url), 'utf8');
+const reportUi = await readFile(new URL('../app/reports/[reportId]/page.tsx', import.meta.url), 'utf8');
+
+test('retired preview labels do not return to any user-facing workspace route', () => {
+  const labels = /وضع العرض التجريبي|وضع عرض تجريبي|بيانات تجريبية|عرض تجريبي|بيانات العرض|مثال تجريبي|مسودة تجريبية|خيالية|تجريبية/;
+  for (const screen of [app, signInUi, onboardingUi, encounterUi, reportUi, uiLocales]) assert.doesNotMatch(screen, labels);
+  assert.doesNotMatch(uiStyles, /\.demo-notice|\.connection-chip\.demo/);
+  assert.match(app, /قاعدة البيانات غير متصلة/);
+  assert.match(app, /الحفظ الدائم يتطلب اتصال قاعدة البيانات/);
+});
+
+test('patient clinical details are filtered to the selected patient before rendering', () => {
+  assert.match(app, /const selectedHistoryItems = historyItems\.filter\(\(item:any\) => item\.patient_id === selectedPatient\?\.id\)/);
+  assert.match(app, /const selectedEndodonticCases = endodonticCases\.filter\(\(item:any\) => item\.patient_id === selectedPatient\?\.id\)/);
+  assert.match(app, /const currentPatientDetails = patientDetails\?\.patient\?\.id === selectedPatient\?\.id \? patientDetails : null/);
+  assert.match(app, /entry\.patient_id === selectedPatient\?\.id && String\(entry\.tooth_number\)/);
+  assert.match(app, /patient_id:selectedPatient\.id,category:historyCategory/);
 });
