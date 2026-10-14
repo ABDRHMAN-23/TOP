@@ -18,6 +18,17 @@ const nav = [
 ];
 const toothTop = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
 const toothBottom = [48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38];
+const primaryToothTop = [55,54,53,52,51,61,62,63,64,65];
+const primaryToothBottom = [85,84,83,82,81,71,72,73,74,75];
+const weekdayLabels = [
+  {ar:'الأحد',en:'Sunday'},{ar:'الاثنين',en:'Monday'},{ar:'الثلاثاء',en:'Tuesday'},
+  {ar:'الأربعاء',en:'Wednesday'},{ar:'الخميس',en:'Thursday'},{ar:'الجمعة',en:'Friday'},
+  {ar:'السبت',en:'Saturday'},
+];
+const defaultBookingHours = () => Array.from({length:7}).flatMap((_,weekday)=>[
+  {weekday,shift:'morning',enabled:false,start_time:'08:00',end_time:'12:00'},
+  {weekday,shift:'evening',enabled:false,start_time:'16:00',end_time:'20:00'},
+]);
 
 
 function getInitials(fullName: string | null | undefined): string {
@@ -98,6 +109,15 @@ export default function HomePage() {
   const [reviewQueueLoading, setReviewQueueLoading] = useState(false);
   const [reviewQueueAccessDenied, setReviewQueueAccessDenied] = useState(false);
   const [clinicSettings, setClinicSettings] = useState({ clinic_name_ar: '', clinic_name_en: '', address_ar: '', address_en: '', phone: '', email: '', website: '', default_report_language: 'ar', paper_size: 'A4', tooth_notation: 'FDI', recording_policy_version: 'clinic-policy-v1', audio_retention_days: 30 });
+  const [bookingSettings, setBookingSettings] = useState({ public_slug: '', booking_enabled: false, slot_minutes: 30, max_bookings_per_slot: 1, advance_booking_days: 30, min_notice_minutes: 60, public_title_ar: '', public_title_en: '', public_message_ar: '', public_message_en: '', require_phone: true });
+  const [bookingHours, setBookingHours] = useState<any[]>(defaultBookingHours());
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingSaving, setBookingSaving] = useState(false);
+  const [bookingLoaded, setBookingLoaded] = useState(false);
+  const [bookingOrigin, setBookingOrigin] = useState('');
+  const [bookingDecisionBusyId, setBookingDecisionBusyId] = useState('');
+  const [dentition, setDentition] = useState<'permanent'|'primary'>('permanent');
+  const [toothSurfaces, setToothSurfaces] = useState<string[]>([]);
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [settingsDirty, setSettingsDirty] = useState(false);
   const [showToothEntry, setShowToothEntry] = useState(false);
@@ -188,6 +208,18 @@ export default function HomePage() {
     } catch (error) { setLoadError(error instanceof Error ? error.message : 'تعذر الاتصال بالخادم.'); }
   }
   useEffect(() => { setTodayLabel(language === 'ar' ? arabicDateForAden() : englishDateForAden()); }, [language]);
+  useEffect(() => { setBookingOrigin(window.location.origin); }, []);
+  useEffect(() => {
+    if (active !== 'settings' || demoMode || !activeOrganizationId) return;
+    let cancelled=false;
+    setBookingLoading(true);
+    fetch('/api/clinic/booking-settings',{cache:'no-store'})
+      .then(async response=>{const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.error||'تعذر تحميل إعدادات الحجز.');return body;})
+      .then(body=>{if(!cancelled){setBookingSettings(current=>({...current,...body.settings}));setBookingHours(Array.isArray(body.hours)?body.hours:defaultBookingHours());setBookingLoaded(true);}})
+      .catch(error=>{if(!cancelled)notify(error instanceof Error?error.message:'تعذر تحميل إعدادات الحجز.');})
+      .finally(()=>{if(!cancelled)setBookingLoading(false);});
+    return()=>{cancelled=true;};
+  },[active,activeOrganizationId]);
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
@@ -382,6 +414,39 @@ export default function HomePage() {
       await loadLiveCollections();
       notify('تم فتح مساحة العيادة المحددة.');
     } catch (error) { notify(error instanceof Error ? error.message : 'تعذر اختيار العيادة.'); }
+  }
+
+  async function saveBookingSettings() {
+    if (demoMode) { notify('يلزم اتصال قاعدة بيانات العيادة لحفظ ساعات العمل ورابط الحجز.'); return; }
+    setBookingSaving(true);
+    try {
+      const response=await fetch('/api/clinic/booking-settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({...bookingSettings,hours:bookingHours})});
+      const body=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(body.error||'تعذر حفظ إعدادات الحجز.');
+      setBookingSettings(current=>({...current,...(body.settings||bookingSettings)}));
+      if(Array.isArray(body.hours))setBookingHours(body.hours);
+      setBookingLoaded(true);
+      notify(bookingSettings.booking_enabled?'تم حفظ إعدادات الحجز ونشر الرابط.':'تم حفظ ساعات العمل. رابط الحجز غير منشور حتى تفعيله.');
+    } catch(error) { notify(error instanceof Error?error.message:'تعذر حفظ إعدادات الحجز.'); }
+    finally { setBookingSaving(false); }
+  }
+
+  function updateBookingHour(weekday:number,shift:'morning'|'evening',patch:Record<string,unknown>) {
+    setBookingHours(current=>current.map(row=>row.weekday===weekday&&row.shift===shift?{...row,...patch}:row));
+  }
+
+  async function reviewPublicBooking(appointmentId:string,action:'confirm'|'decline') {
+    if(action==='decline'&&!window.confirm('هل تريد رفض طلب الحجز وإتاحة الوقت لمريض آخر؟'))return;
+    setBookingDecisionBusyId(appointmentId);
+    try {
+      const response=await fetch('/api/appointments/'+appointmentId+'/review-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});
+      const body=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(body.error||'تعذر تحديث طلب الحجز.');
+      notify(action==='confirm'?'تم تأكيد الحجز وإنشاء ملف المريض.':'تم رفض الطلب وإتاحة الوقت من جديد.');
+      await loadLiveCollections();
+      if(appointmentViewDate!==dateInputForAden())await loadAppointmentsForDate(appointmentViewDate);
+    } catch(error) { notify(error instanceof Error?error.message:'تعذر مراجعة طلب الحجز.'); }
+    finally { setBookingDecisionBusyId(''); }
   }
 
   async function saveClinicSettings() {
