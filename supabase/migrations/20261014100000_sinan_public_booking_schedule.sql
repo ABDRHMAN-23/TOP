@@ -338,7 +338,7 @@ begin
     raise exception 'valid phone number required' using errcode='22023';
   end if;
   if p_consent_accepted is distinct from true then raise exception 'booking consent is required' using errcode='22023'; end if;
-  if coalesce(p_idempotency_key,'') !~ '^[0-9a-fA-F-]{36}
+  if coalesce(p_idempotency_key,'') !~ '^[0-9a-fA-F-]{36}$' then
     raise exception 'invalid booking request key' using errcode='22023';
   end if;
 

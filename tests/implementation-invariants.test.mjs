@@ -271,3 +271,122 @@ test('patient clinical details are filtered to the selected patient before rende
   assert.match(app, /entry\.patient_id === selectedPatient\?\.id && String\(entry\.tooth_number\)/);
   assert.match(app, /patient_id:selectedPatient\.id,category:historyCategory/);
 });
+
+const bookingSettingsRoute = await readFile(new URL('../app/api/clinic/booking-settings/route.ts', import.meta.url), 'utf8');
+const publicBookingRoute = await readFile(new URL('../app/api/public/booking/[slug]/route.ts', import.meta.url), 'utf8');
+const publicAvailabilityRoute = await readFile(new URL('../app/api/public/booking/[slug]/availability/route.ts', import.meta.url), 'utf8');
+const bookingReviewRoute = await readFile(new URL('../app/api/appointments/[appointmentId]/review-booking/route.ts', import.meta.url), 'utf8');
+const publicBookingPage = await readFile(new URL('../app/book/[slug]/page.tsx', import.meta.url), 'utf8');
+const appointmentApi = await readFile(new URL('../app/api/appointments/route.ts', import.meta.url), 'utf8');
+const publicBookingMigration = await readFile(new URL('../supabase/migrations/20261014100000_sinan_public_booking_schedule.sql', import.meta.url), 'utf8');
+const staffCapacityMigration = await readFile(new URL('../supabase/migrations/20261014160000_sinan_staff_appointment_capacity.sql', import.meta.url), 'utf8');
+const bookingWorkflow = await readFile(new URL('../.github/workflows/deploy-sinan-cloudflare.yml', import.meta.url), 'utf8');
+const bookingRequestsRoute = await readFile(new URL('../app/api/appointments/booking-requests/route.ts', import.meta.url), 'utf8');
+const shiftCapacityMigration = await readFile(new URL('../supabase/migrations/20261014170000_sinan_booking_shift_overlap_and_staff_capacity.sql', import.meta.url), 'utf8');
+
+test('clinic booking settings validate the whole weekly schedule and save through an authorized transactional RPC', () => {
+  assert.match(bookingSettingsRoute, /resolveOrganization\(supabase,\s*user,\s*request\)/);
+  assert.match(bookingSettingsRoute, /\['owner','clinic_admin','dentist','clinician'\]/);
+  assert.match(bookingSettingsRoute, /z\.array\(hourSchema\)\.length\(14\)/);
+  assert.match(bookingSettingsRoute, /weekday: z\.number\(\)\.int\(\)\.min\(0\)\.max\(6\)/);
+  assert.match(bookingSettingsRoute, /shift: z\.enum\(\['morning','evening'\]\)/);
+  assert.match(bookingSettingsRoute, /supabase\.rpc\('save_clinic_booking_settings'/);
+});
+
+test('public booking never exposes the clinical patient API and requires explicit consent', () => {
+  assert.match(publicBookingRoute, /terms_accepted: z\.literal\(true\)/);
+  assert.match(publicBookingRoute, /p_consent_accepted:parsed\.data\.terms_accepted/);
+  assert.match(publicBookingRoute, /create_public_booking_request/);
+  assert.match(publicBookingRoute, /idempotency_key: z\.string\(\)\.uuid\(\)/);
+  assert.match(publicAvailabilityRoute, /get_public_booking_slots/);
+  assert.match(publicBookingPage, /name="website"/);
+  assert.match(publicBookingPage, /name="website"/);
+  assert.match(publicBookingPage, /أوافق على استخدام اسمي وعمري ورقم هاتفي/);
+  assert.match(publicBookingPage, /age_years:parsedAge/);
+  assert.match(publicBookingPage, /idempotencyKey\|\|window\.crypto\.randomUUID\(\)/);
+  assert.match(publicBookingPage, /Request received|booking request is awaiting/i);
+  assert.doesNotMatch(publicBookingRoute, /from\('patients'\)\.insert/);
+});
+
+test('public booking SQL enforces tenant-scoped capacity, consent, and idempotency in the database', () => {
+  assert.match(publicBookingMigration, /create table if not exists public\.clinic_booking_settings/);
+  assert.match(publicBookingMigration, /create table if not exists public\.clinic_booking_hours/);
+  assert.match(publicBookingMigration, /alter table public\.clinic_booking_settings enable row level security/);
+  assert.match(publicBookingMigration, /alter table public\.clinic_booking_hours enable row level security/);
+  assert.match(publicBookingMigration, /booking_consent_at timestamptz/);
+  assert.match(publicBookingMigration, /p_consent_accepted is distinct from true/);
+  assert.match(publicBookingMigration, /booking_idempotency_key=p_idempotency_key/);
+  assert.match(publicBookingMigration, /for update/);
+  assert.match(publicBookingMigration, /v_count >= v_booking\.max_bookings_per_slot/);
+  assert.match(publicBookingMigration, /revoke all on function public\.create_public_booking_request/);
+  assert.equal((publicBookingMigration.match(/\bcommit;/g)||[]).length,1);
+  assert.equal((publicBookingMigration.match(/create or replace function public\.create_public_booking_request/g)||[]).length,1);
+});
+
+test('manual appointment creation uses the same locked capacity check as online booking', () => {
+  assert.match(appointmentApi, /supabase\.rpc\('create_clinic_appointment'/);
+  assert.doesNotMatch(appointmentApi, /from\('appointments'\)\.insert/);
+  assert.match(staffCapacityMigration, /for update/);
+  assert.match(staffCapacityMigration, /v_overlaps >= v_booking\.max_bookings_per_slot/);
+  assert.match(staffCapacityMigration, /public\.has_org_role/);
+  assert.match(staffCapacityMigration, /public\.audit_events/);
+  assert.equal((staffCapacityMigration.match(/\bcommit;/g)||[]).length,1);
+});
+
+test('clinician can review a public booking and the patient file is only created after confirmation', () => {
+  assert.match(bookingReviewRoute, /resolve_public_booking_request/);
+  assert.match(bookingReviewRoute, /resolveOrganization\(supabase,user,request\)/);
+  assert.match(publicBookingMigration, /if p_action='decline' then/);
+  assert.match(publicBookingMigration, /insert into public\.patients\([\s\S]*?reported_age_years[\s\S]*?v_appointment\.patient_age_years/);
+  assert.match(publicBookingMigration, /update public\.appointments set patient_id=v_patient\.id, status='confirmed', booking_status='confirmed'/);
+  assert.match(publicBookingMigration, /set booking_status='declined',status='cancelled'/);
+});
+
+test('the deployed clinic workflow uses the real database configuration rather than demo-only runtime', () => {
+  assert.match(bookingWorkflow, /NEXT_PUBLIC_DEMO_MODE: "false"/);
+  assert.match(bookingWorkflow, /NEXT_PUBLIC_SUPABASE_URL:/);
+  assert.match(bookingWorkflow, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:/);
+  assert.match(bookingWorkflow, /npm run typecheck/);
+  assert.match(bookingWorkflow, /npm test/);
+  assert.match(bookingWorkflow, /npm run build:cloudflare/);
+});
+
+
+test('public booking request inbox is organization-scoped and role-gated across all dates', () => {
+  assert.match(bookingRequestsRoute, /resolveOrganization\(supabase, user, request\)/);
+  assert.match(bookingRequestsRoute, /reviewRoles\.includes\(context\.role\)/);
+  assert.match(bookingRequestsRoute, /eq\('organization_id', context\.organizationId\)/);
+  assert.match(bookingRequestsRoute, /eq\('booking_source', 'public_link'\)/);
+  assert.match(bookingRequestsRoute, /eq\('booking_status', 'requested'\)/);
+  assert.match(bookingRequestsRoute, /limit\(100\)/);
+  assert.match(app, /async function loadBookingRequests\(\)/);
+  assert.match(app, /useMemo\(\(\) => bookingRequests, \[bookingRequests\]\)/);
+  assert.match(app, /setBookingOrigin\(window\.location\.origin\)/);
+  assert.match(app, /من كل التواريخ/);
+});
+
+test('general schedule does not expose public-request phone snapshots to unrelated clinic roles', () => {
+  assert.match(appointmentApi, /canReviewPublicBookings/);
+  assert.match(appointmentApi, /booking_status==='requested'/);
+  assert.doesNotMatch(appointmentApi, /patient_phone_snapshot|patient_age_years|patient_name_snapshot/);
+  assert.doesNotMatch(appointmentApi, /booking_reference/);
+});
+
+test('dental chart stores canonical FDI and correctly renders alternate notation and surface anatomy', () => {
+  assert.match(app, /function formatToothNotation\(value: number \| string, notation: string\)/);
+  assert.match(app, /if \(quadrant === 1\) return String\(9 - position\)/);
+  assert.match(app, /if \(quadrant === 4 \|\| quadrant === 8\) return tooth \+ '┐'/);
+  assert.match(app, /notation_system: 'FDI'/);
+  assert.match(app, /tooth-surface-diagram/);
+  assert.match(app, /value:'palatal',label:'حنكي'/);
+  assert.match(app, /transform=\{!lower \? 'translate\(0 78\) scale\(1 -1\)' : undefined\}/);
+  assert.match(app, /الربع الأول · 18–11/);
+  assert.match(app, /الربع الرابع · 48–41/);
+});
+
+test('clinic shifts cannot overlap and staff appointments share the same capacity lock', () => {
+  assert.match(shiftCapacityMigration, /create trigger clinic_booking_hours_no_overlap/);
+  assert.match(shiftCapacityMigration, /working shifts on the same day may not overlap/);
+  assert.match(shiftCapacityMigration, /select \* into v_booking[\s\S]*?for update/);
+  assert.match(shiftCapacityMigration, /v_overlaps >= v_booking\.max_bookings_per_slot/);
+});

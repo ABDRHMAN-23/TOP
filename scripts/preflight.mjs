@@ -1,6 +1,8 @@
 const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE !== 'false';
-const requiredForLive = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'];
+const requiredForLive = ['NEXT_PUBLIC_SUPABASE_URL'];
 const missing = requiredForLive.filter((name) => !process.env[name]?.trim() || /YOUR_|PLACEHOLDER|CHANGE_ME/i.test(process.env[name]));
+const publicDatabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+if (!demoMode && (!publicDatabaseKey?.trim() || /YOUR_|PLACEHOLDER|CHANGE_ME/i.test(publicDatabaseKey))) missing.push('NEXT_PUBLIC_SUPABASE_ANON_KEY or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY');
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
 console.log('Sinan configuration preflight');
@@ -29,9 +31,8 @@ try {
 }
 
 if (!process.env.GEMINI_API_KEY?.trim() || /YOUR_|PLACEHOLDER|CHANGE_ME/i.test(process.env.GEMINI_API_KEY)) {
-  console.error('FAIL: configure GEMINI_API_KEY on the server before enabling transcription processing.');
-  process.exit(1);
+  console.warn('WARN: GEMINI_API_KEY is not configured; clinical recording transcription will remain unavailable until it is added as a server secret.');
 }
 
-console.log('PASS: required live-mode environment values are present (values were not printed).');
+console.log('PASS: core clinic environment values are present (values were not printed).');
 console.log('REQUIRED: database migration, Auth, private Storage policies, tenant-isolation checks, and build/deployment verification must still be confirmed separately.');

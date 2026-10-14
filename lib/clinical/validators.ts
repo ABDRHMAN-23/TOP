@@ -4,6 +4,7 @@ export const patientCreateSchema = z.object({
   full_name: z.string().trim().min(2).max(180),
   patient_number: z.string().trim().max(80).optional().nullable(),
   date_of_birth: z.string().date().optional().nullable(),
+  reported_age_years: z.number().int().min(1).max(120).optional().nullable(),
   sex: z.enum(['female', 'male', 'unspecified']).default('unspecified'),
   phone: z.string().trim().max(40).optional().nullable(),
   chief_complaint: z.string().trim().max(2000).optional().nullable(),

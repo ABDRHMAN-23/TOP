@@ -1254,3 +1254,321 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
  .system-notice strong{font-size:9px}
  .system-notice span{font-size:8px}
 }
+
+
+/* Sinan clinic scheduling + public booking */
+.booking-settings-panel{margin-top:17px;padding:23px;border:1px solid #dfe7f1;border-radius:19px;background:#fff;box-shadow:0 6px 24px #183b6507}
+.booking-settings-heading,.booking-request-queue-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding-bottom:17px;border-bottom:1px solid #e9eef5}
+.booking-settings-heading h2,.booking-request-queue-head h2{margin:5px 0 0;color:#1e3658;font-size:17px;font-weight:800}
+.booking-settings-heading p,.booking-request-queue-head p{margin:6px 0 0;color:#8493a9;font-size:10px;line-height:1.8}
+.booking-publish-status{display:inline-flex;align-items:center;gap:7px;flex:none;padding:8px 11px;border:1px solid #e5eaf2;border-radius:10px;font-size:10px;font-weight:750;white-space:nowrap}
+.booking-publish-status i{width:7px;height:7px;border-radius:50%;background:#a0aab9}
+.booking-publish-status.published{border-color:#bde8d6;background:#f0fbf6;color:#25815e}
+.booking-publish-status.published i{background:#2aab7a;box-shadow:0 0 0 3px #2aab7a1e}
+.booking-publish-status.unpublished{background:#f6f8fb;color:#6b7d96}
+.booking-connection-notice{display:flex;align-items:center;gap:9px;margin:15px 0;padding:12px 13px;border:1px solid #f1dfbc;border-radius:11px;background:#fff9ed;color:#916b2d;font-size:10px;line-height:1.7}
+.booking-connection-notice svg{flex:none}
+.booking-loading-line{display:flex;align-items:center;gap:9px;padding:13px;color:#7186a3;font-size:10px}
+.booking-publish-toggle{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:16px 0;border-bottom:1px solid #edf1f6}
+.booking-publish-toggle>div{display:flex;flex-direction:column;gap:5px}
+.booking-publish-toggle strong{color:#294463;font-size:11px}
+.booking-publish-toggle span{max-width:650px;color:#8392a7;font-size:9px;line-height:1.8}
+.booking-switch{position:relative;display:inline-flex;flex:none;width:45px;height:26px}
+.booking-switch input{position:absolute;width:1px;height:1px;opacity:0}
+.booking-switch>span{position:relative;width:45px;height:26px;border-radius:99px;background:#d7dfeb;cursor:pointer;transition:background .18s}
+.booking-switch>span:before{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 2px 6px #152f5020;transition:transform .18s}
+[dir="rtl"] .booking-switch>span:before{left:auto;right:3px}
+.booking-switch input:checked+span{background:#2b66cb}
+.booking-switch input:checked+span:before{transform:translateX(19px)}
+[dir="rtl"] .booking-switch input:checked+span:before{transform:translateX(-19px)}
+.booking-switch input:disabled+span{opacity:.5;cursor:not-allowed}
+.booking-config-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:19px 0}
+.booking-config-grid>label{display:flex;flex-direction:column;gap:7px;min-width:0;color:#4a617f;font-size:10px;font-weight:750}
+.booking-config-grid input,.booking-config-grid select{width:100%;min-height:41px;padding:9px 11px;border:1px solid #dce5f0;border-radius:10px;background:#fbfcfe;color:#2d4566;font:inherit;font-size:11px;outline:none;transition:border-color .15s,box-shadow .15s}
+.booking-config-grid input:focus,.booking-config-grid select:focus{border-color:#7ca5eb;box-shadow:0 0 0 3px #4b81d613}
+.booking-config-grid input:disabled,.booking-config-grid select:disabled{background:#f5f7fa;color:#8a98ac}
+.booking-config-grid small,.booking-input-hint{color:#94a1b3;font-size:8px;font-weight:500;line-height:1.6}
+.booking-hours-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:4px 0 13px}
+.booking-hours-heading h3{margin:0;color:#263f60;font-size:13px;font-weight:800}
+.booking-hours-heading p{margin:5px 0 0;color:#8392a7;font-size:9px;line-height:1.7}
+.booking-hours-heading .secondary-button{flex:none;font-size:9px;min-height:35px}
+.booking-week-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.booking-day-card{min-width:0;padding:13px;border:1px solid #e3eaf4;border-radius:13px;background:#fcfdff}
+.booking-day-card>header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;padding-bottom:9px;border-bottom:1px solid #edf1f6}
+.booking-day-card>header strong{color:#304a6e;font-size:11px;font-weight:800}
+.booking-day-card>header span{color:#96a3b4;font-size:8px}
+.booking-shift-editor{padding:9px 0}
+.booking-shift-editor+.booking-shift-editor{border-top:1px dashed #e4eaf2}
+.booking-shift-editor.is-enabled{color:#3269c7}
+.booking-shift-toggle{display:flex;align-items:center;gap:7px;margin-bottom:9px;color:#7385a0;font-size:9px;font-weight:750;cursor:pointer}
+.booking-shift-toggle input{width:14px;height:14px;margin:0;accent-color:#2f69c9}
+.booking-shift-editor.is-enabled .booking-shift-toggle{color:#356bc3}
+.booking-hour-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.booking-hour-fields label{display:flex;align-items:center;gap:7px;min-width:0}
+.booking-hour-fields label span{flex:none;color:#9aa6b7;font-size:8px}
+.booking-hour-fields input{width:100%;min-width:0;min-height:34px;padding:6px;border:1px solid #e0e8f2;border-radius:8px;background:#fff;color:#3d587c;font:10px 'DM Sans',sans-serif}
+.booking-hour-fields input:disabled{background:#f5f7fa;color:#97a4b4}
+.booking-share-box{display:flex;align-items:center;gap:13px;margin-top:19px;padding:16px;border:1px solid #dbe6f5;border-radius:14px;background:linear-gradient(120deg,#f7faff,#fbfdff)}
+.booking-share-icon{display:grid;place-items:center;flex:none;width:43px;height:43px;border:1px solid #dce7f8;border-radius:13px;background:#eaf1ff;color:#3269c5}
+.booking-share-copy{display:flex;flex:1;flex-direction:column;gap:5px;min-width:0}
+.booking-share-copy strong{color:#294463;font-size:10px;font-weight:800}
+.booking-share-copy span{color:#8393a9;font-size:9px;line-height:1.7}
+.booking-share-copy code{overflow-wrap:anywhere;color:#346ac0;font:10px 'DM Sans',sans-serif;direction:ltr;text-align:left}
+.booking-share-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:none}
+.booking-share-actions .secondary-button{font-size:9px;min-height:35px}
+.booking-share-actions .text-link{display:inline-flex;align-items:center;gap:4px;font-size:9px}
+.booking-settings-footer{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-top:16px;padding-top:15px;border-top:1px solid #e9eef5}
+.booking-settings-footer>span{display:flex;align-items:center;gap:7px;color:#7b8ea6;font-size:9px;line-height:1.7}
+.booking-settings-footer>span svg{flex:none;color:#5e85bd}
+.booking-settings-footer .primary-button{flex:none;min-height:41px;font-size:10px}
+.booking-request-queue{margin-bottom:13px;padding:20px;border:1px solid #dce7f5;border-radius:17px;background:#fff;box-shadow:0 5px 20px #16395f08}
+.booking-request-queue-head{align-items:center}
+.booking-request-count{display:grid;place-items:center;flex:none;min-width:36px;height:36px;padding:0 8px;border:1px solid #f0dcae;border-radius:12px;background:#fff7e5;color:#9b6c20;font-size:14px;font-weight:850}
+.booking-request-list{display:grid;gap:0}
+.booking-request-card{display:grid;grid-template-columns:minmax(190px,1.1fr) minmax(180px,.9fr) minmax(100px,.5fr) auto;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid #edf1f6}
+.booking-request-card:last-child{border-bottom:0;padding-bottom:2px}
+.booking-request-patient{display:flex;align-items:center;gap:10px;min-width:0}
+.booking-request-avatar{display:grid;place-items:center;flex:none;width:42px;height:42px;border:1px solid #dce8fb;border-radius:13px;background:#eaf1ff;color:#3b68b2;font-size:11px;font-weight:850}
+.booking-request-patient>div,.booking-request-when>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.booking-request-patient strong,.booking-request-when strong{overflow:hidden;color:#2d4668;font-size:10px;font-weight:800;text-overflow:ellipsis;white-space:nowrap}
+.booking-request-patient span,.booking-request-when span{display:flex;align-items:center;gap:5px;color:#7d8fa8;font-size:9px}
+.booking-request-patient small{color:#7187a3;font:10px 'DM Sans',sans-serif;direction:ltr;text-align:right}
+.booking-request-when{display:flex;align-items:flex-start;gap:9px;min-width:0;color:#6785b5}
+.booking-request-when>svg{flex:none;margin-top:2px}
+.booking-request-reference{display:flex;flex-direction:column;gap:5px}
+.booking-request-reference small{color:#9aa6b6;font-size:8px}
+.booking-request-reference strong{color:#47688f;font:11px 'DM Sans',sans-serif}
+.booking-request-actions{display:flex;flex-direction:column;gap:7px;min-width:145px}
+.booking-request-actions button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:34px;padding:7px 10px;font-size:9px;white-space:nowrap}
+.booking-request-actions .danger-action{border-color:#f1dada;background:#fff8f8;color:#a44f53}
+.booking-request-actions .danger-action:hover{border-color:#dfb9b9;background:#fff0f0}
+.booking-request-actions button:disabled{opacity:.5;cursor:wait}
+.dental-chart{padding:23px 18px;border:1px solid #dce6f2;border-radius:17px;background:linear-gradient(180deg,#fcfdff,#f7faff)}
+.odontogram-patient-heading{align-items:center;gap:18px}
+.odontogram-controls{display:flex;flex-direction:column;align-items:flex-end;gap:9px;min-width:230px}
+.odontogram-controls .native-select{min-width:230px;max-width:100%}
+.dentition-toggle{display:flex;align-items:center;gap:3px;padding:3px;border:1px solid #dfe7f2;border-radius:10px;background:#f2f5fa}
+.dentition-toggle button{padding:7px 11px;border:0;border-radius:7px;background:transparent;color:#71849f;font-size:9px;font-weight:750;cursor:pointer}
+.dentition-toggle button.active{background:#fff;color:#2458bd;box-shadow:0 2px 5px #173c6c0d}
+.chart-jaw-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px;color:#3b577c;font-size:10px;font-weight:800}
+.chart-jaw-heading small{color:#92a0b3;font-size:8px;font-weight:500}
+.chart-jaw-heading.lower{margin-top:13px;margin-bottom:0}
+.teeth-row.anatomical-teeth{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));align-items:end;gap:2px;min-width:0}
+.teeth-row.anatomical-teeth.primary-dentition{grid-template-columns:repeat(10,minmax(0,1fr));max-width:82%;margin-inline:auto}
+.tooth{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;min-width:0;padding:5px 1px;border:1px solid transparent;border-radius:9px;background:transparent;color:#8da1bd;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
+.tooth:hover{border-color:#cbdcf2;background:#edf4ff;transform:translateY(-1px)}
+.tooth .tooth-glyph{display:grid;place-items:center;width:100%;height:65px;min-width:0;border:0;border-radius:0;background:transparent;box-shadow:none;color:#94a8c3}
+.tooth .anatomical-tooth-glyph{display:block;width:100%;height:100%;max-width:49px;overflow:visible}
+.tooth .anatomical-tooth-glyph .tooth-root-shape{stroke:#aabbd0}
+.tooth .anatomical-tooth-glyph .tooth-crown-shape{fill:#fff;stroke:#8299b7;stroke-width:1.7;filter:drop-shadow(0 2px 2px #193b6108)}
+.tooth .anatomical-tooth-glyph path:not(.tooth-root-shape):not(.tooth-crown-shape){stroke:#a2b3ca}
+.tooth small{color:#8192aa;font-size:8px;font-weight:750;line-height:1.2}
+.tooth.picked{border-color:#a8c4f2;background:#ebf3ff;box-shadow:0 0 0 2px #3f78d00d}
+.tooth.picked .anatomical-tooth-glyph .tooth-crown-shape{fill:#d9e8ff;stroke:#386fc4}
+.tooth.picked .anatomical-tooth-glyph .tooth-root-shape{stroke:#7299d2}
+.tooth.flagged .anatomical-tooth-glyph .tooth-crown-shape{fill:#fff0d2;stroke:#be8b36}
+.tooth.flagged .anatomical-tooth-glyph .tooth-root-shape{stroke:#be9a61}
+.tooth.recorded .anatomical-tooth-glyph .tooth-crown-shape{fill:#dff4ea;stroke:#4d9b7e}
+.tooth.recorded .anatomical-tooth-glyph .tooth-root-shape{stroke:#6fa68f}
+.jaw-midline{display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0;color:#8b9cb2;font-size:7px}
+.jaw-midline i{height:1px;width:12%;background:#dce5f1}
+.tooth-detail.anatomical-tooth-detail{align-items:flex-start;padding:17px;margin-top:15px;border:1px solid #dbe6f3;border-radius:14px;background:#fff}
+.anatomical-tooth-detail>div{flex:1;min-width:0}
+.anatomical-tooth-detail h3{display:flex;align-items:baseline;gap:8px}
+.anatomical-tooth-detail h3 small{padding:3px 6px;border-radius:6px;background:#f0f4fa;color:#7c8da7;font-size:8px}
+.tooth-surface-picker,.tooth-entry-surfaces{display:flex;flex-direction:column;gap:8px;margin-top:13px}
+.tooth-surface-picker>strong,.tooth-entry-surfaces>strong{color:#5d7391;font-size:9px;font-weight:800}
+.tooth-surface-picker>div,.tooth-entry-surfaces>div{display:flex;flex-wrap:wrap;gap:6px}
+.tooth-surface-picker button,.tooth-entry-surfaces button{padding:7px 10px;border:1px solid #dee7f3;border-radius:8px;background:#f9fbfe;color:#7084a1;font-size:9px;cursor:pointer}
+.tooth-surface-picker button.selected,.tooth-entry-surfaces button.selected{border-color:#8fb4ed;background:#eaf2ff;color:#2b63ba;box-shadow:0 0 0 2px #3b75d00c}
+.tooth-surface-picker>small{color:#98a5b6;font-size:8px;line-height:1.7}
+.legend-dot.recorded{background:#63ab8c}
+.tooth-entry-modal{width:min(100%,560px)}
+.tooth-entry-summary{display:flex;align-items:center;gap:12px;margin:4px 0 17px;padding:12px;border:1px solid #e3ebf5;border-radius:12px;background:#f8fbff}
+.tooth-entry-icon{display:grid;place-items:center;flex:none;width:46px;height:46px;border-radius:11px;background:#e8f1ff;color:#527bad}
+.tooth-entry-icon .anatomical-tooth-glyph{width:34px;height:42px}
+.tooth-entry-summary>div{display:flex;flex-direction:column;gap:5px}
+.tooth-entry-summary strong{color:#304b6e;font-size:11px}
+.tooth-entry-summary span{color:#8395ad;font-size:9px}
+.public-booking-shell{min-height:100dvh;padding:0 28px 24px;background:radial-gradient(ellipse at 10% 0,#e8f1ff 0,transparent 40%),#f5f8fc;color:#233b5a}
+.public-booking-topbar{display:flex;align-items:center;gap:12px;max-width:1180px;margin:0 auto;padding:20px 0;border-bottom:1px solid #e2e9f3}
+.public-booking-brand{display:grid;place-items:center;flex:none;width:43px;height:43px;border:1px solid #d8e5f8;border-radius:14px;background:#e9f1ff;color:#2b62bd}
+.public-booking-topbar>strong,.public-booking-clinic-name strong{color:#1e3658;font-size:13px;font-weight:850}
+.public-booking-clinic-name{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.public-booking-clinic-name span{color:#8291a8;font-size:9px}
+.public-booking-topbar .language-button,.public-booking-topbar button{margin-inline-start:auto}
+.public-booking-layout{display:grid;grid-template-columns:minmax(0,.85fr) minmax(440px,1.15fr);align-items:start;gap:clamp(28px,5vw,72px);max-width:1180px;margin:42px auto 28px}
+.public-booking-intro{position:sticky;top:25px;padding:28px 2px}
+.booking-kicker{display:inline-flex;align-items:center;gap:7px;color:#3970c6;font-size:10px;font-weight:850;letter-spacing:.7px}
+.public-booking-intro h1{max-width:530px;margin:15px 0 13px;color:#18375f;font-size:clamp(28px,3.5vw,42px);font-weight:850;line-height:1.3;letter-spacing:-.7px}
+.public-booking-intro>p{max-width:480px;margin:0;color:#71849f;font-size:12px;line-height:2}
+.booking-trust-points{display:grid;gap:11px;margin-top:25px}
+.booking-trust-points span{display:flex;align-items:center;gap:9px;color:#506b8e;font-size:10px;font-weight:700}
+.booking-trust-points svg{color:#5281c4}
+.public-booking-help{display:flex;gap:11px;max-width:420px;margin-top:34px;padding:15px;border:1px solid #dfe8f4;border-radius:13px;background:#ffffffa6;color:#5c7eab}
+.public-booking-help>svg{flex:none;margin-top:1px}
+.public-booking-help>div{display:flex;flex-direction:column;gap:5px}
+.public-booking-help strong{color:#3d587d;font-size:10px}
+.public-booking-help span{color:#8495ab;font-size:9px;line-height:1.8}
+.public-booking-card{padding:23px 25px;border:1px solid #dce6f2;border-radius:19px;background:#fff;box-shadow:0 18px 52px #153b6a0b}
+.booking-card-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px}
+.booking-card-heading>div{display:flex;align-items:center;gap:10px}
+.booking-step-number{display:grid;place-items:center;flex:none;width:28px;height:28px;border:1px solid #dbe7fa;border-radius:8px;background:#edf4ff;color:#4774b7;font:10px 'DM Sans',sans-serif;font-weight:800}
+.booking-card-heading h2{margin:0;color:#233e61;font-size:13px;font-weight:850}
+.booking-required-note{color:#91a0b4;font-size:8px}
+.public-booking-fields{display:grid;gap:12px;margin-bottom:24px}
+.public-booking-fields label,.booking-date-field{display:flex;flex-direction:column;gap:7px;min-width:0;color:#4d6280;font-size:10px;font-weight:750}
+.public-booking-fields input,.booking-date-field input{width:100%;min-width:0;min-height:42px;padding:10px 11px;border:1px solid #dce5f0;border-radius:10px;background:#fbfcfe;color:#263f60;font-size:11px;outline:none;transition:border-color .15s,box-shadow .15s}
+.public-booking-fields input:focus,.booking-date-field input:focus{border-color:#80a7eb;box-shadow:0 0 0 3px #3a78d015}
+.public-booking-field-row{display:grid;grid-template-columns:minmax(95px,.55fr) minmax(0,1fr);gap:11px}
+.booking-time-heading{padding-top:17px;border-top:1px solid #edf1f6}
+.booking-slot-length{padding:5px 8px;border:1px solid #e0e9f6;border-radius:7px;background:#f4f8ff;color:#587caf;font-size:8px;font-weight:750}
+.booking-date-field{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:14px;padding:9px 11px;border:1px solid #e1e9f3;border-radius:11px;background:#fafcff}
+.booking-date-field>span{display:flex;align-items:center;gap:7px;flex:none;color:#6b829f;font-size:9px}
+.booking-date-field input{width:auto;max-width:60%;min-height:32px;padding:5px 8px;border:0;background:transparent;font-size:10px}
+.booking-selected-date{margin:12px 1px;color:#5d7597;font-size:10px;font-weight:800}
+.booking-shift{margin-top:15px}
+.booking-shift h3{display:flex;align-items:center;gap:7px;margin:0 0 9px;color:#506987;font-size:10px;font-weight:800}
+.booking-shift h3:before{content:"";width:6px;height:6px;border-radius:50%;background:#79a2df}
+.booking-slot-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.booking-slot{min-width:0;min-height:38px;padding:7px 4px;border:1px solid #dce6f3;border-radius:9px;background:#fff;color:#496483;font:10px 'DM Sans',sans-serif;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
+.booking-slot:hover{transform:translateY(-1px);border-color:#8eb2ec;background:#f4f8ff}
+.booking-slot.selected{border-color:#2b65c4;background:#eaf2ff;color:#2458b5;box-shadow:0 0 0 2px #326fd01a}
+.booking-slots-loading,.booking-no-slots{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:9px;min-height:135px;padding:18px;color:#7f91ab;text-align:center}
+.booking-no-slots{border:1px dashed #dce6f2;border-radius:12px;background:#fafcff}
+.booking-no-slots svg{color:#7f9dcc}
+.booking-no-slots strong{color:#4b6282;font-size:10px}
+.booking-no-slots span{max-width:330px;color:#8c9bb0;font-size:9px;line-height:1.8}
+.booking-selected-summary{display:grid;grid-template-columns:20px auto;align-items:center;gap:5px 8px;margin-top:14px;padding:12px;border:1px solid #d7e7ff;border-radius:11px;background:#f1f6ff;color:#3569b6}
+.booking-selected-summary svg{grid-row:span 2}
+.booking-selected-summary span{color:#7c91b0;font-size:8px}
+.booking-selected-summary strong{color:#2f548c;font-size:9px}
+.booking-consent{display:flex;align-items:flex-start;gap:9px;margin:19px 0 12px;color:#7b8ea8;font-size:9px;line-height:1.8;cursor:pointer}
+.booking-consent input{flex:none;width:15px;height:15px;margin:2px 0 0;accent-color:#2f69c9}
+.booking-honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+.booking-form-error{margin:11px 0;padding:11px;border:1px solid #f0d1d1;border-radius:10px;background:#fff7f7;color:#a4484b;font-size:10px;line-height:1.7}
+.public-booking-primary{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:45px;padding:10px 14px;border:1px solid #2759b6;border-radius:11px;background:#2862c5;color:#fff;font-size:10px;font-weight:800;cursor:pointer;transition:background .15s,transform .15s}
+.public-booking-primary:hover{background:#1d51a8;transform:translateY(-1px)}
+.public-booking-primary:disabled{border-color:#ced7e5;background:#e0e6ef;color:#8b98aa;cursor:not-allowed;transform:none}
+.booking-confirm-note{margin:10px 0 0;color:#92a0b2;font-size:8px;line-height:1.8;text-align:center}
+.public-booking-footer{display:flex;align-items:center;justify-content:center;gap:7px;max-width:1180px;margin:26px auto 0;color:#8a99ad;font-size:9px;text-align:center;line-height:1.7}
+.public-booking-footer svg{flex:none;color:#7795bc}
+.public-booking-loading,.public-booking-unavailable{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;min-height:60vh;text-align:center}
+.public-booking-loading{color:#7d90ac;font-size:11px}
+.public-booking-unavailable{max-width:470px;margin:auto}
+.public-booking-unavailable h1{margin:4px 0;color:#213d62;font-size:24px}
+.public-booking-unavailable p{color:#7c8fa8;font-size:11px;line-height:1.9}
+.booking-confirmation{display:flex;align-items:center;flex-direction:column;max-width:620px;margin:6vh auto 0;padding:36px 28px;border:1px solid #dbe7f5;border-radius:19px;background:#fff;box-shadow:0 20px 50px #183c680c;text-align:center}
+.booking-confirmation-icon{display:grid;place-items:center;width:68px;height:68px;border:1px solid #c9eadb;border-radius:22px;background:#edfaf4;color:#26865f}
+.booking-confirmation h1{max-width:470px;margin:8px 0 12px;color:#203d64;font-size:24px;font-weight:850;line-height:1.5}
+.booking-confirmation>p:not(.booking-kicker){max-width:470px;color:#7a8da7;font-size:10px;line-height:1.9}
+.booking-confirmation-details{display:grid;grid-template-columns:1fr;gap:7px;width:100%;margin:18px 0 20px;padding:15px;border:1px solid #e2eaf5;border-radius:13px;background:#f8faff}
+.booking-confirmation-details span{color:#91a0b4;font-size:9px}
+.booking-confirmation-details strong{margin-bottom:6px;color:#35557f;font-size:11px}
+.public-booking-shell .spin{animation:sinan-booking-spin 1.1s linear infinite}
+@keyframes sinan-booking-spin{to{transform:rotate(360deg)}}
+@media(max-width:1050px){
+ .booking-request-card{grid-template-columns:minmax(170px,1fr) minmax(150px,.8fr) auto;gap:12px}
+ .booking-request-reference{display:none}
+ .public-booking-layout{grid-template-columns:minmax(0,.72fr) minmax(400px,1.28fr);gap:28px}
+ .booking-slot-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ .booking-settings-panel{padding:14px 11px;border-radius:15px}
+ .booking-settings-heading h2,.booking-request-queue-head h2{font-size:14px}
+ .booking-settings-heading p,.booking-request-queue-head p{font-size:9px}
+ .booking-publish-status{padding:6px 8px;font-size:8px}
+ .booking-publish-toggle strong{font-size:10px}
+ .booking-publish-toggle span{font-size:8px}
+ .booking-config-grid{grid-template-columns:minmax(0,1fr);gap:11px;padding:14px 0}
+ .booking-hours-heading{align-items:flex-start;flex-direction:column;gap:10px}
+ .booking-week-grid{grid-template-columns:minmax(0,1fr);gap:8px}
+ .booking-day-card{padding:11px}
+ .booking-share-box{align-items:flex-start;flex-wrap:wrap;padding:12px}
+ .booking-share-icon{width:37px;height:37px}
+ .booking-share-copy{flex:1 1 calc(100% - 53px)}
+ .booking-share-actions{display:flex;align-items:flex-start;flex-direction:row;flex-wrap:wrap;width:100%;padding-inline-start:48px}
+ .booking-settings-footer{align-items:stretch;flex-direction:column;gap:12px}
+ .booking-settings-footer .primary-button{width:100%}
+ .booking-request-queue{padding:14px 11px;border-radius:14px}
+ .booking-request-card{grid-template-columns:minmax(0,1fr);gap:11px;padding:14px 0}
+ .booking-request-reference{display:flex;flex-direction:row;align-items:center;gap:8px}
+ .booking-request-actions{display:grid;grid-template-columns:1fr 1fr;min-width:0}
+ .booking-request-actions button{font-size:8px;padding:7px 5px}
+ .odontogram-controls{align-items:stretch;width:100%;min-width:0}
+ .odontogram-controls .native-select{width:100%;min-width:0}
+ .odontogram-patient-heading{align-items:stretch;flex-direction:column}
+ .dental-chart{padding:13px 6px}
+ .chart-jaw-heading{align-items:flex-start;flex-direction:column;gap:4px;padding-inline:3px;font-size:9px}
+ .teeth-row.anatomical-teeth{gap:0;grid-template-columns:repeat(16,minmax(0,1fr))}
+ .teeth-row.anatomical-teeth.primary-dentition{max-width:100%;grid-template-columns:repeat(10,minmax(0,1fr))}
+ .tooth{padding:4px 0;border-radius:6px}
+ .tooth .tooth-glyph{height:44px}
+ .tooth small{font-size:7px}
+ .jaw-midline{gap:2px;margin:7px 0;font-size:6px}
+ .jaw-midline i{width:7%}
+ .tooth-detail.anatomical-tooth-detail{flex-direction:column;align-items:stretch;padding:12px}
+ .tooth-entry-modal{width:min(100%,560px);padding:16px 13px}
+ .public-booking-shell{padding:0 12px 20px}
+ .public-booking-topbar{padding:13px 0;gap:8px}
+ .public-booking-brand{width:37px;height:37px;border-radius:12px}
+ .public-booking-topbar>strong,.public-booking-clinic-name strong{font-size:11px}
+ .public-booking-layout{grid-template-columns:minmax(0,1fr);gap:12px;margin:15px auto}
+ .public-booking-intro{position:static;padding:9px 1px 14px}
+ .public-booking-intro h1{margin:9px 0 7px;font-size:25px;letter-spacing:-.3px}
+ .public-booking-intro>p{font-size:10px;line-height:1.8}
+ .booking-trust-points{grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
+ .booking-trust-points span{gap:6px;font-size:8px}
+ .booking-trust-points svg{width:15px;height:15px}
+ .public-booking-help{margin-top:13px;padding:11px}
+ .public-booking-card{padding:15px 12px;border-radius:15px}
+ .booking-card-heading h2{font-size:12px}
+ .public-booking-fields{gap:10px;margin-bottom:17px}
+ .public-booking-fields input{min-height:40px}
+ .public-booking-field-row{grid-template-columns:minmax(85px,.5fr) minmax(0,1fr);gap:8px}
+ .booking-slot-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .booking-slot{min-height:38px;font-size:9px}
+ .booking-date-field{gap:6px;padding:8px}
+ .booking-date-field>span{font-size:8px}
+ .booking-date-field input{max-width:63%;font-size:9px}
+ .public-booking-footer{font-size:8px;margin-top:15px}
+ .booking-confirmation{margin-top:5vh;padding:24px 15px;border-radius:15px}
+ .booking-confirmation h1{font-size:20px}
+}
+
+/* Clinical appointment inbox and anatomical tooth-surface map */
+.booking-queue-actions{display:flex;align-items:center;gap:9px;flex:none}
+.booking-queue-actions .secondary-button{min-height:34px;padding:0 10px;font-size:9px}
+.teeth-row.anatomical-teeth{direction:ltr}
+.jaw-midline{direction:ltr;display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;margin:13px 0;color:#6e819d;font-size:9px}
+.jaw-midline i{display:block;width:1px;height:15px;background:#dce5f1}
+.jaw-midline strong{color:#3a5f9c;font-size:9px;font-weight:800;padding:4px 8px;border:1px solid #dfe8f5;border-radius:7px;background:#f5f8ff}
+.lower-midline{margin-top:9px;margin-bottom:7px}
+.tooth-surface-picker{display:flex;flex-direction:column;gap:9px;min-width:0;margin-top:14px}
+.tooth-surface-picker>strong{color:#365273;font-size:10px;font-weight:800}
+.tooth-surface-picker>small{color:#8697ad;font-size:9px;line-height:1.7}
+.tooth-surface-diagram{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(51px,auto));grid-template-areas:". buccal ." "mesial center distal" ". inner .";gap:6px;width:min(100%,340px);padding:9px;border:1px solid #e0e9f4;border-radius:14px;background:linear-gradient(145deg,#fbfdff,#f4f7fc)}
+.tooth-surface-diagram.mesial-right{grid-template-areas:". buccal ." "distal center mesial" ". inner ."}
+.surface-cell{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;min-width:0;min-height:49px;padding:7px 4px;border:1px solid #dfe7f2;border-radius:10px;background:#fff;color:#66809f;cursor:pointer;transition:background .14s,border-color .14s,color .14s,box-shadow .14s}
+.surface-cell:hover{border-color:#a9c4ef;background:#f2f7ff;color:#2458c8}
+.surface-cell>span{display:grid;place-items:center;width:23px;height:23px;border-radius:7px;background:#f0f4fa;color:#4d6b96;font-size:10px;font-weight:850}
+.surface-cell>small{font-size:8px;line-height:1.3}
+.surface-cell.selected{border-color:#4c7ed2;background:#e9f1ff;color:#2458c8;box-shadow:inset 0 0 0 1px #4c7ed21b}
+.surface-cell.selected>span{background:#2458c8;color:#fff}
+.surface-buccal{grid-area:buccal}
+.surface-mesial{grid-area:mesial}
+.surface-center{grid-area:center;border-color:#cbd9ec;background:#f8faff}
+.surface-distal{grid-area:distal}
+.surface-inner{grid-area:inner}
+.tooth-surface-selection{display:flex;align-items:center;gap:5px;flex-wrap:wrap;min-height:20px}
+.tooth-surface-selection span{padding:4px 7px;border:1px solid #d6e4f7;border-radius:999px;background:#f0f6ff;color:#3566b2;font-size:8px;font-weight:750}
+.tooth-surface-selection .surface-none{border-color:#e5ebf3;background:#f8faff;color:#98a5b7;font-weight:500}
+@media(max-width:760px){
+  .booking-queue-actions{gap:5px}
+  .booking-queue-actions .secondary-button{font-size:8px;padding:0 7px}
+  .jaw-midline{gap:5px;font-size:7px}
+  .jaw-midline strong{font-size:7px;padding:3px 5px}
+  .tooth-surface-diagram{grid-template-rows:repeat(3,minmax(44px,auto));gap:4px;width:100%;padding:6px}
+  .surface-cell{min-height:43px;padding:5px 2px}
+  .surface-cell>small{font-size:7px}
+}
