@@ -471,6 +471,10 @@ const dictionary: Record<string, string> = {
   "العودة إلى مساحة العمل": "Return to workspace",
   "مساحة العمل الحالية": "Current workspace",
   "لا توجد تنبيهات جديدة.": "No new notifications.",
+  "حساب العيادة": "Clinic account",
+  "إدارة المواعيد ومتابعة الحضور والحالة ضمن جدول العيادة.": "Manage appointments and track attendance and status in the clinic schedule.",
+  "يحتاج مراجعة": "Needs review",
+  "لا يتوفر حفظ دائم لأن قاعدة بيانات العيادة غير متصلة.": "Persistent saving is unavailable because the clinic database is not connected.",
 };
 
 function translate(text: string, language: Language): string {
