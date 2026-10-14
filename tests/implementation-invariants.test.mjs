@@ -202,3 +202,25 @@ test('clinical status badges are non-interactive labels with distinct icons for 
   assert.ok(app.includes("state-pill ${c}"));
   assert.ok(app.includes('aria-hidden="true"'));
 });
+
+const reviewQueueRoute = await readFile(new URL('../app/api/review-queue/route.ts', import.meta.url), 'utf8');
+
+test('Sinan dashboard uses a data-led workbench, real counts, and a global command palette', () => {
+  assert.match(app, /className="dashboard-workbench"/);
+  assert.match(app, /setShowCommandPalette\(open => !open\)/);
+  assert.match(app, /commandPatientResults/);
+  assert.match(app, /const reviewCount = demoMode \? attentionPatients\.length : reviewQueue\.length/);
+  assert.match(app, /createDemoAppointments\(\)/);
+  assert.doesNotMatch(app, /number="١٢٨"/);
+  assert.doesNotMatch(app, /time="٩:٠٠" period="ص" patient=/);
+});
+
+test('clinical review queue is limited to one clinic and only unapproved clinical notes', () => {
+  assert.match(reviewQueueRoute, /resolveOrganization\(supabase, user, request\)/);
+  assert.match(reviewQueueRoute, /allowedRoles\.includes\(context\.role\)/);
+  assert.match(reviewQueueRoute, /eq\('organization_id', context\.organizationId\)/);
+  assert.match(reviewQueueRoute, /in\('status', \['draft', 'needs_review', 'ready_for_approval'\]\)/);
+  assert.match(reviewQueueRoute, /from\('patient_directory'\)/);
+  assert.match(reviewQueueRoute, /limit\(50\)/);
+  assert.doesNotMatch(reviewQueueRoute, /from\('clinical_notes'\)\.select\('\*'\)/);
+});
