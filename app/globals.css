@@ -105,13 +105,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .icon-button{position:relative;display:grid;place-items:center;flex:none;width:38px;height:38px;border:1px solid #e0e4d9;border-radius:12px;background:var(--surface);color:#536d61;transition:background .18s,border-color .18s,color .18s}
 .icon-button:hover{border-color:#bacbb9;background:#eff3e7;color:var(--forest)}
 .icon-button.subtle{border-color:transparent;background:transparent;color:#b2c5b7}
-.demo-notice{position:relative;display:flex;align-items:center;gap:12px;padding:11px 15px;margin:16px 0 0;border:1px solid #e2ddc4;border-radius:13px;background:#f8f2df;color:#a07836}
-.demo-notice:before{content:"";align-self:stretch;width:3px;min-height:29px;border-radius:5px;background:#d5b75e}
-.demo-notice>svg{color:#bd9646}
-.demo-notice>div{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
-.demo-notice strong{color:#87662e;font-size:10px;font-weight:700}
-.demo-notice span{color:#99835a;font-size:9px;line-height:1.7}
-.demo-notice button{display:grid;place-items:center;border:0;background:transparent;color:#a98a50}
+.system-notice{position:relative;display:flex;align-items:center;gap:12px;padding:11px 15px;margin:16px 0 0;border:1px solid #e2ddc4;border-radius:13px;background:#f8f2df;color:#a07836}
+.system-notice:before{content:"";align-self:stretch;width:3px;min-height:29px;border-radius:5px;background:#d5b75e}
+.system-notice>svg{color:#bd9646}
+.system-notice>div{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.system-notice strong{color:#87662e;font-size:10px;font-weight:700}
+.system-notice span{color:#99835a;font-size:9px;line-height:1.7}
+.system-notice button{display:grid;place-items:center;border:0;background:transparent;color:#a98a50}
 .welcome-row{position:relative;isolation:isolate;display:flex;align-items:flex-end;justify-content:space-between;gap:25px;min-height:222px;overflow:hidden;padding:31px 34px;margin:23px 0 20px;border:1px solid #1d4740;border-radius:27px;background:linear-gradient(113deg,#102f2d 0%,#16433b 53%,#1b4a3d 100%);box-shadow:0 15px 34px #173d3420}
 .welcome-row:before{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse at 8% 12%,#d8f07813 0,transparent 34%),linear-gradient(90deg,transparent 50%,#ffffff03 100%);pointer-events:none}
 .welcome-row:after{content:"";position:absolute;z-index:-1;left:-45px;bottom:-170px;width:300px;height:300px;border:1px solid #d8f07822;border-radius:50%;box-shadow:0 0 0 24px #d8f07808,0 0 0 52px #d8f07807,0 0 0 82px #d8f07805;pointer-events:none}
@@ -434,9 +434,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
  .top-date,.top-divider,.sign-in-link{display:none}
  .status-pill{padding:6px 8px;font-size:8px}
  .top-actions .icon-button{width:34px;height:34px}
- .demo-notice{gap:8px;padding:10px;margin-top:12px}
- .demo-notice strong{font-size:9px}
- .demo-notice span{font-size:8px}
+ .system-notice{gap:8px;padding:10px;margin-top:12px}
+ .system-notice strong{font-size:9px}
+ .system-notice span{font-size:8px}
  .welcome-row{display:flex;flex-direction:column;align-items:flex-start;gap:17px;min-height:0;padding:23px 20px 20px;margin:14px 0 13px;border-radius:22px}
  .welcome-row:after{left:-91px;bottom:-211px;width:250px;height:250px}
  .welcome-copy{max-width:100%;width:100%}
@@ -639,11 +639,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .language-toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:66px;min-height:37px;padding:0 12px;border:1px solid #cedcf2;border-radius:11px;background:#fff;color:#244d91;font-size:11px;font-weight:800;letter-spacing:.2px;box-shadow:0 2px 6px #17365b06;transition:background .15s,border-color .15s,transform .15s;cursor:pointer;white-space:nowrap}
 .language-toggle:hover{background:#edf4ff;border-color:#a9c5f5;transform:translateY(-1px)}
 .language-toggle-globe{display:grid;place-items:center;width:19px;height:19px;border-radius:7px;background:#e9f0ff;color:#2458c8;font-size:11px;font-weight:800}
-.demo-notice{border-color:#f1dfb7;background:#fff8e7;color:#9a6b20;border-radius:15px;box-shadow:0 2px 8px #7b5a1806}
-.demo-notice:before{background:#dfb756;border-radius:10px}
-.demo-notice>svg{color:#b9852e}
-.demo-notice strong{color:#855d1c;font-size:11px}
-.demo-notice span{color:#997a45;font-size:10px}
+.system-notice{border-color:#f1dfb7;background:#fff8e7;color:#9a6b20;border-radius:15px;box-shadow:0 2px 8px #7b5a1806}
+.system-notice:before{background:#dfb756;border-radius:10px}
+.system-notice>svg{color:#b9852e}
+.system-notice strong{color:#855d1c;font-size:11px}
+.system-notice span{color:#997a45;font-size:10px}
 .welcome-row{min-height:202px;padding:27px 31px;margin:20px 0 17px;border:1px solid #254da4;border-radius:23px;background:linear-gradient(116deg,#163b83 0%,#2458c8 58%,#3b78e5 100%);box-shadow:0 15px 34px #2458c81f;color:#fff;isolation:isolate}
 .welcome-row:before{opacity:.28;background:radial-gradient(circle at center,transparent 0 34%,#fff2 35%,transparent 36% 54%,#fff2 55%,transparent 56%)}
 .welcome-row:after{background:linear-gradient(135deg,transparent 40%,#8ab6ff2d 40%,#8ab6ff2d 60%,transparent 60%);border-color:#fff2}
@@ -866,9 +866,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .status-pill{max-width:95px;padding:6px 7px;font-size:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .top-actions .icon-button{width:34px;height:34px}
   .top-date,.top-divider,.sign-in-link{display:none}
-  .demo-notice{gap:8px;padding:11px 10px;margin-top:11px}
-  .demo-notice strong{font-size:9px;line-height:1.65}
-  .demo-notice span{font-size:8px;line-height:1.7}
+  .system-notice{gap:8px;padding:11px 10px;margin-top:11px}
+  .system-notice strong{font-size:9px;line-height:1.65}
+  .system-notice span{font-size:8px;line-height:1.7}
   .welcome-row{display:flex;flex-direction:column;align-items:stretch;gap:12px;min-height:0;padding:18px 17px 15px;margin:13px 0 12px;border-radius:19px}
   .welcome-row:after{left:-100px;bottom:-200px;width:230px;height:230px}
   .welcome-copy{max-width:100%;width:100%}
@@ -1009,8 +1009,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .workbench-heading-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-shrink:0}
 .connection-chip{display:inline-flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid #d9e6df;border-radius:9px;background:#f5fbf7;color:#3c7e62;font-size:9px;font-weight:700;white-space:nowrap}
 .connection-chip i{width:6px;height:6px;border-radius:50%;background:#38ae83}
-.connection-chip.demo{border-color:#f0e1bf;background:#fff9eb;color:#956d2c}
-.connection-chip.demo i{background:#d3a347}
+
 .connection-chip.disconnected{border-color:#efd8d8;background:#fff5f5;color:#a45353}
 .connection-chip.disconnected i{background:#d36b6b}
 .workbench-actionbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:18px 0 16px}
@@ -1223,3 +1222,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @media(max-width:760px){
   .timeline-list .appointment-state-select{grid-area:status;justify-self:start;max-width:135px;min-width:100px;min-height:28px;font-size:8px;padding:3px 19px 3px 6px}
 }
+
+/* Quiet operational connection status replaces promotional mode badges. */
+.connection-text{display:inline-flex;align-items:center;min-height:30px;padding-inline:4px;color:#8593a7;font-size:9px;font-weight:600;white-space:nowrap}
+.system-notice{position:relative;display:flex;align-items:center;gap:12px;padding:11px 15px;margin:16px 0 0;border:1px solid #e3eaf4;border-radius:13px;background:#f7f9fc;color:#70839d}
+.system-notice:before{content:"";align-self:stretch;width:3px;min-height:29px;border-radius:5px;background:#9db5db}
+.system-notice>svg{color:#6482b5}
+.system-notice>div{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.system-notice strong{color:#425a7c;font-size:10px;font-weight:750}
+.system-notice span{color:#7e8fa7;font-size:9px;line-height:1.7}
+.system-notice button{display:grid;place-items:center;border:0;background:transparent;color:#6f84a3}
+@media(max-width:760px){.connection-text{font-size:8px}.system-notice{gap:8px;padding:10px;margin-top:12px}.system-notice strong{font-size:9px}.system-notice span{font-size:8px}}
