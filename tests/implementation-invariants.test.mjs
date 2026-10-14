@@ -202,3 +202,45 @@ test('clinical status badges are non-interactive labels with distinct icons for 
   assert.ok(app.includes("state-pill ${c}"));
   assert.ok(app.includes('aria-hidden="true"'));
 });
+
+const reviewQueueRoute = await readFile(new URL('../app/api/review-queue/route.ts', import.meta.url), 'utf8');
+
+test('Sinan dashboard uses a data-led workbench, real counts, and a global command palette', () => {
+  assert.match(app, /className="workspace-page dashboard-workbench"/);
+  assert.match(app, /setShowCommandPalette\(open => !open\)/);
+  assert.match(app, /commandPatientResults/);
+  assert.match(app, /const reviewCount = demoMode \? attentionPatients\.length : reviewQueue\.length/);
+  assert.match(app, /createDemoAppointments\(\)/);
+  assert.doesNotMatch(app, /number="١٢٨"/);
+  assert.doesNotMatch(app, /time="٩:٠٠" period="ص" patient=/);
+});
+
+test('clinical review queue is limited to one clinic and only unapproved clinical notes', () => {
+  assert.match(reviewQueueRoute, /resolveOrganization\(supabase, user, request\)/);
+  assert.match(reviewQueueRoute, /allowedRoles\.includes\(context\.role\)/);
+  assert.match(reviewQueueRoute, /eq\('organization_id', context\.organizationId\)/);
+  assert.match(reviewQueueRoute, /in\('status', \['draft', 'needs_review', 'ready_for_approval'\]\)/);
+  assert.match(reviewQueueRoute, /from\('patient_directory'\)/);
+  assert.match(reviewQueueRoute, /limit\(50\)/);
+  assert.doesNotMatch(reviewQueueRoute, /from\('clinical_notes'\)\.select\('\*'\)/);
+});
+
+test('patient edit form is connected to the clinic-scoped patient PATCH endpoint', () => {
+  assert.match(app, /async function savePatientEdits\(\)/);
+  assert.match(app, /onClick=\{openPatientEdit\}/);
+  assert.match(app, /method: 'PATCH'/);
+  assert.match(patientDetailRoute, /eq\('id', patientId\)\.eq\('organization_id', context\.organizationId\)/);
+  assert.match(patientDetailRoute, /action: 'patient\.updated'/);
+});
+
+const appointmentStatusRoute = await readFile(new URL('../app/api/appointments/[appointmentId]/route.ts', import.meta.url), 'utf8');
+
+test('appointment status updates are validated, clinic-scoped, role-checked, and audited', () => {
+  assert.match(appointmentStatusRoute, /export async function PATCH/);
+  assert.match(appointmentStatusRoute, /status: z\.enum\(\['scheduled', 'confirmed', 'arrived', 'in_progress', 'completed', 'cancelled', 'no_show'\]\)/);
+  assert.match(appointmentStatusRoute, /resolveOrganization\(supabase, user, request\)/);
+  assert.match(appointmentStatusRoute, /eq\('organization_id', context\.organizationId\)/);
+  assert.match(appointmentStatusRoute, /action: 'appointment\.status_changed'/);
+  assert.match(app, /async function updateAppointmentStatus\(appointmentId: string, status: string\)/);
+  assert.match(app, /className="appointment-state-select"/);
+});

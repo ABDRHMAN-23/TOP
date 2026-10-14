@@ -5,7 +5,7 @@ import { LanguageButton, Localized, useLanguage } from './i18n';
 import {
   Activity, AlertCircle, Bell, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight,
   ClipboardList, Clock3, FileText, HeartPulse, Mic, Plus, Search, Settings, ShieldCheck,
-  Stethoscope, Users, X, ArrowUpLeft, FilePlus2, Play, Sparkles, CircleCheck, Menu
+  Stethoscope, Users, X, ArrowUpLeft, FilePlus2, Play, Sparkles, CircleCheck, Menu, Pencil
 } from 'lucide-react';
 
 const samplePatients = [
@@ -63,6 +63,19 @@ function dateInputForAden(value = new Date()) {
   const part = (type: string) => parts.find(item => item.type === type)?.value || '';
   return `${part('year')}-${part('month')}-${part('day')}`;
 }
+function createDemoAppointments() {
+  const date = dateInputForAden();
+  const items = [
+    { id: 'demo-appointment-1047', patient_id: 'SN-1047', time: '09:45', duration: 45, status: 'arrived', name: 'عمر خالد صالح', appointment_type: 'متابعة علاج العصب' },
+    { id: 'demo-appointment-1048', patient_id: 'SN-1048', time: '10:30', duration: 30, status: 'scheduled', name: 'سارة محمد علي', appointment_type: 'فحص ألم الضرس' },
+    { id: 'demo-appointment-1046', patient_id: 'SN-1046', time: '11:15', duration: 30, status: 'confirmed', name: 'ليلى عبدالكريم', appointment_type: 'فحص دوري' },
+    { id: 'demo-appointment-1045', patient_id: 'SN-1045', time: '12:00', duration: 45, status: 'confirmed', name: 'عبدالله ياسر', appointment_type: 'فحص حشوة' },
+  ];
+  return items.map(item => {
+    const start = new Date(date + 'T' + item.time + ':00+03:00');
+    return { id: item.id, patient_id: item.patient_id, scheduled_start: start.toISOString(), scheduled_end: new Date(start.getTime() + item.duration * 60000).toISOString(), timezone: 'Asia/Aden', appointment_type: item.appointment_type, status: item.status, note: null, patients: { full_name: item.name } };
+  });
+}
 function arabicDateForAden(value = new Date()) {
   return new Intl.DateTimeFormat('ar-YE', { timeZone: 'Asia/Aden', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(value);
 }
@@ -77,9 +90,17 @@ export default function HomePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [todayLabel, setTodayLabel] = useState('');
   const [search, setSearch] = useState('');
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [commandSearch, setCommandSearch] = useState('');
+  const commandInputRef = useRef<HTMLInputElement>(null);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(demoMode ? samplePatients[0] : null);
   const [selectedTooth, setSelectedTooth] = useState(46);
   const [showNewPatient, setShowNewPatient] = useState(false);
+  const [showEditPatient, setShowEditPatient] = useState(false);
+  const [editPatientName, setEditPatientName] = useState('');
+  const [editPatientPhone, setEditPatientPhone] = useState('');
+  const [editPatientComplaint, setEditPatientComplaint] = useState('');
+  const [patientSaving, setPatientSaving] = useState(false);
   const [showScribe, setShowScribe] = useState(false);
   const [showManualVisit, setShowManualVisit] = useState(false);
   const [manualComplaint, setManualComplaint] = useState('');
@@ -95,6 +116,9 @@ export default function HomePage() {
   const [showOrganizationPicker, setShowOrganizationPicker] = useState(false);
   const [todayAppointments, setTodayAppointments] = useState<any[]>([]);
   const [savedReports, setSavedReports] = useState<any[]>([]);
+  const [reviewQueue, setReviewQueue] = useState<any[]>([]);
+  const [reviewQueueLoading, setReviewQueueLoading] = useState(false);
+  const [reviewQueueAccessDenied, setReviewQueueAccessDenied] = useState(false);
   const [clinicSettings, setClinicSettings] = useState({ clinic_name_ar: '', clinic_name_en: '', address_ar: '', address_en: '', phone: '', email: '', website: '', default_report_language: 'ar', paper_size: 'A4', tooth_notation: 'FDI', recording_policy_version: 'clinic-policy-v1', audio_retention_days: 30 });
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [settingsDirty, setSettingsDirty] = useState(false);
@@ -186,6 +210,27 @@ export default function HomePage() {
     } catch (error) { setLoadError(error instanceof Error ? error.message : 'تعذر الاتصال بالخادم.'); }
   }
   useEffect(() => { setTodayLabel(language === 'ar' ? arabicDateForAden() : englishDateForAden()); }, [language]);
+  useEffect(() => {
+    if (!demoMode) return;
+    const fixtures = createDemoAppointments();
+    setTodayAppointments(fixtures);
+    setScheduleAppointments(fixtures);
+  }, []);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setShowCommandPalette(open => !open);
+        setCommandSearch('');
+      } else if (event.key === 'Escape') {
+        setShowCommandPalette(false);
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+  useEffect(() => { if (showCommandPalette) commandInputRef.current?.focus(); }, [showCommandPalette]);
   useEffect(() => { if (demoMode) return; let cancelled=false; bootstrapOrganization().catch(e=>{if(!cancelled)setLoadError(e instanceof Error?e.message:'تعذر تحميل مساحة العيادة.')}); return ()=>{cancelled=true}; }, []);
   useEffect(() => {
     if (demoMode || active !== 'odontogram' || !selectedPatient?.id) return;
@@ -204,15 +249,52 @@ export default function HomePage() {
     return()=>{cancelled=true};
   },[active,selectedPatient?.id]);
   useEffect(() => {
+    if (demoMode || active !== 'dashboard' || !activeOrganizationId) return;
+    let cancelled = false;
+    setReviewQueueLoading(true);
+    setReviewQueueAccessDenied(false);
+    fetch('/api/review-queue', { cache: 'no-store' })
+      .then(async response => {
+        const body = await response.json().catch(() => ({}));
+        if (response.status === 403) return { items: [], accessDenied: true };
+        if (!response.ok) throw new Error(body.error || 'تعذر تحميل قائمة مراجعة السجلات.');
+        return body;
+      })
+      .then(body => { if (!cancelled) { setReviewQueue(Array.isArray(body.items) ? body.items : []); setReviewQueueAccessDenied(Boolean(body.accessDenied)); } })
+      .catch(error => { if (!cancelled) notify(error instanceof Error ? error.message : 'تعذر تحميل قائمة المراجعة.'); })
+      .finally(() => { if (!cancelled) setReviewQueueLoading(false); });
+    return () => { cancelled = true; };
+  }, [active, activeOrganizationId]);
+  useEffect(() => {
     if (demoMode || active !== 'reports') return;
     let cancelled=false; fetch('/api/reports',{cache:'no-store'}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'تعذر تحميل التقارير.');return b;}).then(b=>{if(!cancelled)setSavedReports(Array.isArray(b.reports)?b.reports:[])}).catch(e=>{if(!cancelled)notify(e instanceof Error?e.message:'تعذر تحميل التقارير.')});return()=>{cancelled=true};
   },[active]);
   const filtered = useMemo(() => patients.filter(p => `${p.name} ${p.id} ${p.reason}`.toLowerCase().includes(search.toLowerCase())), [patients, search]);
   const currentToothEntry = toothEntries.find(entry => String(entry.tooth_number) === String(selectedTooth)) || null;
+  const attentionPatients = useMemo(() => patients.filter(patient => /مراجعة|مسودة|review|draft|needs/i.test(patient.state)).slice(0, 5), [patients]);
+  const reviewCount = demoMode ? attentionPatients.length : reviewQueue.length;
+  const activeClinicRole = organizations.find(item => item.organization_id === activeOrganizationId)?.role;
+  const canEditPatient = demoMode || ['owner', 'clinic_admin', 'dentist', 'clinician'].includes(activeClinicRole);
+  const visibleScheduleAppointments = demoMode ? scheduleAppointments.filter(item => dateInputForAden(new Date(item.scheduled_start)) === appointmentViewDate) : scheduleAppointments;
+  const commandRoutes = useMemo(() => [
+    ...nav,
+    { key: 'odontogram', label: 'مخطط الأسنان', icon: HeartPulse },
+    { key: 'endodontics', label: 'علاج العصب', icon: Activity },
+    { key: 'settings', label: 'إعدادات العيادة', icon: Settings },
+  ], []);
+  const commandNavResults = useMemo(() => {
+    const aliases: Record<string, string> = { dashboard: 'home dashboard overview', patients: 'patient files directory', appointments: 'calendar scheduling', scribe: 'record visit voice documentation', reports: 'reports records', odontogram: 'dental chart teeth', endodontics: 'root canal endodontics', settings: 'clinic settings configuration' };
+    const query = commandSearch.trim().toLocaleLowerCase();
+    return commandRoutes.filter(item => !query || (item.label + ' ' + item.key + ' ' + (aliases[item.key] || '')).toLocaleLowerCase().includes(query));
+  }, [commandRoutes, commandSearch]);
+  const commandPatientResults = useMemo(() => {
+    const query = commandSearch.trim().toLocaleLowerCase();
+    return patients.filter(patient => !query || (patient.name + ' ' + patient.id + ' ' + patient.reason).toLocaleLowerCase().includes(query)).slice(0, 5);
+  }, [patients, commandSearch]);
   const renderSavedAppointment = (a: any, color = 'blue') => {
     const patient = Array.isArray(a.patients) ? a.patients[0] : a.patients;
     const minutes = Math.max(1, Math.round((Date.parse(a.scheduled_end) - Date.parse(a.scheduled_start)) / 60000));
-    return <Appointment key={a.id} time={new Date(a.scheduled_start).toLocaleTimeString(language === 'ar' ? 'ar-YE' : 'en-US', { timeZone: 'Asia/Aden', hour: '2-digit', minute: '2-digit' })} period="" patient={patient?.full_name || patients.find(p => p.id === a.patient_id)?.name || 'مريض'} type={a.appointment_type === 'dental_visit' ? 'زيارة أسنان' : a.appointment_type || 'زيارة أسنان'} duration={minutes + (language === 'ar' ? ' دقيقة' : ' minutes')} status={appointmentStatus(a.status)} color={color}/>;
+    return <Appointment key={a.id} time={new Date(a.scheduled_start).toLocaleTimeString(language === 'ar' ? 'ar-YE' : 'en-US', { timeZone: 'Asia/Aden', hour: '2-digit', minute: '2-digit' })} period="" patient={patient?.full_name || patients.find(p => p.id === a.patient_id)?.name || 'مريض'} type={a.appointment_type === 'dental_visit' ? 'زيارة أسنان' : a.appointment_type || 'زيارة أسنان'} duration={minutes + (language === 'ar' ? ' دقيقة' : ' minutes')} status={appointmentStatus(a.status)} statusKey={a.status} onStatusChange={active === 'appointments' ? nextStatus => void updateAppointmentStatus(a.id, nextStatus) : undefined} color={color}/>;
   };
 
   function notify(message: string) { setToast(message); window.setTimeout(() => setToast(''), 3200); }
@@ -223,6 +305,75 @@ export default function HomePage() {
       setPatients([next, ...patients]); setSelectedPatient(next); setName(''); setComplaint(''); setShowNewPatient(false); setActive('patients'); notify('أُضيف المريض إلى بيانات العرض المحلية فقط.'); return;
     }
     try { const response = await fetch('/api/patients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ full_name: name.trim(), chief_complaint: complaint.trim() || null }) }); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || 'تعذر إنشاء ملف المريض.'); const p = body.patient; const next: Patient = { id: p.id, displayId: p.patient_number || String(p.id).slice(0,8), name: p.full_name, age: 'العمر غير مسجل', phone: maskPhoneForDisplay(p.phone), visit: 'لا توجد زيارة مسجلة', reason: p.chief_complaint || 'لم تسجل الشكوى بعد', state: 'مسودة', initials: getInitials(p.full_name || 'م'), color: 'mint' }; setPatients([next,...patients]); setSelectedPatient(next); setName(''); setComplaint(''); setShowNewPatient(false); setActive('patients'); notify('تم إنشاء ملف المريض في قاعدة البيانات.'); } catch (error) { notify(error instanceof Error ? error.message : 'تعذر إنشاء ملف المريض.'); }
+  }
+
+  function openPatientEdit() {
+    if (!selectedPatient) { notify('اختر ملف المريض أولاً.'); return; }
+    setEditPatientName(selectedPatient.name);
+    setEditPatientPhone(demoMode ? '' : (patientDetails?.patient?.id === selectedPatient.id ? String(patientDetails.patient.phone || '') : ''));
+    setEditPatientComplaint(demoMode ? selectedPatient.reason : (patientDetails?.patient?.id === selectedPatient.id ? String(patientDetails.patient.chief_complaint || '') : ''));
+    setShowEditPatient(true);
+  }
+
+  async function savePatientEdits() {
+    if (!selectedPatient) { notify('اختر ملف المريض أولاً.'); return; }
+    const fullName = editPatientName.trim();
+    if (fullName.length < 2) { notify('أدخل اسم المريض بشكل صحيح.'); return; }
+    const complaintValue = editPatientComplaint.trim();
+    if (demoMode) {
+      const updated: Patient = {
+        ...selectedPatient,
+        name: fullName,
+        initials: getInitials(fullName),
+        reason: complaintValue || 'لم تسجل الشكوى بعد',
+        phone: editPatientPhone.trim() ? maskPhoneForDisplay(editPatientPhone.trim()) : selectedPatient.phone,
+      };
+      setPatients(current => current.map(patient => patient.id === selectedPatient.id ? updated : patient));
+      setSelectedPatient(updated);
+      setShowEditPatient(false);
+      notify('تم تحديث ملف العرض الحالي فقط؛ لم تُحفظ التعديلات في قاعدة بيانات.');
+      return;
+    }
+
+    const payload: Record<string, unknown> = {};
+    if (fullName !== selectedPatient.name) payload.full_name = fullName;
+    const detailMatchesSelection = patientDetails?.patient?.id === selectedPatient.id;
+    const originalComplaint = detailMatchesSelection ? String(patientDetails.patient.chief_complaint || '') : '';
+    if (complaintValue !== originalComplaint) payload.chief_complaint = complaintValue || null;
+    const originalPhone = detailMatchesSelection ? String(patientDetails.patient.phone || '') : '';
+    if (editPatientPhone.trim() && editPatientPhone.trim() !== originalPhone) payload.phone = editPatientPhone.trim();
+    if (Object.keys(payload).length === 0) {
+      setShowEditPatient(false);
+      notify('لا توجد تغييرات جديدة لحفظها.');
+      return;
+    }
+
+    setPatientSaving(true);
+    try {
+      const response = await fetch('/api/patients/' + selectedPatient.id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.patient) throw new Error(body.error || 'تعذر تحديث ملف المريض.');
+      const updated: Patient = {
+        ...selectedPatient,
+        name: body.patient.full_name,
+        initials: getInitials(body.patient.full_name),
+        reason: body.patient.chief_complaint || 'لم تسجل الشكوى بعد',
+        phone: maskPhoneForDisplay(body.patient.phone),
+      };
+      setPatients(current => current.map(patient => patient.id === updated.id ? updated : patient));
+      setSelectedPatient(updated);
+      setPatientDetails((current: any) => current ? { ...current, patient: body.patient } : current);
+      setShowEditPatient(false);
+      notify('تم حفظ تعديلات ملف المريض.');
+    } catch (error) {
+      notify(error instanceof Error ? error.message : 'تعذر تحديث ملف المريض.');
+    } finally {
+      setPatientSaving(false);
+    }
   }
 
   async function createManualVisit() {
@@ -259,7 +410,7 @@ export default function HomePage() {
   }
 
   async function saveClinicSettings() {
-    if (demoMode) { notify('التغييرات في العرض التجريبي محلية فقط ولا تُحفظ في قاعدة البيانات.'); return; }
+    if (demoMode) { setSettingsDirty(false); notify('تم تطبيق إعدادات العرض الحالي فقط؛ لن تُحفظ بعد تحديث الصفحة أو في قاعدة البيانات.'); return; }
     setSettingsBusy(true);
     try {
       const payload = { ...clinicSettings, clinic_name_ar: clinicSettings.clinic_name_ar.trim() || clinicName, clinic_name_en: clinicSettings.clinic_name_en.trim() || null, address_ar: clinicSettings.address_ar.trim() || null, address_en: clinicSettings.address_en.trim() || null, phone: clinicSettings.phone.trim() || null, email: clinicSettings.email.trim() || null, website: clinicSettings.website.trim() || null };
@@ -300,6 +451,32 @@ export default function HomePage() {
       setEndodonticCases(current => [body.case, ...current]); setShowEndoForm(false); setEndoDiagnosis(''); notify('تم حفظ ملف علاج العصب وقياسات القنوات.');
     } catch (error) { notify(error instanceof Error ? error.message : 'تعذر حفظ ملف علاج العصب.'); }
     finally { setEndoSaving(false); }
+  }
+
+  async function updateAppointmentStatus(appointmentId: string, status: string) {
+    const allowed = ['scheduled', 'confirmed', 'arrived', 'in_progress', 'completed', 'cancelled', 'no_show'];
+    if (!allowed.includes(status)) { notify('حالة الموعد غير صالحة.'); return; }
+    if (demoMode) {
+      setScheduleAppointments(current => current.map(item => item.id === appointmentId ? { ...item, status } : item));
+      setTodayAppointments(current => current.map(item => item.id === appointmentId ? { ...item, status } : item));
+      notify('تم تحديث حالة الموعد في بيانات العرض الحالية فقط.');
+      return;
+    }
+    try {
+      const response = await fetch('/api/appointments/' + appointmentId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.appointment) throw new Error(body.error || 'تعذر تحديث حالة الموعد.');
+      const updateList = (list: any[]) => list.map(item => item.id === appointmentId ? { ...item, ...body.appointment, patients: item.patients } : item);
+      setScheduleAppointments(updateList);
+      setTodayAppointments(updateList);
+      notify('تم تحديث حالة الموعد.');
+    } catch (error) {
+      notify(error instanceof Error ? error.message : 'تعذر تحديث حالة الموعد.');
+    }
   }
 
   async function saveAppointment() {
@@ -350,29 +527,98 @@ export default function HomePage() {
     </aside>
 
     <main className="main-content">
-      <header className="topbar"><button className="mobile-menu-trigger icon-button" type="button" aria-label="فتح القائمة" aria-expanded={sidebarOpen} onClick={() => setSidebarOpen(value => !value)}><Menu size={19}/></button><div className="breadcrumb"><span>{clinicName}</span><ChevronLeft size={14}/><strong>{nav.find(n=>n.key===active)?.label || (active==='odontogram'?'مخطط الأسنان':active==='endodontics'?'علاج العصب':'إعدادات العيادة')}</strong></div><div className="top-actions"><LanguageButton/><span className="status-pill"><span className="status-dot"/> {demoMode ? 'وضع عرض تجريبي' : activeOrganizationId ? 'مساحة العيادة' : 'غير متصل'}</span><a href="/sign-in" className="sign-in-link">تسجيل الدخول</a><button className="icon-button" aria-label="التنبيهات" onClick={()=>notify('لا توجد تنبيهات جديدة في بيانات العرض.')}><Bell size={18}/><i className="notification-dot"/></button><div className="top-divider"/><div className="top-date"><CalendarDays size={16}/><span>{todayLabel || 'تاريخ اليوم'}</span></div></div></header>
+      <header className="topbar"><button className="mobile-menu-trigger icon-button" type="button" aria-label="فتح القائمة" aria-expanded={sidebarOpen} onClick={() => setSidebarOpen(value => !value)}><Menu size={19}/></button><div className="breadcrumb"><span>{clinicName}</span><ChevronLeft size={14}/><strong>{nav.find(n=>n.key===active)?.label || (active==='odontogram'?'مخطط الأسنان':active==='endodontics'?'علاج العصب':'إعدادات العيادة')}</strong></div><div className="top-actions"><button className="command-launcher" type="button" onClick={() => {setShowCommandPalette(true);setCommandSearch("")}} aria-label="بحث شامل"><Search size={16}/><span>بحث سريع</span><kbd>Ctrl K</kbd></button><LanguageButton/><span className="status-pill"><span className="status-dot"/> {demoMode ? 'وضع عرض تجريبي' : activeOrganizationId ? 'مساحة العيادة' : 'غير متصل'}</span><a href="/sign-in" className="sign-in-link">تسجيل الدخول</a><button className="icon-button" aria-label="التنبيهات" onClick={()=>notify('لا توجد تنبيهات جديدة في بيانات العرض.')}><Bell size={18}/><i className="notification-dot"/></button><div className="top-divider"/><div className="top-date"><CalendarDays size={16}/><span>{todayLabel || 'تاريخ اليوم'}</span></div></div></header>
       {demoMode ? <div className="demo-notice"><AlertCircle size={17}/><div><strong>بيانات تجريبية — ليست سجلات مرضى حقيقية.</strong><span>البيانات المعروضة للتجربة فقط، ولا تُحفظ بشكل دائم في هذه النسخة.</span></div><button aria-label="إغلاق التنبيه" onClick={e=>e.currentTarget.parentElement?.remove()}><X size={16}/></button></div> : loadError ? <div className="demo-notice"><AlertCircle size={17}/><div><strong>تعذر تحميل مساحة العيادة</strong><span>{loadError}</span></div>{loadError.includes('لا توجد عيادة')&&<a className="text-link" href="/onboarding">إعداد العيادة</a>}<a className="text-link" href="/sign-in">تسجيل الدخول</a>{organizations.length>1&&<button className="text-link" onClick={()=>setShowOrganizationPicker(true)}>اختيار العيادة</button>}</div> : null}
 
-      {active === 'dashboard' && <>
-        <section className="welcome-row">
-          <div className="welcome-copy">
-            <div className="eyebrow"><span className="hero-eyebrow-mark"/> {todayLabel || 'مساحة الطبيب · نظرة اليوم'}</div>
-            <h1>{demoMode ? 'صباح هادئ، دكتور أحمد' : 'مرحباً بعودتك'} <span className="wave">✳</span></h1>
-            <p>كل ما يحتاج انتباهك اليوم، مرتب أمامك لتمنح كل مريض وقتك الكامل.</p>
-            <div className="hero-meta"><span><span className="hero-live-dot"/> مساحة العمل جاهزة</span><i/><span>المرضى أولاً، دائماً</span></div>
+      {active === 'dashboard' && <section className="workspace-page dashboard-workbench">
+        <header className="workbench-heading">
+          <div className="workbench-title">
+            <div className="eyebrow"><span className="workbench-status-dot"/>{todayLabel || 'مساحة العيادة'}</div>
+            <h1>{demoMode ? 'مساحة عمل عيادة النور' : (clinicName || 'مساحة عمل العيادة')}</h1>
+            <p>{demoMode ? 'نموذج تفاعلي لرحلة العمل اليومية. استخدم الإجراءات السريعة للوصول إلى كل مهمة.' : 'نظرة تشغيلية على جدول اليوم وملفات المرضى التي تحتاج إلى متابعة.'}</p>
           </div>
-          <button className="primary-button hero-cta" onClick={()=>setShowScribe(true)}><span className="hero-cta-icon"><Mic size={18}/></span><span>توثيق زيارة جديدة</span><ChevronLeft className="hero-cta-arrow" size={17}/></button>
-          <div className="hero-art" aria-hidden="true"><div className="hero-art-ring ring-one"/><div className="hero-art-ring ring-two"/><div className="hero-art-core"><Stethoscope size={40} strokeWidth={1.2}/></div><span className="hero-art-spark spark-one">✳</span><span className="hero-art-spark spark-two">·</span></div>
+          <div className="workbench-heading-actions">
+            <span className={'connection-chip ' + (demoMode ? 'demo' : activeOrganizationId ? 'connected' : 'disconnected')}><i/>{demoMode ? 'بيانات تجريبية' : activeOrganizationId ? 'متصل بالعيادة' : 'غير متصل'}</span>
+            <button className="secondary-button" type="button" onClick={() => setShowCommandPalette(true)}><Search size={16}/> بحث شامل</button>
+          </div>
+        </header>
+
+        <div className="workbench-actionbar" aria-label="الإجراءات السريعة">
+          <button className="workbench-action primary" type="button" onClick={() => setShowNewPatient(true)}><span className="workbench-action-icon"><Plus size={18}/></span><span><strong>إضافة مريض</strong><small>فتح ملف جديد</small></span></button>
+          <button className="workbench-action" type="button" onClick={() => { setAppointmentPatientId(selectedPatient?.id || patients[0]?.id || ''); setAppointmentDate(appointmentViewDate); setShowNewAppointment(true); }}><span className="workbench-action-icon"><CalendarDays size={18}/></span><span><strong>حجز موعد</strong><small>إضافة إلى الجدول</small></span></button>
+          <button className="workbench-action" type="button" onClick={() => { if (!selectedPatient) { setActive('patients'); notify('اختر ملف المريض أولاً.'); return; } setManualComplaint(''); setShowManualVisit(true); }}><span className="workbench-action-icon"><FilePlus2 size={18}/></span><span><strong>توثيق يدوي</strong><small>إنشاء مسودة زيارة</small></span></button>
+          <button className="workbench-action" type="button" onClick={() => { setActive('scribe'); setShowScribe(true); }}><span className="workbench-action-icon"><Mic size={18}/></span><span><strong>التوثيق الصوتي</strong><small>يتطلب إعداد التسجيل</small></span></button>
+        </div>
+
+        <div className="workbench-metrics">
+          <button className="workbench-metric" type="button" onClick={() => setActive('appointments')}>
+            <span className="metric-symbol blue"><CalendarDays size={19}/></span><span className="metric-content"><small>مواعيد اليوم</small><strong>{todayAppointments.length.toLocaleString(language === 'ar' ? 'ar' : 'en-US')}</strong><em>{demoMode ? 'أمثلة مرتبطة بملفات العرض' : 'مواعيد محمّلة من العيادة'}</em></span><ChevronLeft size={16}/>
+          </button>
+          <button className="workbench-metric" type="button" onClick={() => setActive('patients')}>
+            <span className="metric-symbol mint"><Users size={19}/></span><span className="metric-content"><small>ملفات المرضى</small><strong>{patients.length.toLocaleString(language === 'ar' ? 'ar' : 'en-US')}</strong><em>{demoMode ? 'ملفات افتراضية قابلة للتجربة' : 'الملفات التي تم تحميلها'}</em></span><ChevronLeft size={16}/>
+          </button>
+          <button className="workbench-metric" type="button" onClick={() => setActive('patients')}>
+            <span className="metric-symbol amber"><AlertCircle size={19}/></span><span className="metric-content"><small>تحتاج إلى متابعة</small><strong>{reviewCount.toLocaleString(language === 'ar' ? 'ar' : 'en-US')}</strong><em>مسودات بانتظار مراجعة الطبيب</em></span><ChevronLeft size={16}/>
+          </button>
+        </div>
+
+        <div className="workbench-columns">
+          <section className="panel workbench-schedule">
+            <div className="workbench-section-heading">
+              <div><span className="section-kicker">إدارة اليوم</span><h2>جدول المواعيد</h2><p>{todayLabel}</p></div>
+              <button className="text-link" type="button" onClick={() => setActive('appointments')}>فتح الجدول الكامل <ChevronLeft size={16}/></button>
+            </div>
+            <div className="workbench-timeline">
+              {todayAppointments.length ? todayAppointments.slice().sort((a,b)=>Date.parse(a.scheduled_start)-Date.parse(b.scheduled_start)).slice(0,5).map(item => renderSavedAppointment(item, item.status === 'arrived' ? 'mint' : 'blue')) : <div className="workbench-empty"><CalendarDays size={24}/><strong>لا توجد مواعيد محمّلة</strong><span>{demoMode ? 'أضف موعداً لتراه هنا فوراً في بيانات هذه الجلسة.' : 'تحقق من الاتصال أو أنشئ موعداً جديداً.'}</span><button className="primary-button" type="button" onClick={() => {setAppointmentPatientId(selectedPatient?.id || patients[0]?.id || '');setShowNewAppointment(true)}}><Plus size={15}/> حجز موعد</button></div>}
+            </div>
+            <div className="workbench-panel-footer"><span>{demoMode ? 'هذه أمثلة وليست سجلات عيادة فعلية' : 'المواعيد حسب اليوم المحدد في العيادة'}</span><button type="button" onClick={() => setActive('appointments')}>عرض التقويم <ChevronLeft size={15}/></button></div>
+          </section>
+
+          <div className="workbench-side-stack">
+            <section className="panel workbench-attention">
+              <div className="workbench-section-heading"><div><span className="section-kicker">قائمة العمل</span><h2>تحتاج إلى انتباهك</h2><p>افتح الملف لمراجعة الحالة أو المسودة.</p></div><span className="workbench-count">{attentionPatients.length.toLocaleString(language === 'ar' ? 'ar' : 'en-US')}</span></div>
+              {demoMode && attentionPatients.length > 0 && <div className="attention-list">{attentionPatients.map(patient => <button type="button" className="attention-row" key={patient.id} onClick={() => {setSelectedPatient(patient);setPatientTab('overview');setActive('patients')}}><span className={'attention-avatar ' + patient.color}>{patient.initials}</span><span className="attention-copy"><strong>{patient.name}</strong><small>{patient.reason}</small></span><StatePill state={patient.state}/><ChevronLeft size={15}/></button>)}</div>}
+              {!demoMode && reviewQueueLoading && <div className="review-queue-loading"><span className="loading-dot"/><span>جارٍ تحميل السجلات التي تنتظر المراجعة...</span></div>}
+              {!demoMode && !reviewQueueLoading && reviewQueue.length > 0 && <div className="attention-list">{reviewQueue.slice(0,5).map(item => <button type="button" className="attention-row" key={item.id} onClick={() => item.encounter_id ? window.location.assign('/encounters/' + item.encounter_id) : setActive('patients')}><span className="attention-avatar blue">{getInitials(item.patient_name)}</span><span className="attention-copy"><strong>{item.patient_name}</strong><small>{item.chief_complaint || item.patient_number || ('نسخة ' + item.version)}</small></span><StatePill state={item.status==='ready_for_approval'?'جاهز للاعتماد':item.status==='draft'?'مسودة':'تحتاج مراجعة'}/><ChevronLeft size={15}/></button>)}</div>}
+              {!demoMode && reviewQueueAccessDenied && <div className="workbench-empty compact"><ShieldCheck size={21}/><strong>تحتاج إلى صلاحية سريرية</strong><span>لا تسمح صلاحيات هذا الحساب بعرض السجلات التي تنتظر المراجعة.</span></div>}
+              {((demoMode && attentionPatients.length===0) || (!demoMode && !reviewQueueLoading && !reviewQueueAccessDenied && reviewQueue.length===0)) && <div className="workbench-empty compact"><CircleCheck size={21}/><strong>لا توجد سجلات تنتظر المراجعة</strong><span>{demoMode ? 'ستظهر أمثلة المتابعة عندما يحتوي ملف العرض على حالة تحتاج مراجعة.' : 'ستظهر هنا المسودات والسجلات التي تحتاج إلى اعتماد الطبيب.'}</span></div>}
+              <button className="workbench-link-row" type="button" onClick={() => setActive('patients')}>فتح ملفات المرضى <ChevronLeft size={15}/></button>
+            </section>
+
+            <section className="panel workbench-shortcuts">
+              <div className="workbench-section-heading"><div><span className="section-kicker">الوحدات</span><h2>انتقال مباشر</h2></div></div>
+              <div className="workbench-shortcut-grid">
+                <button type="button" onClick={() => setActive('odontogram')}><HeartPulse size={19}/><span>مخطط الأسنان</span><ChevronLeft size={14}/></button>
+                <button type="button" onClick={() => setActive('endodontics')}><Activity size={19}/><span>علاج العصب</span><ChevronLeft size={14}/></button>
+                <button type="button" onClick={() => setActive('reports')}><FileText size={19}/><span>التقارير والسجلات</span><ChevronLeft size={14}/></button>
+                <button type="button" onClick={() => setActive('settings')}><Settings size={19}/><span>إعدادات العيادة</span><ChevronLeft size={14}/></button>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <section className="panel workbench-patients">
+          <div className="workbench-section-heading patients-workbench-heading">
+            <div><span className="section-kicker">الوصول السريع</span><h2>ملفات المرضى</h2><p>اختر ملفاً للانتقال مباشرة إلى التاريخ الصحي والزيارات.</p></div>
+            <div className="workbench-patient-tools"><label className="search-box"><Search size={16}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="ابحث بالاسم أو رقم الملف"/></label><button className="primary-button" type="button" onClick={() => setShowNewPatient(true)}><Plus size={16}/> إضافة مريض</button></div>
+          </div>
+          <div className="workbench-patient-grid">
+            {filtered.slice(0,4).map(patient => <button className="workbench-patient-card" type="button" key={patient.id} onClick={() => {setSelectedPatient(patient);setPatientTab('overview');setActive('patients')}}>
+              <span className={'workbench-patient-avatar ' + patient.color}>{patient.initials}</span>
+              <span className="workbench-patient-main"><strong>{patient.name}</strong><small>{patient.displayId || patient.id} · {patient.age}</small><em>{patient.reason}</em></span>
+              <StatePill state={patient.state}/>
+              <ChevronLeft size={15}/>
+            </button>)}
+            {!filtered.length && <div className="workbench-empty compact"><Search size={20}/><strong>لم نعثر على ملف مطابق</strong><span>جرّب الاسم أو رقم الملف أو أضف ملفاً جديداً.</span></div>}
+          </div>
+          <div className="workbench-panel-footer"><span>{filtered.length.toLocaleString(language === 'ar' ? 'ar' : 'en-US')} نتائج في البحث الحالي</span><button type="button" onClick={() => setActive('patients')}>فتح مساحة المرضى <ChevronLeft size={15}/></button></div>
         </section>
-        {demoMode && <section className="stats-grid"><StatCard icon={<CalendarDays size={19}/>} tone="teal" label="مواعيد اليوم" number="٨" foot="٢ خلال الساعة القادمة"/><StatCard icon={<Users size={19}/>} tone="blue" label="إجمالي المرضى" number="١٢٨" foot="٦ ملفات أُضيفت هذا الأسبوع"/><StatCard icon={<ClipboardList size={19}/>} tone="amber" label="تحتاج مراجعتك" number="٣" foot="مسودات بانتظار الاعتماد" alert/><StatCard icon={<Check size={19}/>} tone="mint" label="سجلات معتمدة" number="١٤" foot="هذا الأسبوع"/></section>}
-        {demoMode ? <section className="dashboard-grid"><div className="panel appointments-panel"><div className="panel-heading"><div><h2>مواعيد اليوم</h2><p>المرضى المتوقع حضورهم في العيادة</p></div><button className="text-link" onClick={()=>setActive('appointments')}>عرض الجدول <ArrowUpLeft size={14}/></button></div><div className="timeline-list"><Appointment time="٩:٠٠" period="ص" patient="عمر خالد صالح" type="متابعة علاج العصب" duration="٤٥ دقيقة" status="وصل" color="blue"/><Appointment time="١٠:٣٠" period="ص" patient="سارة محمد علي" type="فحص ألم الضرس" duration="٣٠ دقيقة" status="قيد الانتظار" color="mint" active/><Appointment time="١١:١٥" period="ص" patient="مروان يحيى" type="تنظيف وفحص دوري" duration="٣٠ دقيقة" status="مؤكد" color="peach"/><Appointment time="١٢:٠٠" period="م" patient="هند عبدالله" type="استشارة علاجية" duration="٤٥ دقيقة" status="مؤكد" color="lilac"/>{todayAppointments.map(a => <Appointment key={a.id} time={new Date(a.scheduled_start).toLocaleTimeString(language === "ar" ? "ar-YE" : "en-US",{timeZone:"Asia/Aden",hour:"2-digit",minute:"2-digit"})} period="" patient={a.patients?.full_name||"مريض"} type={a.appointment_type||"زيارة أسنان"} duration={`${Math.max(1,Math.round((Date.parse(a.scheduled_end)-Date.parse(a.scheduled_start))/60000))} دقيقة`} status={appointmentStatus(a.status)} color="blue"/>)}</div><button className="full-link" onClick={()=>setActive('appointments')}>فتح كل المواعيد <ChevronLeft size={15}/></button></div>
-        <div className="panel review-panel"><div className="panel-heading"><div><h2>بانتظار مراجعتك</h2><p>المسودات التي تحتاج إلى قرار الطبيب</p></div><span className="count-badge">٣</span></div><div className="review-list"><ReviewItem name="سارة محمد علي" detail="شكوى ألم · اليوم ١٠:٤٥" state="٢ نقاط غير مؤكدة" color="mint" onClick={()=>{setSelectedPatient(samplePatients[0]);setShowScribe(true)}}/><ReviewItem name="عمر خالد صالح" detail="متابعة عصب · اليوم ١٠:١٠" state="مراجعة القياسات" color="blue" onClick={()=>{setSelectedPatient(samplePatients[1]);setActive('patients')}}/><ReviewItem name="هند عبدالله" detail="استشارة · اليوم ٨:٤٥" state="مسودة جديدة" color="peach" onClick={()=>{setShowScribe(true)}}/></div><button className="full-link" onClick={()=>{setActive('reports');notify('يمكن فتح تفاصيل كل مسودة من ملف الزيارة.')}}>مراجعة السجلات <ChevronLeft size={15}/></button></div></section> : <section className="dashboard-grid"><div className="panel appointments-panel"><div className="panel-heading"><div><h2>مواعيد العيادة</h2><p>تظهر المواعيد عند توصيل جدول العيادة.</p></div></div><div className="timeline-list">{todayAppointments.map(a=>{const pat=Array.isArray(a.patients)?a.patients[0]:a.patients;return <Appointment key={a.id} time={new Date(a.scheduled_start).toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'})} period="" patient={pat?.full_name||'مريض'} type={a.appointment_type||'زيارة أسنان'} duration={`${Math.max(1,Math.round((Date.parse(a.scheduled_end)-Date.parse(a.scheduled_start))/60000))} دقيقة`} status={appointmentStatus(a.status)} color="mint"/>})}{todayAppointments.length===0&&<div className="live-empty"><CalendarDays size={22}/><strong>لا توجد مواعيد قادمة مسجلة</strong><span>أضف موعداً من شاشة المواعيد. لن نعرض أرقاماً تقديرية على أنها بيانات حقيقية.</span></div>}</div><button className="full-link" onClick={()=>setActive('appointments')}>فتح كل المواعيد <ChevronLeft size={15}/></button></div><div className="panel review-panel"><div className="panel-heading"><div><h2>المسودات السريرية</h2><p>تحتاج المراجعة إلى تحميل قائمة الزيارات.</p></div></div><div className="live-empty"><FileText size={22}/><strong>لم يتم تحميل مسودات للمراجعة</strong><span>تبقى كل مسودة آلية غير معتمدة حتى توقيع الطبيب.</span></div></div></section>}
-        <section className="panel patients-panel"><div className="panel-heading patients-heading"><div><h2>المرضى مؤخراً</h2><p>آخر الملفات التي تم فتحها في العيادة</p></div><div className="patient-tools"><div className="search-box"><Search size={16}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="ابحث عن اسم أو رقم ملف..."/></div><button className="secondary-button" onClick={()=>setShowNewPatient(true)}><Plus size={16}/> إضافة مريض</button></div></div><div className="table-wrap"><table className="patient-table"><thead><tr><th>اسم المريض</th><th>الشكوى الرئيسية</th><th>آخر زيارة</th><th>حالة السجل</th><th></th></tr></thead><tbody>{filtered.map(p=><tr key={p.id} onClick={()=>{setSelectedPatient(p);setActive('patients')}}><td><div className="patient-cell"><div className={`avatar ${p.color}`}>{p.initials}</div><div><strong>{p.name}</strong><span>{p.id} · {p.age}</span></div></div></td><td>{p.reason}</td><td>{p.visit}</td><td><StatePill state={p.state}/></td><td><button className="row-arrow" onClick={e=>{e.stopPropagation();setSelectedPatient(p);setActive('patients')}} aria-label={`فتح ملف ${p.name}`}><ChevronLeft size={17}/></button></td></tr>)}</tbody></table>{filtered.length===0&&<div className="empty-state">لا توجد نتائج مطابقة للبحث.</div>}</div><button className="full-link" onClick={()=>setActive('patients')}>فتح سجل المرضى <ChevronLeft size={15}/></button></section>
-      </>}
+      </section>}
 
-      {active === 'patients' && <section className="workspace-page"><div className="page-heading"><div><div className="eyebrow">الملفات السريرية</div><h1>ملفات المرضى</h1><p>الهوية، التاريخ الصحي، الزيارات، وخطة العلاج في ملف واحد.</p></div><button className="primary-button" onClick={()=>setShowNewPatient(true)}><Plus size={17}/> إضافة مريض</button></div><div className="patient-workspace"><div className="panel patient-list-panel"><div className="search-box wide"><Search size={16}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="ابحث باسم المريض أو الرقم"/></div>{filtered.map(p=><button key={p.id} onClick={()=>setSelectedPatient(p)} className={`patient-select ${selectedPatient?.id===p.id?'selected':''}`}><div className={`avatar ${p.color}`}>{p.initials}</div><div className="patient-select-main"><strong>{p.name}</strong><span>{p.displayId || p.id} · {p.age}</span><small>{p.reason}</small></div><ChevronLeft size={15}/></button>)}</div>{selectedPatient&&<div className="panel patient-detail"><div className="patient-profile-head"><div className={`avatar big ${selectedPatient.color}`}>{selectedPatient.initials}</div><div className="patient-profile-meta"><div className="patient-id">ملف رقم {selectedPatient.displayId || selectedPatient.id}</div><h2>{selectedPatient.name}</h2><p>{selectedPatient.age} · {selectedPatient.phone}</p></div><div className="patient-head-actions"><button className="secondary-button" onClick={()=>setShowScribe(true)}><Mic size={16}/> توثيق بالصوت</button><button className="secondary-button" onClick={()=>{setManualComplaint('');setShowManualVisit(true)}}><FilePlus2 size={16}/> إدخال يدوي</button></div></div><div className="detail-tabs"><button className={`detail-tab ${patientTab==='overview'?'active':''}`} onClick={()=>setPatientTab('overview')}>نظرة عامة</button><button className={`detail-tab ${patientTab==='history'?'active':''}`} onClick={()=>setPatientTab('history')}>التاريخ الصحي</button><button className="detail-tab" onClick={()=>setActive('odontogram')}>مخطط الأسنان</button><button className={`detail-tab ${patientTab==='visits'?'active':''}`} onClick={()=>setPatientTab('visits')}>الزيارات</button></div>{patientTab==='overview'&&<><div className="detail-section"><h3>المعلومات الأساسية</h3><div className="detail-fields"><DetailField label="الشكوى الرئيسية" value={selectedPatient.reason}/><DetailField label="آخر زيارة" value={selectedPatient.visit}/><DetailField label="الحساسية" value="لم يتم توثيقها" warning/><DetailField label="الأدوية الحالية" value="لم يتم توثيقها" warning/></div></div><div className="missing-notice"><AlertCircle size={17}/><div><strong>التاريخ الصحي يحتاج إلى استكمال</strong><span>المعلومة غير المسجلة لا تعني أن المريض لا يعاني منها. أكّد الحساسية والأدوية والتاريخ المرضي قبل الاعتماد.</span></div></div><div className="detail-section"><div className="panel-heading"><h3>آخر السجلات</h3><button className="text-link" onClick={()=>setPatientTab('visits')}>عرض الكل</button></div>{demoMode?<div className="record-line"><div className="record-icon"><FileText size={17}/></div><div><strong>ملخص الزيارة — مسودة تجريبية</strong><span>{selectedPatient.visit} · لم يتم اعتماد السجل</span></div><StatePill state={selectedPatient.state}/></div>:<div className="live-empty"><FileText size={19}/><strong>سجل الزيارات متاح من تبويب الزيارات</strong></div>}</div></>}{patientTab==='history'&&<div className="detail-section patient-history-section"><div className="panel-heading"><div><h3>التاريخ الصحي</h3><p>حالات صحية وحساسية وأدوية ومعلومات أسنان مسجلة مع حالة المراجعة.</p></div><button className="secondary-button" onClick={()=>setShowHistoryForm(true)}><Plus size={15}/> إضافة معلومة</button></div>{historyItems.length===0?<div className="missing-notice"><AlertCircle size={17}/><div><strong>لم يُسجل تاريخ صحي لهذا الملف بعد</strong><span>لا تفسر غياب المعلومة على أنه نفي. أضف المعلومات بعد سؤال المريض والتحقق منها.</span></div></div>:<div className="history-list">{historyItems.map((item:any)=><div className="history-item" key={item.id}><div className="history-item-main"><strong>{item.title}</strong><span>{({condition:'حالة صحية',allergy:'حساسية',medication:'دواء',surgery:'جراحة سابقة',family_history:'تاريخ عائلي',social_history:'تاريخ اجتماعي',dental_history:'تاريخ أسنان',other:'أخرى'} as Record<string,string>)[item.category]||item.category}</span>{item.value!==null&&item.value!==undefined&&<p>{typeof item.value==='string'?item.value:JSON.stringify(item.value)}</p>}</div><span className={`state-pill ${item.state==='explicitly_negative'?'approved':item.state==='needs_review'||item.state==='not_recorded'?'review':'neutral'}`}>{({positive:'مذكورة',explicitly_negative:'نفي صريح',not_asked:'لم يُسأل',not_recorded:'غير مسجلة',unknown:'غير معلومة',not_applicable:'لا ينطبق',needs_review:'تحتاج مراجعة'} as Record<string,string>)[item.state]||item.state}</span></div>)}</div>}</div>}{patientTab==='visits'&&<div className="detail-section"><div className="panel-heading"><div><h3>الزيارات السابقة</h3><p>التاريخ والحالة لكل زيارة محفوظة للمريض.</p></div><div className="visit-actions"><button className="secondary-button" onClick={()=>{setManualComplaint('');setShowManualVisit(true)}}><FilePlus2 size={15}/> زيارة يدوية</button><button className="primary-button" onClick={()=>setShowScribe(true)}><Mic size={15}/> توثيق بالصوت</button></div></div>{!patientDetails?.encounters?.length?<div className="live-empty"><CalendarDays size={20}/><strong>لا توجد زيارات محفوظة لهذا المريض</strong><span>بعد انتهاء المعالجة، ستظهر المسودة هنا للمراجعة والاعتماد.</span></div>:<div className="history-list">{patientDetails.encounters.map((visit:any)=><a className="history-item visit-history-item" href={`/encounters/${visit.id}`} key={visit.id}><div className="history-item-main"><strong>{visit.chief_complaint||'زيارة أسنان'}</strong><span>{new Date(visit.started_at||visit.created_at).toLocaleString('ar')}</span></div><StatePill state={({recording:'قيد التسجيل',processing:'قيد المعالجة',needs_review:'تحتاج مراجعة',approved:'معتمد',draft:'مسودة',corrected:'مصحح',cancelled:'ملغي',processing_failed:'فشلت المعالجة'} as Record<string,string>)[visit.status]||visit.status}/><ChevronLeft size={15}/></a>)}</div>}</div>}</div>}</div></section>}
+      {active === 'patients' && <section className="workspace-page"><div className="page-heading"><div><div className="eyebrow">الملفات السريرية</div><h1>ملفات المرضى</h1><p>الهوية، التاريخ الصحي، الزيارات، وخطة العلاج في ملف واحد.</p></div><button className="primary-button" onClick={()=>setShowNewPatient(true)}><Plus size={17}/> إضافة مريض</button></div><div className="patient-workspace"><div className="panel patient-list-panel"><div className="search-box wide"><Search size={16}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="ابحث باسم المريض أو الرقم"/></div>{filtered.map(p=><button key={p.id} onClick={()=>setSelectedPatient(p)} className={`patient-select ${selectedPatient?.id===p.id?'selected':''}`}><div className={`avatar ${p.color}`}>{p.initials}</div><div className="patient-select-main"><strong>{p.name}</strong><span>{p.displayId || p.id} · {p.age}</span><small>{p.reason}</small></div><ChevronLeft size={15}/></button>)}</div>{selectedPatient&&<div className="panel patient-detail"><div className="patient-profile-head"><div className={`avatar big ${selectedPatient.color}`}>{selectedPatient.initials}</div><div className="patient-profile-meta"><div className="patient-id">ملف رقم {selectedPatient.displayId || selectedPatient.id}</div><h2>{selectedPatient.name}</h2><p>{selectedPatient.age} · {selectedPatient.phone}</p></div><div className="patient-head-actions">{canEditPatient && <button className="secondary-button" onClick={openPatientEdit}><Pencil size={16}/> تعديل البيانات</button>}<button className="secondary-button" onClick={()=>setShowScribe(true)}><Mic size={16}/> توثيق بالصوت</button><button className="secondary-button" onClick={()=>{setManualComplaint('');setShowManualVisit(true)}}><FilePlus2 size={16}/> إدخال يدوي</button></div></div><div className="detail-tabs"><button className={`detail-tab ${patientTab==='overview'?'active':''}`} onClick={()=>setPatientTab('overview')}>نظرة عامة</button><button className={`detail-tab ${patientTab==='history'?'active':''}`} onClick={()=>setPatientTab('history')}>التاريخ الصحي</button><button className="detail-tab" onClick={()=>setActive('odontogram')}>مخطط الأسنان</button><button className={`detail-tab ${patientTab==='visits'?'active':''}`} onClick={()=>setPatientTab('visits')}>الزيارات</button></div>{patientTab==='overview'&&<><div className="detail-section"><h3>المعلومات الأساسية</h3><div className="detail-fields"><DetailField label="الشكوى الرئيسية" value={selectedPatient.reason}/><DetailField label="آخر زيارة" value={selectedPatient.visit}/><DetailField label="الحساسية" value="لم يتم توثيقها" warning/><DetailField label="الأدوية الحالية" value="لم يتم توثيقها" warning/></div></div><div className="missing-notice"><AlertCircle size={17}/><div><strong>التاريخ الصحي يحتاج إلى استكمال</strong><span>المعلومة غير المسجلة لا تعني أن المريض لا يعاني منها. أكّد الحساسية والأدوية والتاريخ المرضي قبل الاعتماد.</span></div></div><div className="detail-section"><div className="panel-heading"><h3>آخر السجلات</h3><button className="text-link" onClick={()=>setPatientTab('visits')}>عرض الكل</button></div>{demoMode?<div className="record-line"><div className="record-icon"><FileText size={17}/></div><div><strong>ملخص الزيارة — مسودة تجريبية</strong><span>{selectedPatient.visit} · لم يتم اعتماد السجل</span></div><StatePill state={selectedPatient.state}/></div>:<div className="live-empty"><FileText size={19}/><strong>سجل الزيارات متاح من تبويب الزيارات</strong></div>}</div></>}{patientTab==='history'&&<div className="detail-section patient-history-section"><div className="panel-heading"><div><h3>التاريخ الصحي</h3><p>حالات صحية وحساسية وأدوية ومعلومات أسنان مسجلة مع حالة المراجعة.</p></div><button className="secondary-button" onClick={()=>setShowHistoryForm(true)}><Plus size={15}/> إضافة معلومة</button></div>{historyItems.length===0?<div className="missing-notice"><AlertCircle size={17}/><div><strong>لم يُسجل تاريخ صحي لهذا الملف بعد</strong><span>لا تفسر غياب المعلومة على أنه نفي. أضف المعلومات بعد سؤال المريض والتحقق منها.</span></div></div>:<div className="history-list">{historyItems.map((item:any)=><div className="history-item" key={item.id}><div className="history-item-main"><strong>{item.title}</strong><span>{({condition:'حالة صحية',allergy:'حساسية',medication:'دواء',surgery:'جراحة سابقة',family_history:'تاريخ عائلي',social_history:'تاريخ اجتماعي',dental_history:'تاريخ أسنان',other:'أخرى'} as Record<string,string>)[item.category]||item.category}</span>{item.value!==null&&item.value!==undefined&&<p>{typeof item.value==='string'?item.value:JSON.stringify(item.value)}</p>}</div><span className={`state-pill ${item.state==='explicitly_negative'?'approved':item.state==='needs_review'||item.state==='not_recorded'?'review':'neutral'}`}>{({positive:'مذكورة',explicitly_negative:'نفي صريح',not_asked:'لم يُسأل',not_recorded:'غير مسجلة',unknown:'غير معلومة',not_applicable:'لا ينطبق',needs_review:'تحتاج مراجعة'} as Record<string,string>)[item.state]||item.state}</span></div>)}</div>}</div>}{patientTab==='visits'&&<div className="detail-section"><div className="panel-heading"><div><h3>الزيارات السابقة</h3><p>التاريخ والحالة لكل زيارة محفوظة للمريض.</p></div><div className="visit-actions"><button className="secondary-button" onClick={()=>{setManualComplaint('');setShowManualVisit(true)}}><FilePlus2 size={15}/> زيارة يدوية</button><button className="primary-button" onClick={()=>setShowScribe(true)}><Mic size={15}/> توثيق بالصوت</button></div></div>{!patientDetails?.encounters?.length?<div className="live-empty"><CalendarDays size={20}/><strong>لا توجد زيارات محفوظة لهذا المريض</strong><span>بعد انتهاء المعالجة، ستظهر المسودة هنا للمراجعة والاعتماد.</span></div>:<div className="history-list">{patientDetails.encounters.map((visit:any)=><a className="history-item visit-history-item" href={`/encounters/${visit.id}`} key={visit.id}><div className="history-item-main"><strong>{visit.chief_complaint||'زيارة أسنان'}</strong><span>{new Date(visit.started_at||visit.created_at).toLocaleString('ar')}</span></div><StatePill state={({recording:'قيد التسجيل',processing:'قيد المعالجة',needs_review:'تحتاج مراجعة',approved:'معتمد',draft:'مسودة',corrected:'مصحح',cancelled:'ملغي',processing_failed:'فشلت المعالجة'} as Record<string,string>)[visit.status]||visit.status}/><ChevronLeft size={15}/></a>)}</div>}</div>}</div>}</div></section>}
 
-      {active === 'appointments' && <section className="workspace-page"><div className="page-heading"><div><div className="eyebrow">إدارة الوقت</div><h1>المواعيد</h1><p>{demoMode ? 'عرض توضيحي ببيانات خيالية — لا ترسل تذكيرات.' : 'المواعيد المحفوظة في مساحة العيادة الحالية.'}</p></div><button className="primary-button" onClick={()=>{setAppointmentPatientId(selectedPatient?.id || patients[0]?.id || '');setShowNewAppointment(true)}}><Plus size={17}/> موعد جديد</button></div><div className="panel"><div className="panel-heading"><div><h2>{new Date(appointmentViewDate + 'T12:00:00+03:00').toLocaleDateString(language === 'ar' ? 'ar-YE' : 'en-US',{timeZone:'Asia/Aden',weekday:'long',day:'numeric',month:'long',year:'numeric'})}</h2><p>{demoMode ? 'بيانات عرض تجريبي' : `${todayAppointments.length} موعداً في القائمة المحملة`}</p></div><div className="month-switch"><button aria-label={language==='ar'?'اليوم السابق':'Previous day'} onClick={()=>void loadAppointmentsForDate(shiftAdenDate(appointmentViewDate,-1))}><ChevronRight size={16}/></button><button aria-label={language==='ar'?'تحديث المواعيد':'Refresh appointments'} onClick={()=>{if(demoMode)notify('هذه مواعيد خيالية للعرض فقط.');else void loadAppointmentsForDate(appointmentViewDate)}}><Activity size={17}/></button><button aria-label={language==='ar'?'اليوم التالي':'Next day'} onClick={()=>void loadAppointmentsForDate(shiftAdenDate(appointmentViewDate,1))}><ChevronLeft size={16}/></button></div></div><label className="agenda-date-picker"><span>{language==='ar'?'تاريخ العرض':'Agenda date'}</span><input type="date" value={appointmentViewDate} onChange={e=>void loadAppointmentsForDate(e.target.value)}/></label><div className="timeline-list roomy">{demoMode ? <>{appointmentViewDate===dateInputForAden() && <><Appointment time="٩:٠٠" period="ص" patient="عمر خالد صالح" type="متابعة علاج العصب" duration="٤٥ دقيقة" status="وصل" color="blue"/><Appointment time="١٠:٣٠" period="ص" patient="سارة محمد علي" type="فحص ألم الضرس" duration="٣٠ دقيقة" status="قيد الانتظار" color="mint" active/><Appointment time="١١:١٥" period="ص" patient="مروان يحيى" type="تنظيف وفحص دوري" duration="٣٠ دقيقة" status="مؤكد" color="peach"/><Appointment time="١٢:٠٠" period="م" patient="هند عبدالله" type="استشارة علاجية" duration="٤٥ دقيقة" status="مؤكد" color="lilac"/></>}{scheduleAppointments.filter(a=>dateInputForAden(new Date(a.scheduled_start))===appointmentViewDate).map(a=>renderSavedAppointment(a,'blue'))}</> : scheduleAppointments.map(a=>renderSavedAppointment(a,'mint'))}{!(demoMode && appointmentViewDate===dateInputForAden()) && scheduleAppointments.filter(a=>dateInputForAden(new Date(a.scheduled_start))===appointmentViewDate).length===0 && <div className="live-empty"><CalendarDays size={22}/><strong>لا توجد مواعيد في هذا اليوم</strong><span>اختر يوماً آخر أو أضف موعداً جديداً.</span></div>}</div></div></section>}
+      {active === 'appointments' && <section className="workspace-page"><div className="page-heading"><div><div className="eyebrow">إدارة الوقت</div><h1>المواعيد</h1><p>{demoMode ? 'عرض توضيحي ببيانات خيالية — لا ترسل تذكيرات.' : 'المواعيد المحفوظة في مساحة العيادة الحالية.'}</p></div><button className="primary-button" onClick={()=>{setAppointmentPatientId(selectedPatient?.id || patients[0]?.id || '');setShowNewAppointment(true)}}><Plus size={17}/> موعد جديد</button></div><div className="panel"><div className="panel-heading"><div><h2>{new Date(appointmentViewDate + 'T12:00:00+03:00').toLocaleDateString(language === 'ar' ? 'ar-YE' : 'en-US',{timeZone:'Asia/Aden',weekday:'long',day:'numeric',month:'long',year:'numeric'})}</h2><p>{demoMode ? 'بيانات عرض تجريبي' : `${todayAppointments.length} موعداً في القائمة المحملة`}</p></div><div className="month-switch"><button aria-label={language==='ar'?'اليوم السابق':'Previous day'} onClick={()=>void loadAppointmentsForDate(shiftAdenDate(appointmentViewDate,-1))}><ChevronRight size={16}/></button><button aria-label={language==='ar'?'تحديث المواعيد':'Refresh appointments'} onClick={()=>{if(demoMode)notify('هذه مواعيد خيالية للعرض فقط.');else void loadAppointmentsForDate(appointmentViewDate)}}><Activity size={17}/></button><button aria-label={language==='ar'?'اليوم التالي':'Next day'} onClick={()=>void loadAppointmentsForDate(shiftAdenDate(appointmentViewDate,1))}><ChevronLeft size={16}/></button></div></div><label className="agenda-date-picker"><span>{language==='ar'?'تاريخ العرض':'Agenda date'}</span><input type="date" value={appointmentViewDate} onChange={e=>void loadAppointmentsForDate(e.target.value)}/></label><div className="timeline-list roomy">{visibleScheduleAppointments.map(item => renderSavedAppointment(item, item.status === 'arrived' ? 'mint' : 'blue'))}
+{visibleScheduleAppointments.length === 0 && <div className="workbench-empty compact"><CalendarDays size={24}/><strong>لا توجد مواعيد في هذا اليوم</strong><span>{demoMode ? 'اختر تاريخ اليوم لعرض المواعيد التجريبية أو أضف موعداً جديداً.' : 'لا توجد مواعيد ضمن التاريخ المحدد. يمكنك إنشاء موعد جديد.'}</span><button className="primary-button" type="button" onClick={() => {setAppointmentPatientId(selectedPatient?.id || patients[0]?.id || '');setAppointmentDate(appointmentViewDate);setShowNewAppointment(true)}}><Plus size={15}/> حجز موعد</button></div>}</div></div></section>}
 
       {active === 'scribe' && <section className="workspace-page"><div className="page-heading"><div><div className="eyebrow">التوثيق السريري</div><h1>تسجيل الزيارة</h1><p>ابدأ بعد التحقق من هوية المريض والموافقة على التسجيل.</p></div><span className="status-pill"><span className="status-dot"/> جاهز للتسجيل</span></div><div className="panel scribe-launch"><div className="scribe-orb"><Mic size={32}/></div><h2>حوّل الحوار إلى مسودة سريرية</h2><p>التسجيل الحقيقي يحتاج صلاحية الميكروفون، تسجيل الموافقة، وتوصيل خدمة التخزين والمعالجة قبل الاستخدام السريري.</p><button className="primary-button" onClick={()=>setShowScribe(true)}><Play size={17}/> فتح مساحة الاستماع</button></div></section>}
 
@@ -394,6 +640,28 @@ export default function HomePage() {
       <footer className="app-footer"><span>سِنان <span className="footer-sep">·</span> مساحة عمل سريرية للأسنان</span><span><ShieldCheck size={13}/> الخصوصية والسلامة السريرية أساس التصميم</span></footer>
     </main>
 
+
+
+    {showCommandPalette && <div className="command-backdrop" role="presentation" onMouseDown={event => {if (event.target === event.currentTarget) setShowCommandPalette(false)}}><section className="command-palette" role="dialog" aria-modal="true" aria-label="بحث شامل وتنقل سريع">
+      <div className="command-searchline"><Search size={19}/><input ref={commandInputRef} value={commandSearch} onChange={event => setCommandSearch(event.target.value)} placeholder="ابحث عن مريض أو افتح وحدة..." aria-label="بحث شامل"/><button type="button" onClick={() => setShowCommandPalette(false)} aria-label="إغلاق البحث">Esc</button></div>
+      <div className="command-results">
+        {commandNavResults.length > 0 && <div className="command-group"><span className="command-group-label">الانتقال إلى</span>{commandNavResults.map(item => <button type="button" className="command-result" key={item.key} onClick={() => {setActive(item.key);if(item.key==='scribe')setShowScribe(true);setSidebarOpen(false);setShowCommandPalette(false);setCommandSearch('')}}><span className="command-result-icon"><item.icon size={18}/></span><span><strong>{item.label}</strong><small>فتح مساحة {item.label}</small></span><kbd>↵</kbd></button>)}</div>}
+        {commandPatientResults.length > 0 && <div className="command-group"><span className="command-group-label">ملفات المرضى</span>{commandPatientResults.map(patient => <button type="button" className="command-result" key={patient.id} onClick={() => {setSelectedPatient(patient);setPatientTab('overview');setActive('patients');setShowCommandPalette(false);setCommandSearch('')}}><span className={'command-result-avatar ' + patient.color}>{patient.initials}</span><span><strong>{patient.name}</strong><small>{patient.displayId || patient.id} · {patient.reason}</small></span><ChevronLeft size={16}/></button>)}</div>}
+        {commandNavResults.length===0 && commandPatientResults.length===0 && <div className="command-empty"><Search size={24}/><strong>لا توجد نتائج</strong><span>ابحث باسم المريض أو رقم الملف أو اسم الوحدة.</span></div>}
+      </div>
+      <footer className="command-footer"><span><kbd>Ctrl</kbd> + <kbd>K</kbd> فتح البحث</span><span><kbd>Esc</kbd> إغلاق</span><span>البحث ضمن بيانات هذه العيادة فقط</span></footer>
+    </section></div>}
+
+
+    {showEditPatient && selectedPatient && <div className="modal-backdrop" role="presentation" onMouseDown={event => {if (event.target === event.currentTarget && !patientSaving) setShowEditPatient(false)}}><div className="modal patient-edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-patient-title">
+      <div className="modal-head"><div><div className="eyebrow">الملفات السريرية</div><h2 id="edit-patient-title">تعديل بيانات المريض</h2></div><button className="icon-button" type="button" onClick={() => setShowEditPatient(false)} disabled={patientSaving} aria-label="إغلاق"><X size={18}/></button></div>
+      <p className="modal-intro">راجع البيانات الأساسية فقط. لا تغيّر الشكوى إلا إذا أكدها المريض، ولا تستبدل التاريخ الصحي أو التشخيصات بهذه الخانات.</p>
+      <label className="form-field">اسم المريض <span>*</span><input value={editPatientName} onChange={event => setEditPatientName(event.target.value)} minLength={2} maxLength={180} required/></label>
+      <label className="form-field">رقم الهاتف<input type="tel" value={editPatientPhone} onChange={event => setEditPatientPhone(event.target.value)} maxLength={40} placeholder={demoMode ? 'اختياري في بيانات العرض' : 'اتركه فارغاً للإبقاء على الرقم الحالي'}/></label>
+      <label className="form-field">الشكوى الرئيسية<textarea value={editPatientComplaint} onChange={event => setEditPatientComplaint(event.target.value)} maxLength={2000} rows={3} placeholder="ما ذكره المريض، دون استنتاج تشخيص"/></label>
+      {demoMode && <div className="modal-warning"><AlertCircle size={16}/> هذه التعديلات تغيّر بيانات العرض الحالية في الذاكرة فقط، ولا تُحفظ في قاعدة بيانات.</div>}
+      <div className="modal-actions"><button className="secondary-button" type="button" onClick={() => setShowEditPatient(false)} disabled={patientSaving}>إلغاء</button><button className="primary-button" type="button" onClick={savePatientEdits} disabled={patientSaving || editPatientName.trim().length < 2}><SaveIcon/>{patientSaving ? 'جارٍ حفظ التعديلات...' : 'حفظ التعديلات'}</button></div>
+    </div></div>}
 
     {showNewAppointment && <div className="modal-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget&&!appointmentSaving)setShowNewAppointment(false)}}><div className="modal" role="dialog" aria-modal="true" aria-labelledby="new-appointment-title"><div className="modal-head"><div><div className="eyebrow">جدول العيادة</div><h2 id="new-appointment-title">موعد جديد</h2></div><button className="icon-button" onClick={()=>setShowNewAppointment(false)} aria-label="إغلاق" disabled={appointmentSaving}><X size={18}/></button></div><label className="form-field">المريض <span>*</span><select value={appointmentPatientId} onChange={e=>setAppointmentPatientId(e.target.value)} required><option value="">اختر المريض</option>{patients.map(p=><option key={p.id} value={p.id}>{p.name} · {p.displayId||p.id}</option>)}</select></label><div className="settings-grid appointment-fields"><label>التاريخ<input type="date" value={appointmentDate} onChange={e=>setAppointmentDate(e.target.value)} required/></label><label>وقت البداية<input type="time" value={appointmentTime} onChange={e=>setAppointmentTime(e.target.value)} required/></label><label>المدة<select value={appointmentDuration} onChange={e=>setAppointmentDuration(e.target.value)}><option value="15">١٥ دقيقة</option><option value="30">٣٠ دقيقة</option><option value="45">٤٥ دقيقة</option><option value="60">٦٠ دقيقة</option><option value="90">٩٠ دقيقة</option></select></label></div><label className="form-field">ملاحظة الموعد (اختيارية)<textarea value={appointmentNote} onChange={e=>setAppointmentNote(e.target.value)} maxLength={2000} rows={3} placeholder="مثلاً: متابعة علاج العصب"/></label>{demoMode&&<div className="modal-warning"><AlertCircle size={16}/> وضع العرض لا يحفظ المواعيد على الخادم؛ أوقف العرض التجريبي لاستخدام قاعدة البيانات.</div>}<div className="modal-actions"><button className="secondary-button" onClick={()=>setShowNewAppointment(false)} disabled={appointmentSaving}>إلغاء</button><button className="primary-button" onClick={saveAppointment} disabled={appointmentSaving||!appointmentPatientId}><CalendarDays size={16}/>{appointmentSaving?'جارٍ الحفظ...':'حفظ الموعد'}</button></div></div></div>}
 
@@ -417,7 +685,7 @@ function ToothGlyph({tooth}:{tooth:number}) {
 }
 
 function StatCard({icon,tone,label,number,foot,alert=false}:{icon:React.ReactNode;tone:string;label:string;number:string;foot:string;alert?:boolean}){return <Localized><div className="stat-card"><div className={`stat-icon ${tone}`}>{icon}</div><div className="stat-label">{label}</div><div className={`stat-number ${alert?'alert-number':''}`}>{number}</div><div className="stat-foot">{alert&&<span className="tiny-alert"/>}{foot}</div></div></Localized>}
-function Appointment({time,period,patient,type,duration,status,color,active=false}:{time:string;period:string;patient:string;type:string;duration:string;status:string;color:string;active?:boolean}){return <Localized><div className={`timeline-item ${active?'active-appointment':''}`}><div className="timeline-time"><strong>{time}</strong><span>{period}</span></div><div className="timeline-track"><i className={active?'track-active':''}/></div><div className={`avatar small ${color}`}>{patient.slice(0,1)}</div><div className="appointment-info"><strong>{patient}</strong><span>{type==='dental_visit'?'زيارة أسنان':type}</span><small><Clock3 size={12}/> {duration}</small></div><span className={`appointment-state ${status==='وصل'?'checked-in':status==='قيد الانتظار'?'waiting':''}`}>{status}</span></div></Localized>}
+function Appointment({time,period,patient,type,duration,status,color,active=false,statusKey,onStatusChange}:{time:string;period:string;patient:string;type:string;duration:string;status:string;color:string;active?:boolean;statusKey?:string;onStatusChange?:(status:string)=>void}){return <Localized><div className={`timeline-item ${active?'active-appointment':''}`}><div className="timeline-time"><strong>{time}</strong><span>{period}</span></div><div className="timeline-track"><i className={active?'track-active':''}/></div><div className={`avatar small ${color}`}>{patient.slice(0,1)}</div><div className="appointment-info"><strong>{patient}</strong><span>{type==='dental_visit'?'زيارة أسنان':type}</span><small><Clock3 size={12}/> {duration}</small></div>{onStatusChange&&statusKey?<select className="appointment-state-select" value={statusKey} onChange={event=>onStatusChange(event.target.value)} aria-label="تغيير حالة الموعد"><option value="scheduled">مجدول</option><option value="confirmed">مؤكد</option><option value="arrived">وصل</option><option value="in_progress">قيد التنفيذ</option><option value="completed">مكتمل</option><option value="cancelled">ملغي</option><option value="no_show">لم يحضر</option></select>:<span className={`appointment-state ${status==='وصل'?'checked-in':status==='قيد الانتظار'?'waiting':''}`}>{status}</span>}</div></Localized>}
 function ReviewItem({name,detail,state,color,onClick}:{name:string;detail:string;state:string;color:string;onClick:()=>void}){return <Localized><button className="review-item" onClick={onClick}><div className={`avatar small ${color}`}>{name.slice(0,1)}</div><div className="review-info"><strong>{name}</strong><span>{detail}</span><small><AlertCircle size={12}/>{state}</small></div><ChevronLeft size={16}/></button></Localized>}
 function StatePill({state}:{state:string}){let c=state.includes('معتمد')?'approved':state.includes('مسودة')?'draft':state.includes('مراجعة')||state.includes('غير')?'review':'neutral';const Icon=c==='review'?AlertCircle:c==='approved'?CircleCheck:c==='draft'?FileText:null;return <Localized><span className={`state-pill ${c}`} aria-label={`الحالة: ${state}`}>{Icon&&<Icon size={12} aria-hidden="true"/>}{state}</span></Localized>}
 function DetailField({label,value,warning=false}:{label:string;value:string;warning?:boolean}){return <Localized><div className="detail-field"><span>{label}</span><strong className={warning?'muted-field':''}>{value}</strong></div></Localized>}

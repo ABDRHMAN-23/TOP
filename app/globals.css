@@ -992,3 +992,234 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .auth-card>.language-toggle{top:12px;right:12px}
   [dir="ltr"] .auth-card>.language-toggle{right:auto;left:12px}
 }
+
+
+/* Workflow redesign v2: operational dashboard, command search, and compact clinical cards */
+.command-launcher{display:inline-flex;align-items:center;gap:9px;min-height:37px;padding:0 11px;border:1px solid #dfe7f3;border-radius:11px;background:#fff;color:#61738d;font-size:10px;white-space:nowrap;cursor:pointer;transition:border-color .16s,background .16s,color .16s}
+.command-launcher:hover{border-color:#b8cdf1;background:#f6f9ff;color:#2458c8}
+.command-launcher>svg{color:#7c90ae}
+.command-launcher kbd{padding:3px 5px;border:1px solid #e1e8f2;border-radius:5px;background:#f7f9fd;color:#8b9ab0;font:9px 'DM Sans',sans-serif}
+.dashboard-workbench{max-width:1540px;margin:0 auto;padding-top:25px}
+.workbench-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:0 0 21px;border-bottom:1px solid #e2e9f3}
+.workbench-title{min-width:0}
+.workbench-title .eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:9px;color:#6d83a4;font-size:10px;font-weight:700;letter-spacing:.15px}
+.workbench-status-dot{width:7px;height:7px;display:inline-block;border-radius:50%;background:#39b88f;box-shadow:0 0 0 4px #39b88f1a}
+.workbench-title h1{margin:0;color:#162f53;font-size:clamp(24px,2.1vw,32px);font-weight:750;line-height:1.35;letter-spacing:-.6px}
+.workbench-title p{max-width:650px;margin:8px 0 0;color:#8392a8;font-size:11px;line-height:1.85}
+.workbench-heading-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-shrink:0}
+.connection-chip{display:inline-flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid #d9e6df;border-radius:9px;background:#f5fbf7;color:#3c7e62;font-size:9px;font-weight:700;white-space:nowrap}
+.connection-chip i{width:6px;height:6px;border-radius:50%;background:#38ae83}
+.connection-chip.demo{border-color:#f0e1bf;background:#fff9eb;color:#956d2c}
+.connection-chip.demo i{background:#d3a347}
+.connection-chip.disconnected{border-color:#efd8d8;background:#fff5f5;color:#a45353}
+.connection-chip.disconnected i{background:#d36b6b}
+.workbench-actionbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:18px 0 16px}
+.workbench-action{display:flex;align-items:center;gap:12px;min-width:0;min-height:68px;padding:12px 14px;border:1px solid #e0e8f3;border-radius:14px;background:#fff;text-align:start;box-shadow:0 3px 12px #153b7006;transition:transform .15s,border-color .15s,box-shadow .15s,background .15s}
+.workbench-action:hover{transform:translateY(-2px);border-color:#bfd1f1;background:#fbfcff;box-shadow:0 9px 23px #153b7010}
+.workbench-action.primary{border-color:#2458c8;background:#2458c8;color:white;box-shadow:0 7px 18px #2458c824}
+.workbench-action.primary:hover{background:#1949ad;border-color:#1949ad}
+.workbench-action-icon{display:grid;place-items:center;flex:none;width:39px;height:39px;border:1px solid #e1e9f5;border-radius:12px;background:#f1f5fc;color:#3d65ab}
+.workbench-action.primary .workbench-action-icon{border-color:#ffffff2f;background:#ffffff1c;color:#fff}
+.workbench-action>span:last-child{display:flex;flex:1;flex-direction:column;gap:5px;min-width:0}
+.workbench-action strong{overflow:hidden;color:#263e61;font-size:11px;font-weight:750;text-overflow:ellipsis;white-space:nowrap}
+.workbench-action small{overflow:hidden;color:#8a99af;font-size:9px;text-overflow:ellipsis;white-space:nowrap}
+.workbench-action.primary strong{color:#fff}
+.workbench-action.primary small{color:#dbe6ff}
+.workbench-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 16px}
+.workbench-metric{display:flex;align-items:center;gap:12px;min-width:0;padding:15px 16px;border:1px solid #e1e9f4;border-radius:15px;background:#fff;text-align:start;box-shadow:0 4px 16px #1d3e6b05;transition:border-color .15s,box-shadow .15s}
+.workbench-metric:hover{border-color:#c1d4f6;box-shadow:0 8px 24px #1d3e6b0d}
+.metric-symbol{display:grid;place-items:center;width:43px;height:43px;flex:none;border-radius:13px}
+.metric-symbol.blue{background:#eaf1ff;color:#3266c7}
+.metric-symbol.mint{background:#e7f7f0;color:#278268}
+.metric-symbol.amber{background:#fff4df;color:#a56f1c}
+.metric-content{display:flex;flex:1;flex-direction:column;gap:3px;min-width:0}
+.metric-content small{color:#7d8da5;font-size:10px;font-weight:650}
+.metric-content strong{color:#1b355a;font-size:25px;font-weight:800;line-height:1.2;letter-spacing:-.5px}
+.metric-content em{overflow:hidden;color:#93a0b2;font-size:9px;font-style:normal;text-overflow:ellipsis;white-space:nowrap}
+.workbench-metric>svg{color:#a3b1c4}
+.workbench-columns{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(330px,.82fr);align-items:start;gap:15px;margin-bottom:15px}
+.workbench-schedule,.workbench-attention,.workbench-shortcuts,.workbench-patients{min-width:0;padding:19px 20px}
+.workbench-section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;min-width:0;margin-bottom:15px}
+.workbench-section-heading>div{min-width:0}
+.workbench-section-heading h2{margin:4px 0 0;color:#1b3559;font-size:15px;font-weight:800;letter-spacing:-.2px}
+.workbench-section-heading p{margin:5px 0 0;color:#8897ac;font-size:10px;line-height:1.7}
+.section-kicker{display:block;color:#7390c0;font-size:9px;font-weight:800;letter-spacing:.25px}
+.workbench-section-heading>.text-link{display:inline-flex;align-items:center;gap:6px;min-height:34px;flex:none;font-size:10px}
+.workbench-timeline{min-height:110px}
+.workbench-timeline .timeline-item{grid-template-columns:56px 9px 34px minmax(0,1fr) auto;gap:11px;padding:14px 3px;border-bottom:1px solid #edf1f7}
+.workbench-timeline .timeline-item:last-child{border-bottom:0}
+.workbench-timeline .timeline-time strong{font-size:11px;color:#435d7e}
+.workbench-timeline .timeline-time span{font-size:9px;color:#9aa7ba}
+.workbench-timeline .timeline-track{width:9px}
+.workbench-timeline .timeline-track:before{right:4px}
+.workbench-timeline .timeline-item>.avatar{width:34px;height:34px;border-radius:11px}
+.workbench-timeline .appointment-info strong{font-size:11px;color:#233e62}
+.workbench-timeline .appointment-info span{font-size:10px}
+.workbench-timeline .appointment-info small{font-size:9px}
+.workbench-timeline .appointment-state{font-size:9px;padding:5px 8px}
+.workbench-panel-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:13px;margin-top:8px;border-top:1px solid #edf1f7;color:#8b9ab0;font-size:9px}
+.workbench-panel-footer button,.workbench-link-row{display:inline-flex;align-items:center;gap:5px;border:0;background:transparent;color:#3869bf;font-size:10px;font-weight:750;white-space:nowrap;cursor:pointer}
+.workbench-panel-footer button:hover,.workbench-link-row:hover{color:#1949ad}
+.workbench-side-stack{display:grid;gap:15px;min-width:0}
+.workbench-count{display:grid;place-items:center;min-width:31px;height:31px;padding:0 7px;border:1px solid #f0e2c5;border-radius:10px;background:#fff8e9;color:#9a6b1e;font-size:12px;font-weight:800}
+.attention-list{display:grid;gap:5px}
+.attention-row{display:flex;align-items:center;gap:9px;width:100%;min-width:0;padding:10px 0;border:0;border-bottom:1px solid #edf1f6;background:transparent;text-align:start;cursor:pointer}
+.attention-row:last-child{border-bottom:0}
+.attention-row:hover .attention-copy strong{color:#2458c8}
+.attention-avatar,.command-result-avatar{display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:12px;font-size:11px;font-weight:800}
+.attention-avatar.mint,.command-result-avatar.mint{background:#e3f4e9;color:#267b5d}
+.attention-avatar.blue,.command-result-avatar.blue{background:#e7edff;color:#4b64b9}
+.attention-avatar.peach,.command-result-avatar.peach{background:#fff0e4;color:#a3653d}
+.attention-avatar.lilac,.command-result-avatar.lilac{background:#f0eafa;color:#8268aa}
+.attention-copy{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.attention-copy strong{overflow:hidden;color:#314967;font-size:10px;font-weight:750;text-overflow:ellipsis;white-space:nowrap}
+.attention-copy small{overflow:hidden;color:#8998ac;font-size:9px;text-overflow:ellipsis;white-space:nowrap}
+.attention-row>.state-pill{flex:none;font-size:8px;padding:4px 7px;max-width:95px;overflow:hidden;text-overflow:ellipsis}
+.attention-row>svg{color:#a6b2c4}
+.workbench-link-row{justify-content:space-between;width:100%;padding:12px 0 0;margin-top:7px;border-top:1px solid #edf1f7}
+.workbench-shortcuts{padding-bottom:15px}
+.workbench-shortcut-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.workbench-shortcut-grid button{display:flex;align-items:center;gap:9px;min-width:0;min-height:49px;padding:9px 10px;border:1px solid #e5ebf4;border-radius:11px;background:#fbfcff;color:#536d91;text-align:start;cursor:pointer;transition:border-color .14s,background .14s}
+.workbench-shortcut-grid button:hover{border-color:#c3d5f5;background:#f0f5ff;color:#2458c8}
+.workbench-shortcut-grid button>svg:first-child{color:#5b7bc0}
+.workbench-shortcut-grid button span{flex:1;min-width:0;overflow:hidden;font-size:10px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
+.workbench-shortcut-grid button>svg:last-child{color:#9aa9bd}
+.workbench-patients{margin-bottom:16px}
+.patients-workbench-heading{align-items:center;flex-wrap:wrap}
+.workbench-patient-tools{display:flex;align-items:center;gap:8px;min-width:0}
+.workbench-patient-tools .search-box{width:240px;min-width:0;margin:0}
+.workbench-patient-tools .search-box input{min-width:0}
+.workbench-patient-tools>.primary-button{flex:none;min-height:39px;padding:0 12px;font-size:10px}
+.workbench-patient-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.workbench-patient-card{display:flex;align-items:center;gap:10px;min-width:0;padding:12px;border:1px solid #e5ebf4;border-radius:13px;background:#fff;text-align:start;cursor:pointer;transition:border-color .15s,background .15s,transform .15s}
+.workbench-patient-card:hover{transform:translateY(-1px);border-color:#bfd2f4;background:#fbfcff}
+.workbench-patient-avatar{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:13px;font-size:11px;font-weight:800}
+.workbench-patient-avatar.mint{background:#e3f4e9;color:#267b5d}
+.workbench-patient-avatar.blue{background:#e7edff;color:#4b64b9}
+.workbench-patient-avatar.peach{background:#fff0e4;color:#a3653d}
+.workbench-patient-avatar.lilac{background:#f0eafa;color:#8268aa}
+.workbench-patient-main{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.workbench-patient-main strong{overflow:hidden;color:#243f63;font-size:11px;font-weight:800;text-overflow:ellipsis;white-space:nowrap}
+.workbench-patient-main small{color:#8a99ae;font-size:9px}
+.workbench-patient-main em{overflow:hidden;color:#7185a2;font-size:9px;font-style:normal;text-overflow:ellipsis;white-space:nowrap}
+.workbench-patient-card>.state-pill{flex:none;font-size:8px;padding:4px 7px;max-width:91px;overflow:hidden;text-overflow:ellipsis}
+.workbench-patient-card>svg{color:#a2b2c8;flex:none}
+.workbench-empty{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:9px;min-height:160px;padding:20px;text-align:center;color:#7890b1}
+.workbench-empty>svg{color:#6d8cd1}
+.workbench-empty strong{color:#304b70;font-size:12px;font-weight:800}
+.workbench-empty span{max-width:380px;color:#8695ab;font-size:10px;line-height:1.8}
+.workbench-empty .primary-button{margin-top:5px}
+.workbench-empty.compact{min-height:100px;padding:15px 8px}
+.workbench-empty.compact>svg{width:20px;height:20px}
+.workbench-empty.compact strong{font-size:10px}
+.workbench-empty.compact span{font-size:9px}
+.command-backdrop{position:fixed;inset:0;z-index:150;display:flex;align-items:flex-start;justify-content:center;padding:11vh 16px 24px;background:#152a4a78;backdrop-filter:blur(7px)}
+.command-palette{display:flex;flex-direction:column;width:min(100%,620px);max-height:min(76dvh,720px);overflow:hidden;border:1px solid #dce6f3;border-radius:19px;background:#fff;box-shadow:0 35px 100px #102b5240}
+.command-searchline{display:flex;align-items:center;gap:12px;padding:14px 15px;border-bottom:1px solid #e8eef6;color:#7187a7}
+.command-searchline input{width:100%;min-width:0;min-height:37px;border:0!important;outline:0!important;background:transparent!important;color:#233e62;font-size:13px}
+.command-searchline input::placeholder{color:#9aa8bb}
+.command-searchline>button{flex:none;padding:5px 8px;border:1px solid #dfe7f1;border-radius:7px;background:#f7f9fc;color:#71839c;font-size:9px;cursor:pointer}
+.command-results{overflow-y:auto;padding:7px 10px}
+.command-group{padding:7px 0 9px}
+.command-group+.command-group{border-top:1px solid #edf1f7}
+.command-group-label{display:block;padding:5px 9px 8px;color:#93a1b4;font-size:9px;font-weight:800}
+.command-result{display:flex;align-items:center;gap:10px;width:100%;min-width:0;padding:9px;border:0;border-radius:10px;background:transparent;text-align:start;cursor:pointer}
+.command-result:hover,.command-result:focus-visible{background:#f0f5ff}
+.command-result-icon{display:grid;place-items:center;flex:none;width:34px;height:34px;border:1px solid #e4ebf5;border-radius:10px;background:#f8faff;color:#4e73b9}
+.command-result>span:nth-child(2){display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.command-result strong{overflow:hidden;color:#2a4263;font-size:11px;font-weight:750;text-overflow:ellipsis;white-space:nowrap}
+.command-result small{overflow:hidden;color:#8695aa;font-size:9px;text-overflow:ellipsis;white-space:nowrap}
+.command-result>kbd{padding:3px 6px;border:1px solid #e1e8f2;border-radius:5px;background:#f8faff;color:#8294ad;font:10px 'DM Sans',sans-serif}
+.command-empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:35px 10px;color:#8b9cb4;text-align:center}
+.command-empty strong{color:#3b5476;font-size:12px}
+.command-empty span{font-size:10px}
+.command-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;border-top:1px solid #e9eef6;background:#fafcff;color:#8b99ad;font-size:9px}
+.command-footer kbd{padding:3px 5px;border:1px solid #dfe7f1;border-radius:5px;background:white;color:#6a7f9b;font:9px 'DM Sans',sans-serif}
+[dir="ltr"] .workbench-title,.workbench-section-heading,[dir="ltr"] .workbench-section-heading,[dir="ltr"] .workbench-action,[dir="ltr"] .workbench-metric,[dir="ltr"] .workbench-patient-card,[dir="ltr"] .attention-row,[dir="ltr"] .command-result{text-align:left}
+[dir="ltr"] .workbench-heading,[dir="ltr"] .workbench-heading-actions{direction:ltr}
+[dir="ltr"] .workbench-title .eyebrow{flex-direction:row}
+[dir="ltr"] .workbench-panel-footer,[dir="ltr"] .workbench-link-row{direction:ltr}
+@media(max-width:1050px){
+  .workbench-columns{grid-template-columns:minmax(0,1fr)}
+  .workbench-side-stack{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .workbench-actionbar{gap:8px}
+  .workbench-action{gap:9px;padding:11px}
+}
+@media(max-width:760px){
+  .command-launcher{min-width:35px;width:35px;height:35px;justify-content:center;padding:0;gap:0}
+  .command-launcher span,.command-launcher kbd{display:none}
+  .dashboard-workbench{padding-top:18px}
+  .workbench-heading{align-items:flex-start;flex-direction:column;gap:13px;padding-bottom:15px}
+  .workbench-title h1{font-size:24px;letter-spacing:-.35px}
+  .workbench-title p{font-size:10px;line-height:1.7}
+  .workbench-heading-actions{width:100%;justify-content:space-between}
+  .workbench-actionbar{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px 0}
+  .workbench-action{min-height:63px;gap:9px;padding:9px;border-radius:12px}
+  .workbench-action-icon{width:34px;height:34px;border-radius:10px}
+  .workbench-action strong{font-size:10px}
+  .workbench-action small{font-size:8px}
+  .workbench-metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:11px}
+  .workbench-metric{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:10px 8px;border-radius:12px}
+  .metric-symbol{width:30px;height:30px;border-radius:9px}
+  .metric-symbol svg{width:16px;height:16px}
+  .metric-content{width:100%;gap:3px}
+  .metric-content small{font-size:8px;line-height:1.45}
+  .metric-content strong{font-size:22px}
+  .metric-content em{display:none}
+  .workbench-metric>svg{display:none}
+  .workbench-columns{grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:10px}
+  .workbench-side-stack{grid-template-columns:minmax(0,1fr);gap:10px}
+  .workbench-schedule,.workbench-attention,.workbench-shortcuts,.workbench-patients{padding:13px 11px;border-radius:15px}
+  .workbench-section-heading{gap:8px;margin-bottom:10px}
+  .workbench-section-heading h2{font-size:13px}
+  .workbench-section-heading p{font-size:9px}
+  .section-kicker{font-size:8px}
+  .workbench-section-heading>.text-link{font-size:9px}
+  .workbench-timeline .timeline-item{grid-template-columns:42px 7px 29px minmax(0,1fr);grid-template-areas:"time track avatar info" ". track . status";grid-template-rows:auto auto;gap:5px 7px;padding:11px 0}
+  .workbench-timeline .timeline-time{grid-area:time}
+  .workbench-timeline .timeline-track{grid-area:track;width:7px;grid-row:1 / span 2}
+  .workbench-timeline .timeline-track:before{right:3px}
+  .workbench-timeline .timeline-item>.avatar{grid-area:avatar;width:28px;height:28px}
+  .workbench-timeline .appointment-info{grid-area:info;min-width:0}
+  .workbench-timeline .appointment-info strong{font-size:9px}
+  .workbench-timeline .appointment-info span,.workbench-timeline .appointment-info small{font-size:8px}
+  .workbench-timeline .appointment-state{grid-area:status;justify-self:start;font-size:8px;padding:4px 7px}
+  .workbench-panel-footer{align-items:flex-start;flex-wrap:wrap;font-size:8px}
+  .attention-row{gap:7px}
+  .attention-avatar{width:32px;height:32px;border-radius:10px;font-size:9px}
+  .attention-copy strong{font-size:9px}
+  .attention-copy small{font-size:8px}
+  .attention-row>.state-pill{max-width:75px;font-size:7px}
+  .workbench-shortcut-grid button{min-height:45px;padding:8px;gap:6px}
+  .workbench-shortcut-grid button span{font-size:9px}
+  .patients-workbench-heading{align-items:stretch;flex-direction:column}
+  .workbench-patient-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;width:100%}
+  .workbench-patient-tools .search-box{width:100%;min-height:39px}
+  .workbench-patient-tools>.primary-button{min-height:39px;padding:0 9px;font-size:9px}
+  .workbench-patient-grid{grid-template-columns:minmax(0,1fr);gap:7px}
+  .workbench-patient-card{gap:8px;padding:9px;border-radius:11px}
+  .workbench-patient-avatar{width:35px;height:35px;border-radius:10px;font-size:9px}
+  .workbench-patient-main strong{font-size:10px}
+  .workbench-patient-main small,.workbench-patient-main em{font-size:8px}
+  .workbench-patient-card>.state-pill{max-width:73px;font-size:7px;padding:4px 5px}
+  .command-backdrop{align-items:flex-start;padding:7vh 9px 16px}
+  .command-palette{max-height:83dvh;border-radius:15px}
+  .command-searchline{gap:8px;padding:10px}
+  .command-searchline input{font-size:12px}
+  .command-results{padding:5px 7px}
+  .command-result{padding:8px}
+  .command-footer{flex-wrap:wrap;justify-content:flex-start}
+}
+
+.review-queue-loading{display:flex;align-items:center;gap:9px;padding:24px 4px;color:#8094b0;font-size:10px}
+.loading-dot{width:8px;height:8px;border-radius:50%;background:#608be0;box-shadow:0 0 0 4px #608be01a;animation:sinan-pulse 1.4s ease-in-out infinite}
+@keyframes sinan-pulse{0%,100%{opacity:.45;transform:scale(.85)}50%{opacity:1;transform:scale(1)}}
+
+.appointment-state-select{max-width:120px;min-width:90px;min-height:30px;padding:4px 24px 4px 8px;border:1px solid #dce6f3;border-radius:9px;background:#f8faff;color:#4e6688;font-size:9px;font-weight:750;cursor:pointer}
+.appointment-state-select:focus{outline:2px solid #a9c7ff;outline-offset:1px}
+.appointment-state-select option{background:#fff;color:#263f60}
+@media(max-width:760px){.workbench-timeline .appointment-state-select{grid-area:status;justify-self:start;max-width:135px;min-width:100px;min-height:28px;font-size:8px;padding:3px 19px 3px 6px}}
+
+@media(max-width:760px){
+  .timeline-list .appointment-state-select{grid-area:status;justify-self:start;max-width:135px;min-width:100px;min-height:28px;font-size:8px;padding:3px 19px 3px 6px}
+}
