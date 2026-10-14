@@ -408,7 +408,7 @@ export default function HomePage() {
   }
 
   async function saveClinicSettings() {
-    if (demoMode) { notify('التغييرات في العرض التجريبي محلية فقط ولا تُحفظ في قاعدة البيانات.'); return; }
+    if (demoMode) { setSettingsDirty(false); notify('تم تطبيق إعدادات العرض الحالي فقط؛ لن تُحفظ بعد تحديث الصفحة أو في قاعدة البيانات.'); return; }
     setSettingsBusy(true);
     try {
       const payload = { ...clinicSettings, clinic_name_ar: clinicSettings.clinic_name_ar.trim() || clinicName, clinic_name_en: clinicSettings.clinic_name_en.trim() || null, address_ar: clinicSettings.address_ar.trim() || null, address_en: clinicSettings.address_en.trim() || null, phone: clinicSettings.phone.trim() || null, email: clinicSettings.email.trim() || null, website: clinicSettings.website.trim() || null };
