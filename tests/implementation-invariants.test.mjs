@@ -244,3 +244,17 @@ test('appointment status updates are validated, clinic-scoped, role-checked, and
   assert.match(app, /async function updateAppointmentStatus\(appointmentId: string, status: string\)/);
   assert.match(app, /className="appointment-state-select"/);
 });
+
+const signInUi = await readFile(new URL('../app/sign-in/page.tsx', import.meta.url), 'utf8');
+const uiStyles = await readFile(new URL('../app/globals.css', import.meta.url), 'utf8');
+const uiLocales = await readFile(new URL('../app/i18n.tsx', import.meta.url), 'utf8');
+
+test('retired preview labels do not return to user-facing workspace screens', () => {
+  const labels = /وضع العرض التجريبي|وضع عرض تجريبي|بيانات تجريبية|عرض تجريبي|بيانات العرض|مثال تجريبي|مسودة تجريبية|خيالية|تجريبية/;
+  assert.doesNotMatch(app, labels);
+  assert.doesNotMatch(signInUi, labels);
+  assert.doesNotMatch(uiStyles, /\.demo-notice|\.connection-chip\.demo/);
+  assert.doesNotMatch(uiLocales, labels);
+  assert.match(app, /قاعدة البيانات غير متصلة/);
+  assert.match(app, /الحفظ الدائم يتطلب اتصال قاعدة البيانات/);
+});
