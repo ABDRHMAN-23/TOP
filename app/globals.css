@@ -1235,3 +1235,22 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @media(max-width:760px){.connection-text{font-size:8px}.system-notice{gap:8px;padding:10px;margin-top:12px}.system-notice strong{font-size:9px}.system-notice span{font-size:8px}}
 
 @media(max-width:760px){.connection-text{display:none}}
+
+/* Clear, actionable empty states and subtle non-mode connection status */
+.patient-list-empty{min-height:185px;margin:10px 0}
+.patient-list-empty .primary-button{margin-top:4px}
+.connection-text{display:inline-flex;align-items:center;min-height:30px;padding-inline:4px;color:#8593a7;font-size:9px;font-weight:600;white-space:nowrap}
+.system-notice{position:relative;display:flex;align-items:center;gap:12px;padding:11px 15px;margin:16px 0 0;border:1px solid #e3eaf4;border-radius:13px;background:#f7f9fc;color:#70839d}
+.system-notice:before{content:"";align-self:stretch;width:3px;min-height:29px;border-radius:5px;background:#9db5db}
+.system-notice>svg{color:#6482b5}
+.system-notice>div{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.system-notice strong{color:#425a7c;font-size:10px;font-weight:750}
+.system-notice span{color:#71849f;font-size:9px;line-height:1.7}
+.system-notice button,.system-notice a{flex:none}
+@media(max-width:760px){
+ .patient-list-empty{min-height:155px;margin:8px 0}
+ .connection-text{font-size:8px;white-space:normal;text-align:end;max-width:110px}
+ .system-notice{gap:8px;padding:10px;margin-top:11px;flex-wrap:wrap}
+ .system-notice strong{font-size:9px}
+ .system-notice span{font-size:8px}
+}
