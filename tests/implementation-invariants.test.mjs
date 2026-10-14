@@ -281,6 +281,8 @@ const appointmentApi = await readFile(new URL('../app/api/appointments/route.ts'
 const publicBookingMigration = await readFile(new URL('../supabase/migrations/20261014100000_sinan_public_booking_schedule.sql', import.meta.url), 'utf8');
 const staffCapacityMigration = await readFile(new URL('../supabase/migrations/20261014160000_sinan_staff_appointment_capacity.sql', import.meta.url), 'utf8');
 const bookingWorkflow = await readFile(new URL('../.github/workflows/deploy-sinan-cloudflare.yml', import.meta.url), 'utf8');
+const bookingRequestsRoute = await readFile(new URL('../app/api/appointments/booking-requests/route.ts', import.meta.url), 'utf8');
+const shiftCapacityMigration = await readFile(new URL('../supabase/migrations/20261014170000_sinan_booking_shift_overlap_and_staff_capacity.sql', import.meta.url), 'utf8');
 
 test('clinic booking settings validate the whole weekly schedule and save through an authorized transactional RPC', () => {
   assert.match(bookingSettingsRoute, /resolveOrganization\(supabase,\s*user,\s*request\)/);
@@ -347,4 +349,44 @@ test('the deployed clinic workflow uses the real database configuration rather t
   assert.match(bookingWorkflow, /npm run typecheck/);
   assert.match(bookingWorkflow, /npm test/);
   assert.match(bookingWorkflow, /npm run build:cloudflare/);
+});
+
+
+test('public booking request inbox is organization-scoped and role-gated across all dates', () => {
+  assert.match(bookingRequestsRoute, /resolveOrganization\(supabase, user, request\)/);
+  assert.match(bookingRequestsRoute, /reviewRoles\.includes\(context\.role\)/);
+  assert.match(bookingRequestsRoute, /eq\('organization_id', context\.organizationId\)/);
+  assert.match(bookingRequestsRoute, /eq\('booking_source', 'public_link'\)/);
+  assert.match(bookingRequestsRoute, /eq\('booking_status', 'requested'\)/);
+  assert.match(bookingRequestsRoute, /limit\(100\)/);
+  assert.match(app, /async function loadBookingRequests\(\)/);
+  assert.match(app, /useMemo\(\(\) => bookingRequests, \[bookingRequests\]\)/);
+  assert.match(app, /setBookingOrigin\(window\.location\.origin\)/);
+  assert.match(app, /من كل التواريخ/);
+});
+
+test('general schedule does not expose public-request phone snapshots to unrelated clinic roles', () => {
+  assert.match(appointmentApi, /canReviewPublicBookings/);
+  assert.match(appointmentApi, /booking_status==='requested'/);
+  assert.doesNotMatch(appointmentApi, /patient_phone_snapshot|patient_age_years|patient_name_snapshot/);
+  assert.doesNotMatch(appointmentApi, /booking_reference/);
+});
+
+test('dental chart stores canonical FDI and correctly renders alternate notation and surface anatomy', () => {
+  assert.match(app, /function formatToothNotation\(value: number \| string, notation: string\)/);
+  assert.match(app, /if \(quadrant === 1\) return String\(9 - position\)/);
+  assert.match(app, /if \(quadrant === 4 \|\| quadrant === 8\) return tooth \+ '┐'/);
+  assert.match(app, /notation_system: 'FDI'/);
+  assert.match(app, /tooth-surface-diagram/);
+  assert.match(app, /value:'palatal',label:'حنكي'/);
+  assert.match(app, /transform=\{!lower \? 'translate\(0 78\) scale\(1 -1\)' : undefined\}/);
+  assert.match(app, /الربع الأول · 18–11/);
+  assert.match(app, /الربع الرابع · 48–41/);
+});
+
+test('clinic shifts cannot overlap and staff appointments share the same capacity lock', () => {
+  assert.match(shiftCapacityMigration, /create trigger clinic_booking_hours_no_overlap/);
+  assert.match(shiftCapacityMigration, /working shifts on the same day may not overlap/);
+  assert.match(shiftCapacityMigration, /select \* into v_booking[\s\S]*?for update/);
+  assert.match(shiftCapacityMigration, /v_overlaps >= v_booking\.max_bookings_per_slot/);
 });
