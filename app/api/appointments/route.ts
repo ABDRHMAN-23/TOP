@@ -20,11 +20,39 @@ export async function GET(request: Request) {
   return NextResponse.json({appointments:appointments.map((item:any)=>({...item,patients:directoryById[item.patient_id] || (item.booking_source==='public_link' ? {full_name:item.patient_name_snapshot,patient_number:null,reported_age_years:item.patient_age_years} : null)}))});
 }
 export async function POST(request: Request) {
-  const {supabase,user}=await requireUser();if(!supabase)return NextResponse.json({error:'خدمة قاعدة البيانات غير مهيأة.'},{status:503});if(!user)return NextResponse.json({error:'سجّل الدخول أولاً.'},{status:401});
-  const {context,error}=await resolveOrganization(supabase,user,request);if(!context)return NextResponse.json({error},{status:403});
-  if(!['owner','clinic_admin','dentist','clinician','receptionist'].includes(context.role))return NextResponse.json({error:'لا تسمح صلاحيات الحساب بإنشاء موعد.'},{status:403});
-  const parsed=createSchema.safeParse(await request.json().catch(()=>null));if(!parsed.success)return NextResponse.json({error:'تحقق من بيانات الموعد.'},{status:400});if(Date.parse(parsed.data.scheduled_end)<=Date.parse(parsed.data.scheduled_start))return NextResponse.json({error:'وقت نهاية الموعد يجب أن يلي بدايته.'},{status:400});
-  const {data:patient}=await supabase.from('patient_directory').select('id').eq('id',parsed.data.patient_id).eq('organization_id',context.organizationId).maybeSingle();if(!patient)return NextResponse.json({error:'المريض غير موجود في العيادة.'},{status:404});
-  const {data,error:insertError}=await supabase.from('appointments').insert({...parsed.data,organization_id:context.organizationId,created_by:user.id,updated_by:user.id}).select('*').single();if(insertError||!data)return NextResponse.json({error:'تعذر حفظ الموعد.'},{status:500});
-  await supabase.from('audit_events').insert({organization_id:context.organizationId,actor_user_id:user.id,action:'appointment.created',resource_type:'appointment',resource_id:data.id,metadata:{}});return NextResponse.json({appointment:data},{status:201});
+  const { supabase, user } = await requireUser();
+  if (!supabase) return NextResponse.json({ error: 'خدمة قاعدة البيانات غير مهيأة.' }, { status: 503 });
+  if (!user) return NextResponse.json({ error: 'سجّل الدخول أولاً.' }, { status: 401 });
+  const { context, error } = await resolveOrganization(supabase, user, request);
+  if (!context) return NextResponse.json({ error }, { status: 403 });
+  if (!['owner','clinic_admin','dentist','clinician','receptionist'].includes(context.role)) {
+    return NextResponse.json({ error: 'لا تسمح صلاحيات الحساب بإنشاء موعد.' }, { status: 403 });
+  }
+  const parsed = createSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: 'تحقق من بيانات الموعد.' }, { status: 400 });
+  if (Date.parse(parsed.data.scheduled_end) <= Date.parse(parsed.data.scheduled_start)) {
+    return NextResponse.json({ error: 'وقت نهاية الموعد يجب أن يلي بدايته.' }, { status: 400 });
+  }
+  const { data, error: createError } = await supabase.rpc('create_clinic_appointment', {
+    p_organization_id: context.organizationId,
+    p_patient_id: parsed.data.patient_id,
+    p_scheduled_start: parsed.data.scheduled_start,
+    p_scheduled_end: parsed.data.scheduled_end,
+    p_timezone: parsed.data.timezone,
+    p_appointment_type: parsed.data.appointment_type,
+    p_note: parsed.data.note ?? null,
+  });
+  if (createError) {
+    if (createError.code === '42501') return NextResponse.json({ error: 'لا تسمح صلاحيات الحساب بإنشاء موعد.' }, { status: 403 });
+    if (createError.code === 'P0002' && /patient not found/i.test(createError.message || '')) {
+      return NextResponse.json({ error: 'المريض غير موجود أو أن ملفه غير نشط في هذه العيادة.' }, { status: 404 });
+    }
+    if (createError.code === 'P0002' && /capacity reached/i.test(createError.message || '')) {
+      return NextResponse.json({ error: 'هذا الوقت ممتلئ حسب السعة التي حددتها العيادة. اختر وقتاً آخر أو راجع طلبات الحجز.' }, { status: 409 });
+    }
+    if (createError.code === '22023') return NextResponse.json({ error: 'تحقق من وقت الموعد ومدته والبيانات المدخلة.' }, { status: 400 });
+    return NextResponse.json({ error: 'تعذر حفظ الموعد. حاول مرة أخرى.' }, { status: 500 });
+  }
+  if (!data?.appointment) return NextResponse.json({ error: 'لم يُعِد النظام بيانات الموعد بعد الحفظ.' }, { status: 500 });
+  return NextResponse.json({ appointment: data.appointment }, { status: 201 });
 }
