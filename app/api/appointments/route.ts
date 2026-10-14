@@ -9,15 +9,15 @@ export async function GET(request: Request) {
   const params=new URL(request.url).searchParams;
   const start=params.get('from')||new Date().toISOString();
   const end=params.get('to');
-  let appointmentsQuery=supabase.from('appointments').select('id,patient_id,clinician_id,scheduled_start,scheduled_end,timezone,appointment_type,status,note').eq('organization_id',context.organizationId).gte('scheduled_start',start).order('scheduled_start',{ascending:true});
+  let appointmentsQuery=supabase.from('appointments').select('id,patient_id,clinician_id,scheduled_start,scheduled_end,timezone,appointment_type,status,note,booking_source,booking_status,booking_reference,patient_name_snapshot,patient_age_years').eq('organization_id',context.organizationId).gte('scheduled_start',start).order('scheduled_start',{ascending:true});
   if(end) appointmentsQuery=appointmentsQuery.lt('scheduled_start',end);
   const {data,error:dbError}=await appointmentsQuery.limit(100);
   if(dbError)return NextResponse.json({error:'تعذر تحميل المواعيد.'},{status:500});
   const appointments=data??[];
   const patientIds=[...new Set(appointments.map((item:any)=>item.patient_id).filter(Boolean))];
-  let directoryById:Record<string,{full_name:string;patient_number:string|null}>={};
-  if(patientIds.length){const {data:directory,error:directoryError}=await supabase.from('patient_directory').select('id,full_name,patient_number').eq('organization_id',context.organizationId).in('id',patientIds);if(directoryError)return NextResponse.json({error:'تعذر تحميل أسماء المرضى للمواعيد.'},{status:500});directoryById=Object.fromEntries((directory??[]).map((p:any)=>[p.id,{full_name:p.full_name,patient_number:p.patient_number}]));}
-  return NextResponse.json({appointments:appointments.map((item:any)=>({...item,patients:directoryById[item.patient_id]||null}))});
+  let directoryById:Record<string,{full_name:string;patient_number:string|null;reported_age_years:number|null}>={};
+  if(patientIds.length){const {data:directory,error:directoryError}=await supabase.from('patient_directory').select('id,full_name,patient_number,reported_age_years').eq('organization_id',context.organizationId).in('id',patientIds);if(directoryError)return NextResponse.json({error:'تعذر تحميل أسماء المرضى للمواعيد.'},{status:500});directoryById=Object.fromEntries((directory??[]).map((p:any)=>[p.id,{full_name:p.full_name,patient_number:p.patient_number,reported_age_years:p.reported_age_years}]));}
+  return NextResponse.json({appointments:appointments.map((item:any)=>({...item,patients:directoryById[item.patient_id] || (item.booking_source==='public_link' ? {full_name:item.patient_name_snapshot,patient_number:null,reported_age_years:item.patient_age_years} : null)}))});
 }
 export async function POST(request: Request) {
   const {supabase,user}=await requireUser();if(!supabase)return NextResponse.json({error:'خدمة قاعدة البيانات غير مهيأة.'},{status:503});if(!user)return NextResponse.json({error:'سجّل الدخول أولاً.'},{status:401});
