@@ -192,3 +192,12 @@ test('patient phone values are consistently masked in the UI layer', () => {
   assert.match(app, /function maskPhoneForDisplay\(phone: string \| null \| undefined\): string/);
   assert.match(app, /phone: maskPhoneForDisplay\(p\.phone\)/);
 });
+
+
+test('clinical status badges are non-interactive labels with distinct icons for review, draft and approved states', () => {
+  assert.ok(app.includes("function StatePill({state}:{state:string})"));
+  assert.ok(app.includes("const Icon=c==='review'?AlertCircle:c==='approved'?CircleCheck:c==='draft'?FileText:null"));
+  assert.ok(app.includes("aria-label={`الحالة: ${state}`}"));
+  assert.ok(app.includes("state-pill ${c}"));
+  assert.ok(app.includes('aria-hidden="true"'));
+});
