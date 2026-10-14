@@ -371,7 +371,10 @@ const dictionary: Record<string, string> = {
   'جارٍ التحميل': 'Loading',
   'معتمد من الطبيب': 'Clinician approved',
   'حالة غير معروفة': 'Status unknown',
-
+,
+  'لا توجد مواعيد في هذا اليوم': 'No appointments on this day',
+  'اختر يوماً آخر أو أضف موعداً جديداً.': 'Choose another day or add a new appointment.',
+  'نص مستخرج من الصوت؛ راجع الكلام غير الواضح أو أسماء الأدوية والقياسات قبل الاعتماد.': 'Transcript extracted from audio. Review unclear words, medication names, and measurements before approval.'
 };
 
 function translate(text: string, language: Language): string {
