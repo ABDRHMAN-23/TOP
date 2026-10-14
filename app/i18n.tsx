@@ -493,6 +493,9 @@ const dictionary: Record<string, string> = {
   "اختر السن لعرض حالته والملاحظات السريرية المسجلة ضمن ملف المريض.": "Select a tooth to view its status and clinical notes saved in the patient file.",
   "لا يتوفر الحفظ الدائم حالياً لأن قاعدة بيانات العيادة غير متصلة.": "Persistent saving is currently unavailable because the clinic database is not connected.",
   "تم تحديث الملف في مساحة العمل الحالية. الحفظ الدائم يتطلب اتصال قاعدة البيانات.": "Patient file updated in the current workspace. Persistent saving requires a database connection.",
+  "العودة إلى مساحة العمل": "Return to workspace",
+  "مساحة العمل الحالية": "Current workspace",
+  "لا توجد تنبيهات جديدة.": "No new notifications.",
 };
 
 function translate(text: string, language: Language): string {
