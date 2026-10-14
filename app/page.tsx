@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { LanguageButton, Localized, useLanguage } from './i18n';
 import {
   Activity, AlertCircle, Bell, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight,
-  ClipboardList, Clock3, FileText, HeartPulse, Mic, Plus, Search, Settings, ShieldCheck,
+  ClipboardList, Clock3, Copy, FileText, HeartPulse, LoaderCircle, Mic, Plus, Search, Settings, ShieldCheck,
   Stethoscope, Users, X, ArrowUpLeft, FilePlus2, Play, Sparkles, CircleCheck, Menu, Pencil
 } from 'lucide-react';
 
@@ -786,7 +786,7 @@ export default function HomePage() {
           <div className="booking-share-box">
             <div className="booking-share-icon"><CalendarDays size={20}/></div>
             <div className="booking-share-copy"><strong>الرابط الذي ترسله للمريض</strong><span>لا يمكن الحجز من الرابط قبل حفظ الإعدادات وتفعيل الاستقبال.</span><code dir="ltr">{bookingOrigin&&bookingSettings.public_slug?bookingOrigin+'/book/'+bookingSettings.public_slug:'احفظ إعدادات العيادة لإنشاء الرابط'}</code></div>
-            <div className="booking-share-actions"><button type="button" className="secondary-button" disabled={demoMode||!bookingLoaded||!bookingSettings.booking_enabled||!bookingOrigin||!bookingSettings.public_slug} onClick={()=>{const url=bookingOrigin+'/book/'+bookingSettings.public_slug;navigator.clipboard.writeText(url).then(()=>notify('تم نسخ رابط الحجز.')).catch(()=>notify('تعذر نسخ الرابط؛ يمكنك تحديده ونسخه يدوياً.'))}}><CopyIcon/> نسخ الرابط</button><a className="text-link" href={bookingSettings.booking_enabled&&bookingSettings.public_slug?'/book/'+bookingSettings.public_slug:undefined} target="_blank" rel="noreferrer" aria-disabled={!bookingSettings.booking_enabled||!bookingLoaded||demoMode} onClick={e=>{if(!bookingSettings.booking_enabled||!bookingLoaded||demoMode)e.preventDefault()}}>معاينة الصفحة <ChevronLeft size={14}/></a></div>
+            <div className="booking-share-actions"><button type="button" className="secondary-button" disabled={demoMode||!bookingLoaded||!bookingSettings.booking_enabled||!bookingOrigin||!bookingSettings.public_slug} onClick={()=>{const url=bookingOrigin+'/book/'+bookingSettings.public_slug;navigator.clipboard.writeText(url).then(()=>notify('تم نسخ رابط الحجز.')).catch(()=>notify('تعذر نسخ الرابط؛ يمكنك تحديده ونسخه يدوياً.'))}}><Copy size={15}/> نسخ الرابط</button><a className="text-link" href={bookingSettings.booking_enabled&&bookingSettings.public_slug?'/book/'+bookingSettings.public_slug:undefined} target="_blank" rel="noreferrer" aria-disabled={!bookingSettings.booking_enabled||!bookingLoaded||demoMode} onClick={e=>{if(!bookingSettings.booking_enabled||!bookingLoaded||demoMode)e.preventDefault()}}>معاينة الصفحة <ChevronLeft size={14}/></a></div>
           </div>
           <div className="booking-settings-footer"><span><ShieldCheck size={16}/> طلب الحجز لا يصبح سجلاً سريرياً إلا بعد اعتماد العيادة.</span><button type="button" className="primary-button" onClick={saveBookingSettings} disabled={demoMode||bookingLoading||bookingSaving}><SaveIcon/>{bookingSaving?'جارٍ حفظ ساعات العمل...':'حفظ ساعات العمل ورابط الحجز'}</button></div>
         </section>
