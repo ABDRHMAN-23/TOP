@@ -224,3 +224,11 @@ test('clinical review queue is limited to one clinic and only unapproved clinica
   assert.match(reviewQueueRoute, /limit\(50\)/);
   assert.doesNotMatch(reviewQueueRoute, /from\('clinical_notes'\)\.select\('\*'\)/);
 });
+
+test('patient edit form is connected to the clinic-scoped patient PATCH endpoint', () => {
+  assert.match(app, /async function savePatientEdits\(\)/);
+  assert.match(app, /onClick=\{openPatientEdit\}/);
+  assert.match(app, /method: 'PATCH'/);
+  assert.match(patientDetailRoute, /eq\('id', patientId\)\.eq\('organization_id', context\.organizationId\)/);
+  assert.match(patientDetailRoute, /action: 'patient\.updated'/);
+});
