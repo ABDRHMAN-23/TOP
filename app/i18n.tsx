@@ -446,6 +446,18 @@ const dictionary: Record<string, string> = {
   "لا توجد سجلات تنتظر المراجعة": "No records are waiting for review",
   "ستظهر هنا المسودات والسجلات التي تحتاج إلى اعتماد الطبيب.": "Drafts and records needing clinician approval will appear here.",
   "ستظهر أمثلة المتابعة عندما يحتوي ملف العرض على حالة تحتاج مراجعة.": "Demo follow-up examples appear when a sample file is marked for review.",
+  "تعديل البيانات": "Edit details",
+  "تعديل بيانات المريض": "Edit patient details",
+  "راجع البيانات الأساسية فقط. لا تغيّر الشكوى إلا إذا أكدها المريض، ولا تستبدل التاريخ الصحي أو التشخيصات بهذه الخانات.": "Edit basic details only. Change the complaint only when confirmed by the patient; do not replace medical history or diagnoses here.",
+  "اتركه فارغاً للإبقاء على الرقم الحالي": "Leave blank to keep the current number",
+  "اختياري في بيانات العرض": "Optional in demo data",
+  "أدخل اسم المريض بشكل صحيح.": "Enter a valid patient name.",
+  "تم تحديث ملف العرض الحالي فقط؛ لم تُحفظ التعديلات في قاعدة بيانات.": "Only the current demo file was updated; changes were not saved to a database.",
+  "لا توجد تغييرات جديدة لحفظها.": "There are no new changes to save.",
+  "تعذر تحديث ملف المريض.": "Could not update the patient file.",
+  "تم حفظ تعديلات ملف المريض.": "Patient file changes saved.",
+  "جارٍ حفظ التعديلات...": "Saving changes…",
+  "تعديل الملف": "Edit file",
 };
 
 function translate(text: string, language: Language): string {
