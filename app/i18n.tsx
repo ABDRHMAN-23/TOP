@@ -1,0 +1,387 @@
+'use client';
+
+import React, { Children, cloneElement, createContext, isValidElement, useContext, useEffect, useState, type ReactNode } from 'react';
+
+export type Language = 'ar' | 'en';
+
+const LanguageContext = createContext<{ language: Language; toggleLanguage: () => void }>({
+  language: 'ar',
+  toggleLanguage: () => {},
+});
+
+const dictionary: Record<string, string> = {
+  'سِنان': 'Sinan',
+  'مساحة العمل السريرية': 'Clinical workspace',
+  'مساحة العيادة': 'Clinic workspace',
+  'الأدوات السريرية': 'Clinical tools',
+  'مخطط الأسنان': 'Dental chart',
+  'علاج العصب': 'Endodontics',
+  'سجل الزيارات': 'Visit history',
+  'إعدادات العيادة': 'Clinic settings',
+  'الخصوصية أولاً': 'Privacy first',
+  'يجب اعتماد الصلاحيات والموافقة قبل استخدام بيانات مرضى حقيقية.': 'Permissions and consent must be verified before real patient data is used.',
+  'تسجيل الدخول': 'Sign in',
+  'بيانات تجريبية — ليست سجلات مرضى حقيقية.': 'Demo data — not real patient records.',
+  'البيانات المعروضة للتجربة فقط، ولا تُحفظ بشكل دائم في هذه النسخة.': 'This preview uses sample data and does not persist records.',
+  'تعذر تحميل مساحة العيادة': 'Could not load the clinic workspace',
+  'إعداد العيادة': 'Set up clinic',
+  'اختيار العيادة': 'Choose clinic',
+  'مساحة الطبيب · نظرة اليوم': 'Your day at a glance',
+  'صباح هادئ، دكتور أحمد': 'Good morning, Dr. Ahmed',
+  'مرحباً بعودتك': 'Welcome back',
+  'كل ما يحتاج انتباهك اليوم، مرتب أمامك لتمنح كل مريض وقتك الكامل.': 'Your priorities are organized so you can focus on every patient.',
+  'مساحة العمل جاهزة': 'Workspace ready',
+  'المرضى أولاً، دائماً': 'Patients first, always',
+  'توثيق زيارة جديدة': 'Document a visit',
+  'مواعيد اليوم': 'Today’s appointments',
+  'المرضى المتوقع حضورهم في العيادة': 'Patients expected at the clinic',
+  'عرض الجدول': 'View schedule',
+  'فتح كل المواعيد': 'View all appointments',
+  'بانتظار مراجعتك': 'Awaiting your review',
+  'المسودات التي تحتاج إلى قرار الطبيب': 'Drafts awaiting a clinician’s decision',
+  'مراجعة السجلات': 'Review records',
+  'مواعيد العيادة': 'Clinic schedule',
+  'تظهر المواعيد عند توصيل جدول العيادة.': 'Appointments appear here once the clinic schedule is connected.',
+  'لا توجد مواعيد قادمة مسجلة': 'No upcoming appointments',
+  'أضف موعداً من شاشة المواعيد. لن نعرض أرقاماً تقديرية على أنها بيانات حقيقية.': 'Add an appointment from the schedule. Estimated numbers are never presented as real data.',
+  'المسودات السريرية': 'Clinical drafts',
+  'تحتاج المراجعة إلى تحميل قائمة الزيارات.': 'The visit list must load before review items can appear.',
+  'لم يتم تحميل مسودات للمراجعة': 'No drafts loaded for review',
+  'تبقى كل مسودة آلية غير معتمدة حتى توقيع الطبيب.': 'Every assisted draft remains unapproved until a clinician signs off.',
+  'المرضى مؤخراً': 'Recent patients',
+  'آخر الملفات التي تم فتحها في العيادة': 'Recently opened patient files',
+  'إضافة مريض': 'Add patient',
+  'اسم المريض': 'Patient name',
+  'الشكوى الرئيسية': 'Chief complaint',
+  'آخر زيارة': 'Last visit',
+  'حالة السجل': 'Record status',
+  'لا توجد نتائج مطابقة للبحث.': 'No matching results.',
+  'فتح سجل المرضى': 'Open patient directory',
+  'الملفات السريرية': 'Clinical records',
+  'ملفات المرضى': 'Patients',
+  'الهوية، التاريخ الصحي، الزيارات، وخطة العلاج في ملف واحد.': 'Identity, medical history, visits, and treatment plan in one record.',
+  'توثيق بالصوت': 'Record visit',
+  'إدخال يدوي': 'Manual entry',
+  'نظرة عامة': 'Overview',
+  'التاريخ الصحي': 'Medical history',
+  'الزيارات': 'Visits',
+  'المعلومات الأساسية': 'Essential information',
+  'التاريخ الصحي يحتاج إلى استكمال': 'Medical history needs completion',
+  'المعلومة غير المسجلة لا تعني أن المريض لا يعاني منها. أكّد الحساسية والأدوية والتاريخ المرضي قبل الاعتماد.': 'An unrecorded item does not mean the patient has no condition. Confirm allergies, medications, and history before approval.',
+  'آخر السجلات': 'Recent records',
+  'عرض الكل': 'View all',
+  'ملخص الزيارة — مسودة تجريبية': 'Visit summary — demo draft',
+  'سجل الزيارات متاح من تبويب الزيارات': 'Visit history is available in the Visits tab',
+  'حالات صحية وحساسية وأدوية ومعلومات أسنان مسجلة مع حالة المراجعة.': 'Conditions, allergies, medications, and dental notes with review status.',
+  'إضافة معلومة': 'Add information',
+  'لم يُسجل تاريخ صحي لهذا الملف بعد': 'No medical history recorded yet',
+  'لا تفسر غياب المعلومة على أنه نفي. أضف المعلومات بعد سؤال المريض والتحقق منها.': 'Do not treat missing information as a negative finding. Ask the patient and verify before adding it.',
+  'الزيارات السابقة': 'Previous visits',
+  'التاريخ والحالة لكل زيارة محفوظة للمريض.': 'The date and status of each saved visit.',
+  'زيارة يدوية': 'Manual visit',
+  'لا توجد زيارات محفوظة لهذا المريض': 'No saved visits for this patient',
+  'بعد انتهاء المعالجة، ستظهر المسودة هنا للمراجعة والاعتماد.': 'After processing, the draft will appear here for review and approval.',
+  'إدارة الوقت': 'Scheduling',
+  'المواعيد': 'Appointments',
+  'موعد جديد': 'New appointment',
+  'أضف موعداً للمريض؛ ستظهر هنا المواعيد التي يحفظها الخادم.': 'Add an appointment for a patient. Saved appointments will appear here.',
+  'التوثيق السريري': 'Clinical documentation',
+  'تسجيل الزيارة': 'Record a visit',
+  'ابدأ بعد التحقق من هوية المريض والموافقة على التسجيل.': 'Start after verifying the patient’s identity and recording consent.',
+  'جاهز للتسجيل': 'Ready to record',
+  'حوّل الحوار إلى مسودة سريرية': 'Turn the consultation into a clinical draft',
+  'التسجيل الحقيقي يحتاج صلاحية الميكروفون، تسجيل الموافقة، وتوصيل خدمة التخزين والمعالجة قبل الاستخدام السريري.': 'Live recording requires microphone access, documented consent, and configured storage and processing.',
+  'فتح مساحة الاستماع': 'Open recording studio',
+  'طب الأسنان': 'Dentistry',
+  'اختيار السن يعرض تفاصيله. الحالات أدناه تجريبية وليست تشخيصات حقيقية.': 'Select a tooth to view its details. Demo cases are examples, not diagnoses.',
+  'نظام الترقيم FDI · العرض من منظور المريض': 'FDI numbering · patient perspective',
+  'الفك العلوي': 'Upper arch',
+  'يمين المريض': 'Patient’s right',
+  'يسار المريض': 'Patient’s left',
+  'الفك السفلي': 'Lower arch',
+  'تسجيل حالة / ملاحظة': 'Record status / note',
+  'دون حالة مسجلة': 'No status recorded',
+  'يحتاج مراجعة في بيانات العرض': 'Needs review in demo data',
+  'السن المحدد': 'Selected tooth',
+  'ملف علاجي متخصص': 'Specialist treatment',
+  'كل قناة تحفظ مستقلة مع نوع القياس والوحدة ومصدرها وحالة التحقق.': 'Each canal is recorded separately with measurement type, unit, source, and review status.',
+  'ملف علاج جديد': 'New treatment case',
+  'اختر ملف مريض أولاً': 'Choose a patient first',
+  'افتح ملف المريض ثم عد إلى علاج العصب.': 'Open the patient record, then return to Endodontics.',
+  'فتح ملفات المرضى': 'Open patient records',
+  'لا توجد ملفات علاج عصب لهذا المريض': 'No endodontic cases for this patient',
+  'أنشئ الملف الأول ثم أدخل التشخيص والقياسات بعد التحقق منها.': 'Create the first case, then enter the verified diagnosis and measurements.',
+  'إضافة أول ملف علاج عصب لهذا المريض': 'Add the first endodontic case',
+  'القناة': 'Canal',
+  'نوع القياس': 'Measurement type',
+  'الطول': 'Length',
+  'الحالة': 'Status',
+  'المستندات الطبية': 'Clinical documents',
+  'التقارير والسجلات': 'Reports & records',
+  'التقرير يُنشأ من نسخة معتمدة ويحفظ لقطة من المحتوى والهوية المستخدمة.': 'Reports are generated from an approved version and preserve its content and identity snapshot.',
+  'لا توجد تقارير محفوظة': 'No saved reports',
+  'تُنشأ التقارير من السجلات السريرية المعتمدة. افتح ملف المريض لمراجعة الزيارات والسجلات المتاحة.': 'Reports are generated from approved clinical records. Open a patient file to review available visits and records.',
+  'فتح السجلات السريرية': 'Open clinical records',
+  'إعدادات مساحة العمل': 'Workspace settings',
+  'احفظ هوية العيادة مرة واحدة لاستخدامها في التقارير والملفات.': 'Set the clinic identity once for use across records and reports.',
+  'هوية العيادة': 'Clinic identity',
+  'اسم العيادة بالعربية': 'Clinic name in Arabic',
+  'اسم العيادة بالإنجليزية': 'Clinic name in English',
+  'رقم الهاتف': 'Phone number',
+  'العنوان بالعربية': 'Address in Arabic',
+  'العنوان بالإنجليزية': 'Address in English',
+  'البريد الإلكتروني': 'Email address',
+  'الموقع الإلكتروني': 'Website',
+  'لغة التقارير': 'Report language',
+  'العربية': 'Arabic',
+  'ثنائي اللغة': 'Bilingual',
+  'حجم الورق': 'Paper size',
+  'نظام ترقيم الأسنان': 'Tooth notation system',
+  'أيام الاحتفاظ بالصوت': 'Audio retention (days)',
+  'توجد تغييرات غير محفوظة': 'You have unsaved changes',
+  'الرئيسية': 'Home',
+  'المرضى': 'Patients',
+  'السجلات': 'Records',
+  'مساحة عمل سريرية للأسنان': 'Dental clinical workspace',
+  'الخصوصية والسلامة السريرية أساس التصميم': 'Privacy and clinical safety by design',
+  'جدول العيادة': 'Clinic schedule',
+  'المريض': 'Patient',
+  'اختر المريض': 'Select a patient',
+  'التاريخ': 'Date',
+  'وقت البداية': 'Start time',
+  'المدة': 'Duration',
+  '١٥ دقيقة': '15 minutes',
+  '٣٠ دقيقة': '30 minutes',
+  '٤٥ دقيقة': '45 minutes',
+  '٦٠ دقيقة': '60 minutes',
+  '٩٠ دقيقة': '90 minutes',
+  'ملاحظة الموعد (اختيارية)': 'Appointment note (optional)',
+  'وضع العرض لا يحفظ المواعيد على الخادم؛ أوقف العرض التجريبي لاستخدام قاعدة البيانات.': 'Demo mode does not save appointments to the server. Configure the database before using live records.',
+  'إلغاء': 'Cancel',
+  'ملف جديد': 'New record',
+  'أدخل المعلومات المعروفة فقط. لا تفسّر الحقول الفارغة على أنها نفي مرضي.': 'Enter only known information. An empty field is not a negative finding.',
+  'سيتم إنشاء سجل محلي للعرض فقط ما لم يتم توصيل قاعدة البيانات.': 'This will create a local demo record until a database is configured.',
+  'إنشاء الملف': 'Create record',
+  'سجل سريري جديد': 'New clinical record',
+  'توثيق زيارة يدوياً': 'Document a visit manually',
+  'الشكوى الرئيسية كما ذكرها المريض': 'Chief complaint as reported by the patient',
+  'ستظل الحساسية والأدوية ونتائج الفحص غير مسجلة حتى تدخلها وتتحقق منها.': 'Allergies, medications, and examination findings remain unrecorded until entered and verified.',
+  'مساحة التوثيق السريرية': 'Clinical documentation studio',
+  'مسودة': 'Draft',
+  'تم التحقق من الموافقة اللازمة على التسجيل.': 'Recording consent has been verified.',
+  'أؤكد أن الموافقة جرى أخذها وتوثيقها وفق سياسة العيادة والقانون المنطبق قبل التقاط أي صوت.': 'I confirm consent was obtained and documented under clinic policy and applicable law before any audio is captured.',
+  'فتح المسودة ومراجعتها': 'Open draft for review',
+  'بدء الاستماع': 'Start recording',
+  'إيقاف مؤقت': 'Pause',
+  'إنهاء الاستماع': 'Finish recording',
+  'استئناف': 'Resume',
+  'جارٍ الحفظ...': 'Saving…',
+  'متابعة بكتابة يدوية': 'Continue with manual entry',
+  'إغلاق المساحة': 'Close workspace',
+  'خطأ': 'Error',
+  'مجدول': 'Scheduled',
+  'مؤكد': 'Confirmed',
+  'وصل': 'Arrived',
+  'قيد الانتظار': 'Waiting',
+  'قيد التنفيذ': 'In progress',
+  'مكتمل': 'Completed',
+  'ملغي': 'Cancelled',
+  'لم يحضر': 'Did not attend',
+  'معتمد': 'Approved',
+  'تحتاج مراجعة': 'Needs review',
+  'بحاجة إلى مراجعة': 'Needs review',
+  'معلومات غير مؤكدة': 'Unverified information',
+  'غير مسجل': 'Not recorded',
+  'غير متاح': 'Unavailable',
+  'الشكوى الرئيسية': 'Chief complaint',
+  'تاريخ الحالة الحالية': 'History of present illness',
+  'الحساسية': 'Allergies',
+  'الأدوية': 'Medications',
+  'نتائج الفحص': 'Examination findings',
+  'التقييم السريري': 'Clinical assessment',
+  'الخطة المقترحة': 'Proposed plan',
+  'إجراءات نوقشت': 'Procedures discussed',
+  'إجراءات مكتملة': 'Completed procedures',
+  'أدوية أو وصفات مقترحة': 'Suggested medications or prescriptions',
+  'المتابعة': 'Follow-up',
+  'ملاحظات عدم اليقين': 'Uncertainty notes',
+  'تاريخ إنشاء الملف': 'Record created',
+  'مراجعة النسخة': 'Review version',
+  'العودة لمساحة العيادة': 'Back to clinic workspace',
+  'ملف الزيارة': 'Visit record',
+  'هذه نسخة معتمدة': 'This version is approved',
+  'المسودة لم تعتمد بعد': 'This draft is not approved',
+  'التفريغ النصي': 'Transcript',
+  'مصدر المسودة': 'Draft source',
+  'لا توجد مسودة بعد': 'No draft yet',
+  'قد يكون التسجيل لا يزال قيد المعالجة أو أن المعالجة توقفت. لن ينشئ النظام سجلاً سريرياً من دون نتيجة معالجة فعلية.': 'Recording may still be processing or processing may have stopped. No clinical record is created without an actual processing result.',
+  'أؤكد أنني راجعت هذه النسخة سريرياً.': 'I confirm that I reviewed this version clinically.',
+  'حفظ التعديلات': 'Save changes',
+  'اعتماد السجل': 'Approve record',
+  'طباعة التقرير': 'Print report',
+  'العودة إلى السجل': 'Back to record',
+  'العيادة': 'Clinic',
+  'نسخة السجل': 'Record version',
+  'جارٍ تحميل التقرير...': 'Loading report…',
+  'العودة للعيادة': 'Back to clinic',
+  'الخطوة الأولى': 'Step 1',
+  'أنشئ مساحة عيادتك': 'Create your clinic workspace',
+  'تُستخدم هذه البيانات في إعدادات العيادة والتقارير. يمكنك إكمال بقية الإعدادات بعد الدخول.': 'These details are used in clinic settings and reports. You can finish setup after signing in.',
+  'اسم العيادة بالإنجليزية (اختياري)': 'Clinic name in English (optional)',
+  'المنطقة الزمنية': 'Time zone',
+  'اليمن — عدن': 'Yemen — Aden',
+  'السعودية — الرياض': 'Saudi Arabia — Riyadh',
+  'الإمارات — دبي': 'United Arab Emirates — Dubai',
+  'مصر — القاهرة': 'Egypt — Cairo',
+  'جارٍ إنشاء المساحة...': 'Creating workspace…',
+  'إنشاء العيادة': 'Create clinic',
+  'يُنشأ الحساب السريري ضمن عضويتك فقط. يلزم تطبيق مخطط Supabase قبل إنشاء العيادة.': 'The clinical account is created only within your membership. Apply the Supabase schema before creating a clinic.',
+  'دخول آمن للعيادة': 'Secure clinic sign-in',
+  'مرحباً بعودتك': 'Welcome back',
+  'سجّل الدخول إلى مساحة العمل الخاصة بعيادتك.': 'Sign in to your clinic workspace.',
+  'البريد الإلكتروني': 'Email',
+  'كلمة المرور': 'Password',
+  'إخفاء كلمة المرور': 'Hide password',
+  'عرض كلمة المرور': 'Show password',
+  'جارٍ تسجيل الدخول...': 'Signing in…',
+  'الوصول إلى بيانات المرضى مقيد بعضوية العيادة وصلاحيات الحساب. لا يوجد تسجيل عام للحسابات.': 'Patient data access is restricted by clinic membership and account permissions. Public registration is disabled.',
+  'العودة إلى العرض التجريبي': 'Back to demo',
+  'لم يتم إعداد Supabase بعد. أضف قيم NEXT_PUBLIC_SUPABASE_URL وNEXT_PUBLIC_SUPABASE_ANON_KEY إلى متغيرات البيئة.': 'Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to environment variables.',
+  'تعذر تسجيل الدخول. تحقق من بيانات الوصول أو اطلب من مسؤول العيادة تفعيل الحساب.': 'Sign-in failed. Check your credentials or ask the clinic administrator to activate your account.',
+  'تعذر إنشاء مساحة العيادة. تأكد من تطبيق مخطط قاعدة البيانات أولاً.': 'Could not create the clinic workspace. Make sure the database schema has been applied.',
+  'العمر غير مسجل': 'Age not recorded',
+  'لا توجد زيارة مسجلة': 'No visit recorded',
+  'لم تسجل الشكوى بعد': 'No complaint recorded',
+  'ملف نشط': 'Active record',
+  'ملف مؤرشف': 'Archived record',
+  'غير متصل': 'Not connected',
+  'مساحة متصلة': 'Connected workspace',
+  'مساحة تجريبية': 'Demo workspace',
+  'وضع عرض تجريبي': 'Demo mode',
+  'تاريخ اليوم': 'Today',
+  'رقم الملف': 'Record ID',
+  'المعلومة غير مسجلة': 'Information not recorded',
+  'الحساسية غير مؤكدة': 'Allergy status unverified',
+  'لم يتم توثيقها': 'Not documented',
+  'لا توجد تنبيهات جديدة في بيانات العرض.': 'No new alerts in demo data.',
+  'عيادة تجريبية — بيانات العرض فقط.': 'Demo clinic — sample data only.',
+  'مساحة العيادة الحالية.': 'Current clinic workspace.',
+  'إدارة الحساب تحتاج إلى تفعيل المصادقة.': 'Account management requires authentication to be enabled.',
+  'لا توجد نتائج مطابقة للبحث.': 'No results match your search.',
+  'أدخل اسم المريض أولاً.': 'Enter the patient’s name first.',
+  'أدخل عنوان المعلومة الصحية.': 'Enter a title for the medical history item.',
+  'اختر المريض أولاً.': 'Select a patient first.',
+  'اختر ملف المريض أولاً.': 'Select a patient record first.',
+  'تحقق من الحقول المدخلة.': 'Check the entered fields.',
+  'تعذر تحميل بيانات العيادة.': 'Could not load clinic data.',
+  'تعذر تحميل قائمة المرضى.': 'Could not load the patient list.',
+  'تم حفظ إعدادات العيادة.': 'Clinic settings saved.',
+  'تم حفظ حالة السن.': 'Tooth status saved.',
+  'تم حفظ ملف علاج العصب وقياسات القنوات.': 'Endodontic case and canal measurements saved.',
+  'تعذر حفظ الموعد.': 'Could not save appointment.',
+  'تم حفظ الموعد في قاعدة البيانات.': 'Appointment saved to the database.',
+  'التغييرات في العرض التجريبي محلية فقط ولا تُحفظ في قاعدة البيانات.': 'In demo mode, changes stay in this browser and are not saved to the database.',
+  'أُضيف المريض إلى بيانات العرض المحلية فقط.': 'Patient added to local demo data only.',
+  'حُفظت الحالة داخل العرض التجريبي فقط.': 'Status saved to demo data only.',
+  'حُفظ الملف في العرض التجريبي فقط.': 'Case saved to demo data only.',
+  'تمت الإضافة إلى العرض التجريبي فقط.': 'Added to demo data only.',
+  'تعذر تحميل التاريخ الصحي.': 'Could not load medical history.',
+  'تعذر تحميل مخطط الأسنان.': 'Could not load the dental chart.',
+  'تعذر تحميل ملفات علاج العصب.': 'Could not load endodontic cases.',
+  'تعذر تحميل التقارير.': 'Could not load reports.',
+  'تعذر تحميل المواعيد.': 'Could not load appointments.',
+  'إعادة المحاولة': 'Try again',
+  'عرض مسودة': 'View draft',
+  'التسجيل الفعلي معطّل في وضع العرض التجريبي.': 'Live recording is disabled in demo mode.',
+  'يلزم تأكيد الموافقة قبل تشغيل الميكروفون.': 'Consent must be confirmed before enabling the microphone.',
+  'اختر ملف مريض محفوظاً في قاعدة بيانات العيادة قبل التسجيل.': 'Select a patient saved in the clinic database before recording.',
+  'هذا المتصفح لا يدعم تسجيل الصوت المطلوب.': 'This browser does not support the required audio recording.',
+  'يجب توثيق الموافقة قبل تشغيل الميكروفون.': 'Document consent before enabling the microphone.',
+  'لن يبدأ التسجيل إلا بعد توفر ملف مريض صالح.': 'Recording will not begin until a valid patient record is available.',
+  'المعلومات الأساسية': 'Essential information',
+  'الحساسية': 'Allergies',
+  'التاريخ الصحي': 'Medical history',
+  'التاريخ الصحي لم يكتمل بعد': 'Medical history is incomplete',
+  'أنشئ أول ملف': 'Create the first record',
+  'لا تُعد تشخيصاً أو سجلاً نهائياً': 'This is not a diagnosis or final record',
+  'موافقة التسجيل': 'Recording consent',
+  'حفظ': 'Save',
+  'تعديل': 'Edit',
+  'بحث': 'Search',
+  'بحث باسم المريض أو الرقم': 'Search by patient name or ID',
+  'ابحث باسم المريض أو الرقم': 'Search by patient name or ID',
+  'أدخل كلمة المرور': 'Enter password',
+  'مثال: عيادة النور للأسنان': 'e.g. Al Noor Dental Clinic',
+  'عنوان العيادة': 'Clinic address',
+  'تاريخ الزيارة': 'Visit date',
+  'الشكوى الرئيسية كما ذكرها، دون استنتاج تشخيص': 'Chief complaint as reported, without inferred diagnosis',
+  'اكتب ما ذكره المريض دون استنتاج تشخيص': 'Enter what the patient reported without inferring a diagnosis',
+  'ابحث باسم المريض أو رقم الملف...': 'Search by patient name or record ID…',
+  'لا توجد سجلات': 'No records',
+};
+
+function translate(text: string, language: Language): string {
+  if (language === 'ar') return text;
+  return dictionary[text.trim()] ?? text;
+}
+
+function transformNode(node: ReactNode, language: Language): ReactNode {
+  if (typeof node === 'string') {
+    const trimmed = node.trim();
+    if (!trimmed) return node;
+    const translated = translate(trimmed, language);
+    return translated === trimmed ? node : node.replace(trimmed, translated);
+  }
+  if (Array.isArray(node)) return node.map(item => transformNode(item, language));
+  if (!isValidElement(node)) return node;
+  const props: Record<string, unknown> = { ...(node.props as Record<string, unknown>) };
+  for (const key of ['placeholder', 'aria-label', 'title', 'alt']) {
+    if (typeof props[key] === 'string') props[key] = translate(props[key] as string, language);
+  }
+  if ('children' in props) props.children = transformNode(props.children as ReactNode, language);
+  return cloneElement(node, props as never);
+}
+
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [language, setLanguage] = useState<Language>('ar');
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem('sinan-language');
+    const selected: Language = saved === 'en' ? 'en' : 'ar';
+    setLanguage(selected);
+    document.documentElement.lang = selected;
+    document.documentElement.dir = selected === 'ar' ? 'rtl' : 'ltr';
+    setReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    window.localStorage.setItem('sinan-language', language);
+    document.documentElement.lang = language;
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+  }, [language, ready]);
+
+  function toggleLanguage() {
+    setLanguage(current => current === 'ar' ? 'en' : 'ar');
+  }
+
+  return <LanguageContext.Provider value={{ language, toggleLanguage }}>{children}</LanguageContext.Provider>;
+}
+
+export function useLanguage() {
+  return useContext(LanguageContext);
+}
+
+export function LanguageButton() {
+  const { language, toggleLanguage } = useLanguage();
+  return <button type="button" className="language-toggle" onClick={toggleLanguage} aria-label={language === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'} title={language === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}>
+    <span className="language-toggle-globe" aria-hidden="true">文</span>
+    <span>{language === 'ar' ? 'EN' : 'عربي'}</span>
+  </button>;
+}
+
+export function Localized({ children }: { children: ReactNode }) {
+  const { language } = useLanguage();
+  return <>{transformNode(children, language)}</>;
+}
