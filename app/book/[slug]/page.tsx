@@ -44,6 +44,7 @@ export default function PublicClinicBookingPage() {
   const [age,setAge]=useState('');
   const [phone,setPhone]=useState('');
   const [termsAccepted,setTermsAccepted]=useState(false);
+  const [idempotencyKey,setIdempotencyKey]=useState('');
   const [website,setWebsite]=useState('');
   const [loadingClinic,setLoadingClinic]=useState(true);
   const [loadingSlots,setLoadingSlots]=useState(false);
@@ -75,7 +76,7 @@ export default function PublicClinicBookingPage() {
   },[slug]);
 
   async function changeDate(nextDate:string) {
-    setDate(nextDate);setSelectedSlot(null);setSlots([]);setError('');
+    setDate(nextDate);setSelectedSlot(null);setIdempotencyKey('');setSlots([]);setError('');
     if(!nextDate||!clinic)return;
     setLoadingSlots(true);
     try{
@@ -104,13 +105,13 @@ export default function PublicClinicBookingPage() {
     try{
       const response=await fetch('/api/public/booking/'+encodeURIComponent(slug),{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({full_name:fullName.trim(),age_years:parsedAge,phone:phone.trim(),start_at:selectedSlot.start_at,idempotency_key:window.crypto.randomUUID(),terms_accepted:termsAccepted,website}),
+        body:JSON.stringify({full_name:fullName.trim(),age_years:parsedAge,phone:phone.trim(),start_at:selectedSlot.start_at,idempotency_key:idempotencyKey||window.crypto.randomUUID(),terms_accepted:termsAccepted,website}),
       });
       const body=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(body.error||text('تعذر إرسال طلب الحجز.','Could not submit the booking request.',language));
       setConfirmation({reference:body.booking.reference,start_at:body.booking.start_at});
       setSlots(current=>current.filter(slot=>slot.start_at!==selectedSlot.start_at));
-      setSelectedSlot(null);
+      setSelectedSlot(null);setIdempotencyKey('');
     }catch(err){setError(err instanceof Error?err.message:text('حدث خطأ أثناء الحجز. حاول مرة أخرى.','Booking failed. Please try again.',language));}
     finally{setSubmitting(false);}
   }
@@ -147,8 +148,8 @@ export default function PublicClinicBookingPage() {
         <label className="booking-date-field"><span><CalendarDays size={16}/>{text('التاريخ','Date',language)}</span><input type="date" value={date} min={clinic?dateInZone(clinic.timezone):undefined} max={maxDate} onChange={e=>void changeDate(e.target.value)} required/></label>
         <div className="booking-selected-date">{date?localDateLabel(date,clinic.timezone,language):''}</div>
         {loadingSlots?<div className="booking-slots-loading"><LoaderCircle className="spin" size={19}/>{text('جارٍ تحميل الأوقات المتاحة...','Loading available times…',language)}</div>:slots.length===0?<div className="booking-no-slots"><CalendarDays size={22}/><strong>{text('لا توجد أوقات متاحة في هذا اليوم','No available times on this date',language)}</strong><span>{text('اختر يوماً آخر. الأوقات المعروضة تتحدث بحسب الحجوزات الفعلية.','Choose another day. Availability reflects current bookings.',language)}</span></div>:<>
-          {groupedSlots.morning.length>0&&<div className="booking-shift"><h3>{text('الفترة الصباحية','Morning',language)}</h3><div className="booking-slot-grid">{groupedSlots.morning.map(slot=><button type="button" key={slot.start_at} className={'booking-slot '+(selectedSlot?.start_at===slot.start_at?'selected':'')} onClick={()=>setSelectedSlot(slot)}>{localTime(slot.start_at,clinic.timezone,language)}</button>)}</div></div>}
-          {groupedSlots.evening.length>0&&<div className="booking-shift"><h3>{text('الفترة المسائية','Evening',language)}</h3><div className="booking-slot-grid">{groupedSlots.evening.map(slot=><button type="button" key={slot.start_at} className={'booking-slot '+(selectedSlot?.start_at===slot.start_at?'selected':'')} onClick={()=>setSelectedSlot(slot)}>{localTime(slot.start_at,clinic.timezone,language)}</button>)}</div></div>}
+          {groupedSlots.morning.length>0&&<div className="booking-shift"><h3>{text('الفترة الصباحية','Morning',language)}</h3><div className="booking-slot-grid">{groupedSlots.morning.map(slot=><button type="button" key={slot.start_at} className={'booking-slot '+(selectedSlot?.start_at===slot.start_at?'selected':'')} onClick={()=>{setSelectedSlot(slot);setIdempotencyKey(window.crypto.randomUUID())}}>{localTime(slot.start_at,clinic.timezone,language)}</button>)}</div></div>}
+          {groupedSlots.evening.length>0&&<div className="booking-shift"><h3>{text('الفترة المسائية','Evening',language)}</h3><div className="booking-slot-grid">{groupedSlots.evening.map(slot=><button type="button" key={slot.start_at} className={'booking-slot '+(selectedSlot?.start_at===slot.start_at?'selected':'')} onClick={()=>{setSelectedSlot(slot);setIdempotencyKey(window.crypto.randomUUID())}}>{localTime(slot.start_at,clinic.timezone,language)}</button>)}</div></div>}
         </>}
         {selectedSlot&&<div className="booking-selected-summary"><CheckCircle2 size={17}/><span>{text('الموعد المختار','Selected appointment',language)}</span><strong>{localDateLabel(date,clinic.timezone,language)} · {localTime(selectedSlot.start_at,clinic.timezone,language)}</strong></div>}
         <label className="booking-consent"><input type="checkbox" checked={termsAccepted} onChange={e=>setTermsAccepted(e.target.checked)}/><span>{text('أوافق على استخدام اسمي وعمري ورقم هاتفي لإدارة طلب الحجز والتواصل لتأكيده.','I agree to the use of my name, age, and phone number to manage this booking and contact me for confirmation.',language)}</span></label>
