@@ -63,6 +63,19 @@ function dateInputForAden(value = new Date()) {
   const part = (type: string) => parts.find(item => item.type === type)?.value || '';
   return `${part('year')}-${part('month')}-${part('day')}`;
 }
+function createDemoAppointments() {
+  const date = dateInputForAden();
+  const items = [
+    { id: 'demo-appointment-1047', patient_id: 'SN-1047', time: '09:45', duration: 45, status: 'arrived', name: 'عمر خالد صالح', appointment_type: 'متابعة علاج العصب' },
+    { id: 'demo-appointment-1048', patient_id: 'SN-1048', time: '10:30', duration: 30, status: 'scheduled', name: 'سارة محمد علي', appointment_type: 'فحص ألم الضرس' },
+    { id: 'demo-appointment-1046', patient_id: 'SN-1046', time: '11:15', duration: 30, status: 'confirmed', name: 'ليلى عبدالكريم', appointment_type: 'فحص دوري' },
+    { id: 'demo-appointment-1045', patient_id: 'SN-1045', time: '12:00', duration: 45, status: 'confirmed', name: 'عبدالله ياسر', appointment_type: 'فحص حشوة' },
+  ];
+  return items.map(item => {
+    const start = new Date(date + 'T' + item.time + ':00+03:00');
+    return { id: item.id, patient_id: item.patient_id, scheduled_start: start.toISOString(), scheduled_end: new Date(start.getTime() + item.duration * 60000).toISOString(), timezone: 'Asia/Aden', appointment_type: item.appointment_type, status: item.status, note: null, patients: { full_name: item.name } };
+  });
+}
 function arabicDateForAden(value = new Date()) {
   return new Intl.DateTimeFormat('ar-YE', { timeZone: 'Asia/Aden', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(value);
 }
@@ -77,6 +90,9 @@ export default function HomePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [todayLabel, setTodayLabel] = useState('');
   const [search, setSearch] = useState('');
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [commandSearch, setCommandSearch] = useState('');
+  const commandInputRef = useRef<HTMLInputElement>(null);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(demoMode ? samplePatients[0] : null);
   const [selectedTooth, setSelectedTooth] = useState(46);
   const [showNewPatient, setShowNewPatient] = useState(false);
@@ -186,6 +202,27 @@ export default function HomePage() {
     } catch (error) { setLoadError(error instanceof Error ? error.message : 'تعذر الاتصال بالخادم.'); }
   }
   useEffect(() => { setTodayLabel(language === 'ar' ? arabicDateForAden() : englishDateForAden()); }, [language]);
+  useEffect(() => {
+    if (!demoMode) return;
+    const fixtures = createDemoAppointments();
+    setTodayAppointments(fixtures);
+    setScheduleAppointments(fixtures);
+  }, []);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setShowCommandPalette(open => !open);
+        setCommandSearch('');
+      } else if (event.key === 'Escape') {
+        setShowCommandPalette(false);
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+  useEffect(() => { if (showCommandPalette) commandInputRef.current?.focus(); }, [showCommandPalette]);
   useEffect(() => { if (demoMode) return; let cancelled=false; bootstrapOrganization().catch(e=>{if(!cancelled)setLoadError(e instanceof Error?e.message:'تعذر تحميل مساحة العيادة.')}); return ()=>{cancelled=true}; }, []);
   useEffect(() => {
     if (demoMode || active !== 'odontogram' || !selectedPatient?.id) return;
@@ -209,6 +246,22 @@ export default function HomePage() {
   },[active]);
   const filtered = useMemo(() => patients.filter(p => `${p.name} ${p.id} ${p.reason}`.toLowerCase().includes(search.toLowerCase())), [patients, search]);
   const currentToothEntry = toothEntries.find(entry => String(entry.tooth_number) === String(selectedTooth)) || null;
+  const attentionPatients = useMemo(() => patients.filter(patient => /مراجعة|مسودة|review|draft|needs/i.test(patient.state)).slice(0, 5), [patients]);
+  const commandRoutes = useMemo(() => [
+    ...nav,
+    { key: 'odontogram', label: 'مخطط الأسنان', icon: HeartPulse },
+    { key: 'endodontics', label: 'علاج العصب', icon: Activity },
+    { key: 'settings', label: 'إعدادات العيادة', icon: Settings },
+  ], []);
+  const commandNavResults = useMemo(() => {
+    const aliases: Record<string, string> = { dashboard: 'home dashboard overview', patients: 'patient files directory', appointments: 'calendar scheduling', scribe: 'record visit voice documentation', reports: 'reports records', odontogram: 'dental chart teeth', endodontics: 'root canal endodontics', settings: 'clinic settings configuration' };
+    const query = commandSearch.trim().toLocaleLowerCase();
+    return commandRoutes.filter(item => !query || (item.label + ' ' + item.key + ' ' + (aliases[item.key] || '')).toLocaleLowerCase().includes(query));
+  }, [commandRoutes, commandSearch]);
+  const commandPatientResults = useMemo(() => {
+    const query = commandSearch.trim().toLocaleLowerCase();
+    return patients.filter(patient => !query || (patient.name + ' ' + patient.id + ' ' + patient.reason).toLocaleLowerCase().includes(query)).slice(0, 5);
+  }, [patients, commandSearch]);
   const renderSavedAppointment = (a: any, color = 'blue') => {
     const patient = Array.isArray(a.patients) ? a.patients[0] : a.patients;
     const minutes = Math.max(1, Math.round((Date.parse(a.scheduled_end) - Date.parse(a.scheduled_start)) / 60000));
