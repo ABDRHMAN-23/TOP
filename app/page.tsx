@@ -292,7 +292,7 @@ export default function HomePage() {
   const renderSavedAppointment = (a: any, color = 'blue') => {
     const patient = Array.isArray(a.patients) ? a.patients[0] : a.patients;
     const minutes = Math.max(1, Math.round((Date.parse(a.scheduled_end) - Date.parse(a.scheduled_start)) / 60000));
-    return <Appointment key={a.id} time={new Date(a.scheduled_start).toLocaleTimeString(language === 'ar' ? 'ar-YE' : 'en-US', { timeZone: 'Asia/Aden', hour: '2-digit', minute: '2-digit' })} period="" patient={patient?.full_name || patients.find(p => p.id === a.patient_id)?.name || 'مريض'} type={a.appointment_type === 'dental_visit' ? 'زيارة أسنان' : a.appointment_type || 'زيارة أسنان'} duration={minutes + (language === 'ar' ? ' دقيقة' : ' minutes')} status={appointmentStatus(a.status)} color={color}/>;
+    return <Appointment key={a.id} time={new Date(a.scheduled_start).toLocaleTimeString(language === 'ar' ? 'ar-YE' : 'en-US', { timeZone: 'Asia/Aden', hour: '2-digit', minute: '2-digit' })} period="" patient={patient?.full_name || patients.find(p => p.id === a.patient_id)?.name || 'مريض'} type={a.appointment_type === 'dental_visit' ? 'زيارة أسنان' : a.appointment_type || 'زيارة أسنان'} duration={minutes + (language === 'ar' ? ' دقيقة' : ' minutes')} status={appointmentStatus(a.status)} statusKey={a.status} onStatusChange={active === 'appointments' ? nextStatus => void updateAppointmentStatus(a.id, nextStatus) : undefined} color={color}/>;
   };
 
   function notify(message: string) { setToast(message); window.setTimeout(() => setToast(''), 3200); }
@@ -449,6 +449,32 @@ export default function HomePage() {
       setEndodonticCases(current => [body.case, ...current]); setShowEndoForm(false); setEndoDiagnosis(''); notify('تم حفظ ملف علاج العصب وقياسات القنوات.');
     } catch (error) { notify(error instanceof Error ? error.message : 'تعذر حفظ ملف علاج العصب.'); }
     finally { setEndoSaving(false); }
+  }
+
+  async function updateAppointmentStatus(appointmentId: string, status: string) {
+    const allowed = ['scheduled', 'confirmed', 'arrived', 'in_progress', 'completed', 'cancelled', 'no_show'];
+    if (!allowed.includes(status)) { notify('حالة الموعد غير صالحة.'); return; }
+    if (demoMode) {
+      setScheduleAppointments(current => current.map(item => item.id === appointmentId ? { ...item, status } : item));
+      setTodayAppointments(current => current.map(item => item.id === appointmentId ? { ...item, status } : item));
+      notify('تم تحديث حالة الموعد في بيانات العرض الحالية فقط.');
+      return;
+    }
+    try {
+      const response = await fetch('/api/appointments/' + appointmentId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.appointment) throw new Error(body.error || 'تعذر تحديث حالة الموعد.');
+      const updateList = (list: any[]) => list.map(item => item.id === appointmentId ? { ...item, ...body.appointment, patients: item.patients } : item);
+      setScheduleAppointments(updateList);
+      setTodayAppointments(updateList);
+      notify('تم تحديث حالة الموعد.');
+    } catch (error) {
+      notify(error instanceof Error ? error.message : 'تعذر تحديث حالة الموعد.');
+    }
   }
 
   async function saveAppointment() {
@@ -657,7 +683,7 @@ function ToothGlyph({tooth}:{tooth:number}) {
 }
 
 function StatCard({icon,tone,label,number,foot,alert=false}:{icon:React.ReactNode;tone:string;label:string;number:string;foot:string;alert?:boolean}){return <Localized><div className="stat-card"><div className={`stat-icon ${tone}`}>{icon}</div><div className="stat-label">{label}</div><div className={`stat-number ${alert?'alert-number':''}`}>{number}</div><div className="stat-foot">{alert&&<span className="tiny-alert"/>}{foot}</div></div></Localized>}
-function Appointment({time,period,patient,type,duration,status,color,active=false}:{time:string;period:string;patient:string;type:string;duration:string;status:string;color:string;active?:boolean}){return <Localized><div className={`timeline-item ${active?'active-appointment':''}`}><div className="timeline-time"><strong>{time}</strong><span>{period}</span></div><div className="timeline-track"><i className={active?'track-active':''}/></div><div className={`avatar small ${color}`}>{patient.slice(0,1)}</div><div className="appointment-info"><strong>{patient}</strong><span>{type==='dental_visit'?'زيارة أسنان':type}</span><small><Clock3 size={12}/> {duration}</small></div><span className={`appointment-state ${status==='وصل'?'checked-in':status==='قيد الانتظار'?'waiting':''}`}>{status}</span></div></Localized>}
+function Appointment({time,period,patient,type,duration,status,color,active=false,statusKey,onStatusChange}:{time:string;period:string;patient:string;type:string;duration:string;status:string;color:string;active?:boolean;statusKey?:string;onStatusChange?:(status:string)=>void}){return <Localized><div className={`timeline-item ${active?'active-appointment':''}`}><div className="timeline-time"><strong>{time}</strong><span>{period}</span></div><div className="timeline-track"><i className={active?'track-active':''}/></div><div className={`avatar small ${color}`}>{patient.slice(0,1)}</div><div className="appointment-info"><strong>{patient}</strong><span>{type==='dental_visit'?'زيارة أسنان':type}</span><small><Clock3 size={12}/> {duration}</small></div>{onStatusChange&&statusKey?<select className="appointment-state-select" value={statusKey} onChange={event=>onStatusChange(event.target.value)} aria-label="تغيير حالة الموعد"><option value="scheduled">مجدول</option><option value="confirmed">مؤكد</option><option value="arrived">وصل</option><option value="in_progress">قيد التنفيذ</option><option value="completed">مكتمل</option><option value="cancelled">ملغي</option><option value="no_show">لم يحضر</option></select>:<span className={`appointment-state ${status==='وصل'?'checked-in':status==='قيد الانتظار'?'waiting':''}`}>{status}</span>}</div></Localized>}
 function ReviewItem({name,detail,state,color,onClick}:{name:string;detail:string;state:string;color:string;onClick:()=>void}){return <Localized><button className="review-item" onClick={onClick}><div className={`avatar small ${color}`}>{name.slice(0,1)}</div><div className="review-info"><strong>{name}</strong><span>{detail}</span><small><AlertCircle size={12}/>{state}</small></div><ChevronLeft size={16}/></button></Localized>}
 function StatePill({state}:{state:string}){let c=state.includes('معتمد')?'approved':state.includes('مسودة')?'draft':state.includes('مراجعة')||state.includes('غير')?'review':'neutral';const Icon=c==='review'?AlertCircle:c==='approved'?CircleCheck:c==='draft'?FileText:null;return <Localized><span className={`state-pill ${c}`} aria-label={`الحالة: ${state}`}>{Icon&&<Icon size={12} aria-hidden="true"/>}{state}</span></Localized>}
 function DetailField({label,value,warning=false}:{label:string;value:string;warning?:boolean}){return <Localized><div className="detail-field"><span>{label}</span><strong className={warning?'muted-field':''}>{value}</strong></div></Localized>}
