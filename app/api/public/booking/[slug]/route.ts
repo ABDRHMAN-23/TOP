@@ -7,6 +7,7 @@ const bookingSchema = z.object({
   age_years: z.number().int().min(1).max(120),
   phone: z.string().trim().min(7).max(30),
   start_at: z.string().datetime({ offset: true }),
+  terms_accepted: z.literal(true),
   idempotency_key: z.string().uuid(),
   website: z.string().max(300).optional().default(''),
 }).strict();
@@ -35,7 +36,7 @@ export async function POST(request:Request,context:{params:Promise<{slug:string}
   if(!supabase) return fail('خدمة الحجز غير متصلة حالياً. يرجى التواصل مع العيادة مباشرة.',503);
   const {data,error}=await supabase.rpc('create_public_booking_request',{
     p_slug:slug,p_full_name:parsed.data.full_name,p_age_years:parsed.data.age_years,
-    p_phone:parsed.data.phone,p_scheduled_start:parsed.data.start_at,p_idempotency_key:parsed.data.idempotency_key,
+    p_phone:parsed.data.phone,p_scheduled_start:parsed.data.start_at,p_consent_accepted:parsed.data.terms_accepted,p_idempotency_key:parsed.data.idempotency_key,
   });
   if(error) {
     const msg=error.message||'';
