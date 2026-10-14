@@ -206,7 +206,7 @@ test('clinical status badges are non-interactive labels with distinct icons for 
 const reviewQueueRoute = await readFile(new URL('../app/api/review-queue/route.ts', import.meta.url), 'utf8');
 
 test('Sinan dashboard uses a data-led workbench, real counts, and a global command palette', () => {
-  assert.match(app, /className="dashboard-workbench"/);
+  assert.match(app, /className="workspace-page dashboard-workbench"/);
   assert.match(app, /setShowCommandPalette\(open => !open\)/);
   assert.match(app, /commandPatientResults/);
   assert.match(app, /const reviewCount = demoMode \? attentionPatients\.length : reviewQueue\.length/);
