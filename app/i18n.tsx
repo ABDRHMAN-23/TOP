@@ -459,6 +459,12 @@ const dictionary: Record<string, string> = {
   "جارٍ حفظ التعديلات...": "Saving changes…",
   "تعديل الملف": "Edit file",
   "تم تطبيق إعدادات العرض الحالي فقط؛ لن تُحفظ بعد تحديث الصفحة أو في قاعدة البيانات.": "Demo settings were applied only to the current view; they will not persist after refresh or be saved to the database.",
+  "تغيير حالة الموعد": "Change appointment status",
+  "تم تحديث حالة الموعد في بيانات العرض الحالية فقط.": "Appointment status was updated in the current demo session only.",
+  "تم تحديث حالة الموعد.": "Appointment status updated.",
+  "حالة الموعد غير صالحة.": "Invalid appointment status.",
+  "تعذر تحديث حالة الموعد.": "Could not update appointment status.",
+  "لا تسمح صلاحيات الحساب بتعديل حالة الموعد.": "Your account does not have permission to update appointment status.",
 };
 
 function translate(text: string, language: Language): string {
