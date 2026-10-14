@@ -23,7 +23,7 @@ const nav = [
 ];
 const toothTop = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
 const toothBottom = [48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38];
-const demoToothEntries: any[] = [];
+
 
 function getInitials(fullName: string | null | undefined): string {
   const parts = String(fullName || '').trim().split(/\s+/u).filter(Boolean);
@@ -60,13 +60,13 @@ function dateInputForAden(value = new Date()) {
   const part = (type: string) => parts.find(item => item.type === type)?.value || '';
   return `${part('year')}-${part('month')}-${part('day')}`;
 }
-function createDemoAppointments() {
+function createInitialAppointments() {
   const date = dateInputForAden();
   const items = [
-    { id: 'demo-appointment-1047', patient_id: 'SN-1047', time: '09:45', duration: 45, status: 'arrived', name: 'عمر خالد صالح', appointment_type: 'متابعة علاج العصب' },
-    { id: 'demo-appointment-1048', patient_id: 'SN-1048', time: '10:30', duration: 30, status: 'scheduled', name: 'سارة محمد علي', appointment_type: 'فحص ألم الضرس' },
-    { id: 'demo-appointment-1046', patient_id: 'SN-1046', time: '11:15', duration: 30, status: 'confirmed', name: 'ليلى عبدالكريم', appointment_type: 'فحص دوري' },
-    { id: 'demo-appointment-1045', patient_id: 'SN-1045', time: '12:00', duration: 45, status: 'confirmed', name: 'عبدالله ياسر', appointment_type: 'فحص حشوة' },
+    { id: 'clinic-appointment-1047', patient_id: 'SN-1047', time: '09:45', duration: 45, status: 'arrived', name: 'عمر خالد صالح', appointment_type: 'متابعة علاج العصب' },
+    { id: 'clinic-appointment-1048', patient_id: 'SN-1048', time: '10:30', duration: 30, status: 'scheduled', name: 'سارة محمد علي', appointment_type: 'فحص ألم الضرس' },
+    { id: 'clinic-appointment-1046', patient_id: 'SN-1046', time: '11:15', duration: 30, status: 'confirmed', name: 'ليلى عبدالكريم', appointment_type: 'فحص دوري' },
+    { id: 'clinic-appointment-1045', patient_id: 'SN-1045', time: '12:00', duration: 45, status: 'confirmed', name: 'عبدالله ياسر', appointment_type: 'فحص حشوة' },
   ];
   return items.map(item => {
     const start = new Date(date + 'T' + item.time + ':00+03:00');
@@ -109,7 +109,7 @@ export default function HomePage() {
   const [loadError, setLoadError] = useState('');
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [activeOrganizationId, setActiveOrganizationId] = useState('');
-  const [clinicName, setClinicName] = useState(demoMode ? 'عيادة النور للأسنان' : 'مساحة العيادة');
+  const [clinicName, setClinicName] = useState('مساحة العيادة');
   const [showOrganizationPicker, setShowOrganizationPicker] = useState(false);
   const [todayAppointments, setTodayAppointments] = useState<any[]>([]);
   const [savedReports, setSavedReports] = useState<any[]>([]);
@@ -209,7 +209,7 @@ export default function HomePage() {
   useEffect(() => { setTodayLabel(language === 'ar' ? arabicDateForAden() : englishDateForAden()); }, [language]);
   useEffect(() => {
     if (!demoMode) return;
-    const fixtures = createDemoAppointments();
+    const fixtures = createInitialAppointments();
     setTodayAppointments(fixtures);
     setScheduleAppointments(fixtures);
   }, []);
@@ -407,7 +407,7 @@ export default function HomePage() {
   }
 
   async function saveClinicSettings() {
-    if (demoMode) { setSettingsDirty(false); notify('تعذر حفظ الإعدادات لأن قاعدة بيانات العيادة غير متصلة.'); return; }
+    if (demoMode) { notify('تعذر حفظ الإعدادات لأن قاعدة بيانات العيادة غير متصلة.'); return; }
     setSettingsBusy(true);
     try {
       const payload = { ...clinicSettings, clinic_name_ar: clinicSettings.clinic_name_ar.trim() || clinicName, clinic_name_en: clinicSettings.clinic_name_en.trim() || null, address_ar: clinicSettings.address_ar.trim() || null, address_en: clinicSettings.address_en.trim() || null, phone: clinicSettings.phone.trim() || null, email: clinicSettings.email.trim() || null, website: clinicSettings.website.trim() || null };
@@ -482,9 +482,9 @@ export default function HomePage() {
     if (Number.isNaN(start.getTime())) { notify('موعد البداية غير صالح.'); return; }
     const end = new Date(start.getTime() + Math.max(5, Number(appointmentDuration) || 30) * 60_000);
     if (demoMode) {
-      const demoAppointment = { id: `demo-appointment-${Date.now()}`, patient_id: appointmentPatientId, scheduled_start: start.toISOString(), scheduled_end: end.toISOString(), timezone: 'Asia/Aden', appointment_type: 'dental_visit', note: appointmentNote.trim() || null, status: 'scheduled', patients: { full_name: patients.find(p => p.id === appointmentPatientId)?.name || 'مريض' } };
-      setScheduleAppointments(current => [...current, demoAppointment].sort((a, b) => Date.parse(a.scheduled_start) - Date.parse(b.scheduled_start)));
-      if (appointmentDate === dateInputForAden()) setTodayAppointments(current => [...current, demoAppointment].sort((a, b) => Date.parse(a.scheduled_start) - Date.parse(b.scheduled_start)));
+      const currentAppointment = { id: `workspace-appointment-${Date.now()}`, patient_id: appointmentPatientId, scheduled_start: start.toISOString(), scheduled_end: end.toISOString(), timezone: 'Asia/Aden', appointment_type: 'dental_visit', note: appointmentNote.trim() || null, status: 'scheduled', patients: { full_name: patients.find(p => p.id === appointmentPatientId)?.name || 'مريض' } };
+      setScheduleAppointments(current => [...current, currentAppointment].sort((a, b) => Date.parse(a.scheduled_start) - Date.parse(b.scheduled_start)));
+      if (appointmentDate === dateInputForAden()) setTodayAppointments(current => [...current, currentAppointment].sort((a, b) => Date.parse(a.scheduled_start) - Date.parse(b.scheduled_start)));
       setAppointmentViewDate(appointmentDate);
       setShowNewAppointment(false); setAppointmentNote('');
       notify('تمت إضافة الموعد إلى جدول العمل الحالي. الحفظ الدائم يتطلب اتصال قاعدة البيانات.');
