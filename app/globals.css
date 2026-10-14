@@ -1535,3 +1535,40 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
  .booking-confirmation{margin-top:5vh;padding:24px 15px;border-radius:15px}
  .booking-confirmation h1{font-size:20px}
 }
+
+/* Clinical appointment inbox and anatomical tooth-surface map */
+.booking-queue-actions{display:flex;align-items:center;gap:9px;flex:none}
+.booking-queue-actions .secondary-button{min-height:34px;padding:0 10px;font-size:9px}
+.teeth-row.anatomical-teeth{direction:ltr}
+.jaw-midline{direction:ltr;display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;margin:13px 0;color:#6e819d;font-size:9px}
+.jaw-midline i{display:block;width:1px;height:15px;background:#dce5f1}
+.jaw-midline strong{color:#3a5f9c;font-size:9px;font-weight:800;padding:4px 8px;border:1px solid #dfe8f5;border-radius:7px;background:#f5f8ff}
+.lower-midline{margin-top:9px;margin-bottom:7px}
+.tooth-surface-picker{display:flex;flex-direction:column;gap:9px;min-width:0;margin-top:14px}
+.tooth-surface-picker>strong{color:#365273;font-size:10px;font-weight:800}
+.tooth-surface-picker>small{color:#8697ad;font-size:9px;line-height:1.7}
+.tooth-surface-diagram{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(51px,auto));grid-template-areas:". buccal ." "mesial center distal" ". inner .";gap:6px;width:min(100%,340px);padding:9px;border:1px solid #e0e9f4;border-radius:14px;background:linear-gradient(145deg,#fbfdff,#f4f7fc)}
+.tooth-surface-diagram.mesial-right{grid-template-areas:". buccal ." "distal center mesial" ". inner ."}
+.surface-cell{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;min-width:0;min-height:49px;padding:7px 4px;border:1px solid #dfe7f2;border-radius:10px;background:#fff;color:#66809f;cursor:pointer;transition:background .14s,border-color .14s,color .14s,box-shadow .14s}
+.surface-cell:hover{border-color:#a9c4ef;background:#f2f7ff;color:#2458c8}
+.surface-cell>span{display:grid;place-items:center;width:23px;height:23px;border-radius:7px;background:#f0f4fa;color:#4d6b96;font-size:10px;font-weight:850}
+.surface-cell>small{font-size:8px;line-height:1.3}
+.surface-cell.selected{border-color:#4c7ed2;background:#e9f1ff;color:#2458c8;box-shadow:inset 0 0 0 1px #4c7ed21b}
+.surface-cell.selected>span{background:#2458c8;color:#fff}
+.surface-buccal{grid-area:buccal}
+.surface-mesial{grid-area:mesial}
+.surface-center{grid-area:center;border-color:#cbd9ec;background:#f8faff}
+.surface-distal{grid-area:distal}
+.surface-inner{grid-area:inner}
+.tooth-surface-selection{display:flex;align-items:center;gap:5px;flex-wrap:wrap;min-height:20px}
+.tooth-surface-selection span{padding:4px 7px;border:1px solid #d6e4f7;border-radius:999px;background:#f0f6ff;color:#3566b2;font-size:8px;font-weight:750}
+.tooth-surface-selection .surface-none{border-color:#e5ebf3;background:#f8faff;color:#98a5b7;font-weight:500}
+@media(max-width:760px){
+  .booking-queue-actions{gap:5px}
+  .booking-queue-actions .secondary-button{font-size:8px;padding:0 7px}
+  .jaw-midline{gap:5px;font-size:7px}
+  .jaw-midline strong{font-size:7px;padding:3px 5px}
+  .tooth-surface-diagram{grid-template-rows:repeat(3,minmax(44px,auto));gap:4px;width:100%;padding:6px}
+  .surface-cell{min-height:43px;padding:5px 2px}
+  .surface-cell>small{font-size:7px}
+}
