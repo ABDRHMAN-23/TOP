@@ -6,8 +6,12 @@ const createSchema = z.object({ patient_id: z.string().uuid(), scheduled_start: 
 export async function GET(request: Request) {
   const {supabase,user}=await requireUser(); if(!supabase)return NextResponse.json({error:'خدمة قاعدة البيانات غير مهيأة.'},{status:503}); if(!user)return NextResponse.json({error:'سجّل الدخول أولاً.'},{status:401});
   const {context,error}=await resolveOrganization(supabase,user,request);if(!context)return NextResponse.json({error},{status:403});
-  const start=new URL(request.url).searchParams.get('from')||new Date().toISOString();
-  const {data,error:dbError}=await supabase.from('appointments').select('id,patient_id,clinician_id,scheduled_start,scheduled_end,timezone,appointment_type,status,note').eq('organization_id',context.organizationId).gte('scheduled_start',start).order('scheduled_start',{ascending:true}).limit(100);
+  const params=new URL(request.url).searchParams;
+  const start=params.get('from')||new Date().toISOString();
+  const end=params.get('to');
+  let appointmentsQuery=supabase.from('appointments').select('id,patient_id,clinician_id,scheduled_start,scheduled_end,timezone,appointment_type,status,note').eq('organization_id',context.organizationId).gte('scheduled_start',start).order('scheduled_start',{ascending:true});
+  if(end) appointmentsQuery=appointmentsQuery.lt('scheduled_start',end);
+  const {data,error:dbError}=await appointmentsQuery.limit(100);
   if(dbError)return NextResponse.json({error:'تعذر تحميل المواعيد.'},{status:500});
   const appointments=data??[];
   const patientIds=[...new Set(appointments.map((item:any)=>item.patient_id).filter(Boolean))];
