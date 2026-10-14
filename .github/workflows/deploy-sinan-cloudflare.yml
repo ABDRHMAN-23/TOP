@@ -72,4 +72,4 @@ jobs:
           test -d .open-next/assets
 
       - name: Deploy Sinan demo to aqarflow-ai1
-        run: npx wrangler deploy --account-id "$CLOUDFLARE_ACCOUNT_ID" --config wrangler.jsonc
+        run: npx wrangler deploy --config wrangler.jsonc
