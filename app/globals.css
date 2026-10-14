@@ -1219,3 +1219,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .appointment-state-select:focus{outline:2px solid #a9c7ff;outline-offset:1px}
 .appointment-state-select option{background:#fff;color:#263f60}
 @media(max-width:760px){.workbench-timeline .appointment-state-select{grid-area:status;justify-self:start;max-width:135px;min-width:100px;min-height:28px;font-size:8px;padding:3px 19px 3px 6px}}
+
+@media(max-width:760px){
+  .timeline-list .appointment-state-select{grid-area:status;justify-self:start;max-width:135px;min-width:100px;min-height:28px;font-size:8px;padding:3px 19px 3px 6px}
+}
