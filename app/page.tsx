@@ -870,7 +870,7 @@ function ToothGlyph({tooth}:{tooth:number}) {
         ? 'M21 35 C20 45 22 55 20 66 C19 72 24 74 26 66 L26 39'
         : 'M17 35 C16 44 17 51 18 60 C18 66 22 68 23 60 L24 37';
   return <svg className="anatomical-tooth-glyph" viewBox="0 0 50 78" aria-hidden="true" focusable="false">
-    <g transform={lower ? 'translate(0 78) scale(1 -1)' : undefined}>
+    <g transform={!lower ? 'translate(0 78) scale(1 -1)' : undefined}>
       <path className="tooth-root-shape" d={roots} fill="none" stroke="currentColor" strokeOpacity=".72" strokeWidth={primary?5:4.6} strokeLinecap="round" strokeLinejoin="round"/>
       <path className="tooth-crown-shape" d={crown} fill="currentColor" fillOpacity=".16" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
       {molar&&<path d="M15 21 Q20 26 24 21 M18 31 L22 26 L27 31" fill="none" stroke="currentColor" strokeOpacity=".45" strokeWidth="1.25" strokeLinecap="round"/>}
