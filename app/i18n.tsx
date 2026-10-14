@@ -432,6 +432,20 @@ const dictionary: Record<string, string> = {
   "أمثلة وليست سجلات حقيقية": "Examples, not real records",
   "بيانات تجريبية": "Demo data",
   "فتح التقويم": "Open calendar",
+  "مسودات بانتظار مراجعة الطبيب": "Drafts waiting for clinician review",
+  "تحتاج إلى صلاحية سريرية": "Clinical access required",
+  "لا تسمح صلاحيات هذا الحساب بعرض السجلات التي تنتظر المراجعة.": "This account does not have permission to view records awaiting review.",
+  "جاهز للاعتماد": "Ready for approval",
+  "نسخة": "Version",
+  "نسخة ": "Version ",
+  "جارٍ تحميل السجلات التي تنتظر المراجعة...": "Loading records awaiting review…",
+  "تعذر تحميل قائمة مراجعة السجلات.": "Could not load the clinical review queue.",
+  "تعذر تحميل قائمة المراجعة.": "Could not load the review queue.",
+  "قائمة مراجعة السجلات متاحة للطبيب السريري المخوّل فقط.": "The clinical review queue is available only to authorized clinical staff.",
+  "قائمة المراجعة": "Review queue",
+  "لا توجد سجلات تنتظر المراجعة": "No records are waiting for review",
+  "ستظهر هنا المسودات والسجلات التي تحتاج إلى اعتماد الطبيب.": "Drafts and records needing clinician approval will appear here.",
+  "ستظهر أمثلة المتابعة عندما يحتوي ملف العرض على حالة تحتاج مراجعة.": "Demo follow-up examples appear when a sample file is marked for review.",
 };
 
 function translate(text: string, language: Language): string {
