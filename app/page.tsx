@@ -111,6 +111,8 @@ export default function HomePage() {
   const [showOrganizationPicker, setShowOrganizationPicker] = useState(false);
   const [todayAppointments, setTodayAppointments] = useState<any[]>([]);
   const [savedReports, setSavedReports] = useState<any[]>([]);
+  const [reviewQueue, setReviewQueue] = useState<any[]>([]);
+  const [reviewQueueLoading, setReviewQueueLoading] = useState(false);
   const [clinicSettings, setClinicSettings] = useState({ clinic_name_ar: '', clinic_name_en: '', address_ar: '', address_en: '', phone: '', email: '', website: '', default_report_language: 'ar', paper_size: 'A4', tooth_notation: 'FDI', recording_policy_version: 'clinic-policy-v1', audio_retention_days: 30 });
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [settingsDirty, setSettingsDirty] = useState(false);
@@ -241,12 +243,28 @@ export default function HomePage() {
     return()=>{cancelled=true};
   },[active,selectedPatient?.id]);
   useEffect(() => {
+    if (demoMode || active !== 'dashboard') return;
+    let cancelled = false;
+    setReviewQueueLoading(true);
+    fetch('/api/review-queue', { cache: 'no-store' })
+      .then(async response => {
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(body.error || 'تعذر تحميل قائمة مراجعة السجلات.');
+        return body;
+      })
+      .then(body => { if (!cancelled) setReviewQueue(Array.isArray(body.items) ? body.items : []); })
+      .catch(error => { if (!cancelled) notify(error instanceof Error ? error.message : 'تعذر تحميل قائمة المراجعة.'); })
+      .finally(() => { if (!cancelled) setReviewQueueLoading(false); });
+    return () => { cancelled = true; };
+  }, [active]);
+  useEffect(() => {
     if (demoMode || active !== 'reports') return;
     let cancelled=false; fetch('/api/reports',{cache:'no-store'}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'تعذر تحميل التقارير.');return b;}).then(b=>{if(!cancelled)setSavedReports(Array.isArray(b.reports)?b.reports:[])}).catch(e=>{if(!cancelled)notify(e instanceof Error?e.message:'تعذر تحميل التقارير.')});return()=>{cancelled=true};
   },[active]);
   const filtered = useMemo(() => patients.filter(p => `${p.name} ${p.id} ${p.reason}`.toLowerCase().includes(search.toLowerCase())), [patients, search]);
   const currentToothEntry = toothEntries.find(entry => String(entry.tooth_number) === String(selectedTooth)) || null;
   const attentionPatients = useMemo(() => patients.filter(patient => /مراجعة|مسودة|review|draft|needs/i.test(patient.state)).slice(0, 5), [patients]);
+  const reviewCount = demoMode ? attentionPatients.length : reviewQueue.length;
   const visibleScheduleAppointments = demoMode ? scheduleAppointments.filter(item => dateInputForAden(new Date(item.scheduled_start)) === appointmentViewDate) : scheduleAppointments;
   const commandRoutes = useMemo(() => [
     ...nav,
@@ -435,7 +453,7 @@ export default function HomePage() {
             <span className="metric-symbol mint"><Users size={19}/></span><span className="metric-content"><small>ملفات المرضى</small><strong>{patients.length.toLocaleString(language === 'ar' ? 'ar' : 'en-US')}</strong><em>{demoMode ? 'ملفات افتراضية قابلة للتجربة' : 'الملفات التي تم تحميلها'}</em></span><ChevronLeft size={16}/>
           </button>
           <button className="workbench-metric" type="button" onClick={() => setActive('patients')}>
-            <span className="metric-symbol amber"><AlertCircle size={19}/></span><span className="metric-content"><small>تحتاج إلى متابعة</small><strong>{attentionPatients.length.toLocaleString(language === 'ar' ? 'ar' : 'en-US')}</strong><em>مسودات وحالات مراجعة من القائمة الحالية</em></span><ChevronLeft size={16}/>
+            <span className="metric-symbol amber"><AlertCircle size={19}/></span><span className="metric-content"><small>تحتاج إلى متابعة</small><strong>{reviewCount.toLocaleString(language === 'ar' ? 'ar' : 'en-US')}</strong><em>مسودات بانتظار مراجعة الطبيب</em></span><ChevronLeft size={16}/>
           </button>
         </div>
 
@@ -454,7 +472,10 @@ export default function HomePage() {
           <div className="workbench-side-stack">
             <section className="panel workbench-attention">
               <div className="workbench-section-heading"><div><span className="section-kicker">قائمة العمل</span><h2>تحتاج إلى انتباهك</h2><p>افتح الملف لمراجعة الحالة أو المسودة.</p></div><span className="workbench-count">{attentionPatients.length.toLocaleString(language === 'ar' ? 'ar' : 'en-US')}</span></div>
-              {attentionPatients.length ? <div className="attention-list">{attentionPatients.map(patient => <button type="button" className="attention-row" key={patient.id} onClick={() => {setSelectedPatient(patient);setPatientTab('overview');setActive('patients')}}><span className={'attention-avatar ' + patient.color}>{patient.initials}</span><span className="attention-copy"><strong>{patient.name}</strong><small>{patient.reason}</small></span><StatePill state={patient.state}/><ChevronLeft size={15}/></button>)}</div> : <div className="workbench-empty compact"><CircleCheck size={21}/><strong>لا توجد حالات متابعة في القائمة الحالية</strong><span>ستظهر هنا الحالات التي تتطلب مراجعة بعد تحميلها.</span></div>}
+              {demoMode && attentionPatients.length > 0 && <div className="attention-list">{attentionPatients.map(patient => <button type="button" className="attention-row" key={patient.id} onClick={() => {setSelectedPatient(patient);setPatientTab('overview');setActive('patients')}}><span className={'attention-avatar ' + patient.color}>{patient.initials}</span><span className="attention-copy"><strong>{patient.name}</strong><small>{patient.reason}</small></span><StatePill state={patient.state}/><ChevronLeft size={15}/></button>)}</div>}
+              {!demoMode && reviewQueueLoading && <div className="review-queue-loading"><span className="loading-dot"/><span>جارٍ تحميل السجلات التي تنتظر المراجعة...</span></div>}
+              {!demoMode && !reviewQueueLoading && reviewQueue.length > 0 && <div className="attention-list">{reviewQueue.slice(0,5).map(item => <button type="button" className="attention-row" key={item.id} onClick={() => item.encounter_id ? window.location.assign('/encounters/' + item.encounter_id) : setActive('patients')}><span className="attention-avatar blue">{getInitials(item.patient_name)}</span><span className="attention-copy"><strong>{item.patient_name}</strong><small>{item.chief_complaint || item.patient_number || ('نسخة ' + item.version)}</small></span><StatePill state={item.status==='ready_for_approval'?'جاهز للاعتماد':item.status==='draft'?'مسودة':'تحتاج مراجعة'}/><ChevronLeft size={15}/></button>)}</div>}
+              {((demoMode && attentionPatients.length===0) || (!demoMode && !reviewQueueLoading && reviewQueue.length===0)) && <div className="workbench-empty compact"><CircleCheck size={21}/><strong>لا توجد سجلات تنتظر المراجعة</strong><span>{demoMode ? 'ستظهر أمثلة المتابعة عندما يحتوي ملف العرض على حالة تحتاج مراجعة.' : 'ستظهر هنا المسودات والسجلات التي تحتاج إلى اعتماد الطبيب.'}</span></div>}
               <button className="workbench-link-row" type="button" onClick={() => setActive('patients')}>فتح ملفات المرضى <ChevronLeft size={15}/></button>
             </section>
 
