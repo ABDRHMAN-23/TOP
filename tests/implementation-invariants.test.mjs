@@ -252,12 +252,22 @@ const signInUi = await readFile(new URL('../app/sign-in/page.tsx', import.meta.u
 const uiStyles = await readFile(new URL('../app/globals.css', import.meta.url), 'utf8');
 const uiLocales = await readFile(new URL('../app/i18n.tsx', import.meta.url), 'utf8');
 
-test('retired preview labels do not return to user-facing workspace screens', () => {
+const onboardingUi = await readFile(new URL('../app/onboarding/page.tsx', import.meta.url), 'utf8');
+const encounterUi = await readFile(new URL('../app/encounters/[encounterId]/page.tsx', import.meta.url), 'utf8');
+const reportUi = await readFile(new URL('../app/reports/[reportId]/page.tsx', import.meta.url), 'utf8');
+
+test('retired preview labels do not return to any user-facing workspace route', () => {
   const labels = /وضع العرض التجريبي|وضع عرض تجريبي|بيانات تجريبية|عرض تجريبي|بيانات العرض|مثال تجريبي|مسودة تجريبية|خيالية|تجريبية/;
-  assert.doesNotMatch(app, labels);
-  assert.doesNotMatch(signInUi, labels);
+  for (const screen of [app, signInUi, onboardingUi, encounterUi, reportUi, uiLocales]) assert.doesNotMatch(screen, labels);
   assert.doesNotMatch(uiStyles, /\.demo-notice|\.connection-chip\.demo/);
-  assert.doesNotMatch(uiLocales, labels);
   assert.match(app, /قاعدة البيانات غير متصلة/);
   assert.match(app, /الحفظ الدائم يتطلب اتصال قاعدة البيانات/);
+});
+
+test('patient clinical details are filtered to the selected patient before rendering', () => {
+  assert.match(app, /const selectedHistoryItems = historyItems\.filter\(\(item:any\) => item\.patient_id === selectedPatient\?\.id\)/);
+  assert.match(app, /const selectedEndodonticCases = endodonticCases\.filter\(\(item:any\) => item\.patient_id === selectedPatient\?\.id\)/);
+  assert.match(app, /const currentPatientDetails = patientDetails\?\.patient\?\.id === selectedPatient\?\.id \? patientDetails : null/);
+  assert.match(app, /entry\.patient_id === selectedPatient\?\.id && String\(entry\.tooth_number\)/);
+  assert.match(app, /patient_id:selectedPatient\.id,category:historyCategory/);
 });
