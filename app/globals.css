@@ -1214,3 +1214,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .review-queue-loading{display:flex;align-items:center;gap:9px;padding:24px 4px;color:#8094b0;font-size:10px}
 .loading-dot{width:8px;height:8px;border-radius:50%;background:#608be0;box-shadow:0 0 0 4px #608be01a;animation:sinan-pulse 1.4s ease-in-out infinite}
 @keyframes sinan-pulse{0%,100%{opacity:.45;transform:scale(.85)}50%{opacity:1;transform:scale(1)}}
+
+.appointment-state-select{max-width:120px;min-width:90px;min-height:30px;padding:4px 24px 4px 8px;border:1px solid #dce6f3;border-radius:9px;background:#f8faff;color:#4e6688;font-size:9px;font-weight:750;cursor:pointer}
+.appointment-state-select:focus{outline:2px solid #a9c7ff;outline-offset:1px}
+.appointment-state-select option{background:#fff;color:#263f60}
+@media(max-width:760px){.workbench-timeline .appointment-state-select{grid-area:status;justify-self:start;max-width:135px;min-width:100px;min-height:28px;font-size:8px;padding:3px 19px 3px 6px}}
