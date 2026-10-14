@@ -5,7 +5,7 @@ import { LanguageButton, Localized, useLanguage } from './i18n';
 import {
   Activity, AlertCircle, Bell, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight,
   ClipboardList, Clock3, FileText, HeartPulse, Mic, Plus, Search, Settings, ShieldCheck,
-  Stethoscope, Users, X, ArrowUpLeft, FilePlus2, Play, Sparkles, CircleCheck, Menu
+  Stethoscope, Users, X, ArrowUpLeft, FilePlus2, Play, Sparkles, CircleCheck, Menu, Pencil
 } from 'lucide-react';
 
 const samplePatients = [
@@ -96,6 +96,11 @@ export default function HomePage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(demoMode ? samplePatients[0] : null);
   const [selectedTooth, setSelectedTooth] = useState(46);
   const [showNewPatient, setShowNewPatient] = useState(false);
+  const [showEditPatient, setShowEditPatient] = useState(false);
+  const [editPatientName, setEditPatientName] = useState('');
+  const [editPatientPhone, setEditPatientPhone] = useState('');
+  const [editPatientComplaint, setEditPatientComplaint] = useState('');
+  const [patientSaving, setPatientSaving] = useState(false);
   const [showScribe, setShowScribe] = useState(false);
   const [showManualVisit, setShowManualVisit] = useState(false);
   const [manualComplaint, setManualComplaint] = useState('');
@@ -298,6 +303,74 @@ export default function HomePage() {
       setPatients([next, ...patients]); setSelectedPatient(next); setName(''); setComplaint(''); setShowNewPatient(false); setActive('patients'); notify('أُضيف المريض إلى بيانات العرض المحلية فقط.'); return;
     }
     try { const response = await fetch('/api/patients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ full_name: name.trim(), chief_complaint: complaint.trim() || null }) }); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || 'تعذر إنشاء ملف المريض.'); const p = body.patient; const next: Patient = { id: p.id, displayId: p.patient_number || String(p.id).slice(0,8), name: p.full_name, age: 'العمر غير مسجل', phone: maskPhoneForDisplay(p.phone), visit: 'لا توجد زيارة مسجلة', reason: p.chief_complaint || 'لم تسجل الشكوى بعد', state: 'مسودة', initials: getInitials(p.full_name || 'م'), color: 'mint' }; setPatients([next,...patients]); setSelectedPatient(next); setName(''); setComplaint(''); setShowNewPatient(false); setActive('patients'); notify('تم إنشاء ملف المريض في قاعدة البيانات.'); } catch (error) { notify(error instanceof Error ? error.message : 'تعذر إنشاء ملف المريض.'); }
+  }
+
+  function openPatientEdit() {
+    if (!selectedPatient) { notify('اختر ملف المريض أولاً.'); return; }
+    setEditPatientName(selectedPatient.name);
+    setEditPatientPhone(demoMode ? '' : String(patientDetails?.patient?.phone || ''));
+    setEditPatientComplaint(demoMode ? selectedPatient.reason : String(patientDetails?.patient?.chief_complaint || ''));
+    setShowEditPatient(true);
+  }
+
+  async function savePatientEdits() {
+    if (!selectedPatient) { notify('اختر ملف المريض أولاً.'); return; }
+    const fullName = editPatientName.trim();
+    if (fullName.length < 2) { notify('أدخل اسم المريض بشكل صحيح.'); return; }
+    const complaintValue = editPatientComplaint.trim();
+    if (demoMode) {
+      const updated: Patient = {
+        ...selectedPatient,
+        name: fullName,
+        initials: getInitials(fullName),
+        reason: complaintValue || 'لم تسجل الشكوى بعد',
+        phone: editPatientPhone.trim() ? maskPhoneForDisplay(editPatientPhone.trim()) : selectedPatient.phone,
+      };
+      setPatients(current => current.map(patient => patient.id === selectedPatient.id ? updated : patient));
+      setSelectedPatient(updated);
+      setShowEditPatient(false);
+      notify('تم تحديث ملف العرض الحالي فقط؛ لم تُحفظ التعديلات في قاعدة بيانات.');
+      return;
+    }
+
+    const payload: Record<string, unknown> = {};
+    if (fullName !== selectedPatient.name) payload.full_name = fullName;
+    const originalComplaint = String(patientDetails?.patient?.chief_complaint || '');
+    if (complaintValue !== originalComplaint) payload.chief_complaint = complaintValue || null;
+    const originalPhone = String(patientDetails?.patient?.phone || '');
+    if (editPatientPhone.trim() && editPatientPhone.trim() !== originalPhone) payload.phone = editPatientPhone.trim();
+    if (Object.keys(payload).length === 0) {
+      setShowEditPatient(false);
+      notify('لا توجد تغييرات جديدة لحفظها.');
+      return;
+    }
+
+    setPatientSaving(true);
+    try {
+      const response = await fetch('/api/patients/' + selectedPatient.id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.patient) throw new Error(body.error || 'تعذر تحديث ملف المريض.');
+      const updated: Patient = {
+        ...selectedPatient,
+        name: body.patient.full_name,
+        initials: getInitials(body.patient.full_name),
+        reason: body.patient.chief_complaint || 'لم تسجل الشكوى بعد',
+        phone: maskPhoneForDisplay(body.patient.phone),
+      };
+      setPatients(current => current.map(patient => patient.id === updated.id ? updated : patient));
+      setSelectedPatient(updated);
+      setPatientDetails((current: any) => current ? { ...current, patient: body.patient } : current);
+      setShowEditPatient(false);
+      notify('تم حفظ تعديلات ملف المريض.');
+    } catch (error) {
+      notify(error instanceof Error ? error.message : 'تعذر تحديث ملف المريض.');
+    } finally {
+      setPatientSaving(false);
+    }
   }
 
   async function createManualVisit() {
