@@ -167,7 +167,8 @@ test('mobile navigation has an explicit trigger and dismissible backdrop', async
   assert.match(app, /className="mobile-menu-trigger icon-button"/);
   assert.match(app, /className="sidebar-backdrop"/);
   assert.match(app, /aria-label="إغلاق القائمة الجانبية"/);
-  assert.match(css, /\.sidebar-backdrop\{display:block;position:fixed/);
+  assert.match(css, /\.sidebar-backdrop\{[^}]*position:fixed/s);
+  assert.match(css, /\.sidebar-backdrop\{[^}]*display:block/s);
 });
 
 test('appointment timeline uses a responsive grid to keep time, patient and status apart', async () => {
