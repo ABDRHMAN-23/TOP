@@ -458,6 +458,7 @@ const dictionary: Record<string, string> = {
   "تم حفظ تعديلات ملف المريض.": "Patient file changes saved.",
   "جارٍ حفظ التعديلات...": "Saving changes…",
   "تعديل الملف": "Edit file",
+  "تم تطبيق إعدادات العرض الحالي فقط؛ لن تُحفظ بعد تحديث الصفحة أو في قاعدة البيانات.": "Demo settings were applied only to the current view; they will not persist after refresh or be saved to the database.",
 };
 
 function translate(text: string, language: Language): string {
