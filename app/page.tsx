@@ -308,8 +308,8 @@ export default function HomePage() {
   function openPatientEdit() {
     if (!selectedPatient) { notify('اختر ملف المريض أولاً.'); return; }
     setEditPatientName(selectedPatient.name);
-    setEditPatientPhone(demoMode ? '' : String(patientDetails?.patient?.phone || ''));
-    setEditPatientComplaint(demoMode ? selectedPatient.reason : String(patientDetails?.patient?.chief_complaint || ''));
+    setEditPatientPhone(demoMode ? '' : (patientDetails?.patient?.id === selectedPatient.id ? String(patientDetails.patient.phone || '') : ''));
+    setEditPatientComplaint(demoMode ? selectedPatient.reason : (patientDetails?.patient?.id === selectedPatient.id ? String(patientDetails.patient.chief_complaint || '') : ''));
     setShowEditPatient(true);
   }
 
@@ -335,9 +335,10 @@ export default function HomePage() {
 
     const payload: Record<string, unknown> = {};
     if (fullName !== selectedPatient.name) payload.full_name = fullName;
-    const originalComplaint = String(patientDetails?.patient?.chief_complaint || '');
+    const detailMatchesSelection = patientDetails?.patient?.id === selectedPatient.id;
+    const originalComplaint = detailMatchesSelection ? String(patientDetails.patient.chief_complaint || '') : '';
     if (complaintValue !== originalComplaint) payload.chief_complaint = complaintValue || null;
-    const originalPhone = String(patientDetails?.patient?.phone || '');
+    const originalPhone = detailMatchesSelection ? String(patientDetails.patient.phone || '') : '';
     if (editPatientPhone.trim() && editPatientPhone.trim() !== originalPhone) payload.phone = editPatientPhone.trim();
     if (Object.keys(payload).length === 0) {
       setShowEditPatient(false);
