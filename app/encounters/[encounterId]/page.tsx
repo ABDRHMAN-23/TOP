@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { LanguageButton, Localized } from '../../i18n';
 import { AlertCircle, ArrowRight, Check, ChevronLeft, ClipboardCheck, FileText, LoaderCircle, Save, ShieldCheck } from 'lucide-react';
 
 type StateValue = 'patient_reported'|'observed'|'ai_suggested'|'clinician_confirmed'|'explicitly_negative'|'unknown'|'not_collected'|'not_applicable'|'needs_review';
@@ -139,8 +140,8 @@ export default function EncounterReviewPage() {
   }
 
   const patient = unwrapPatient(data?.patients);
-  return <main className="review-page" dir="rtl">
-    <header className="review-header"><a href="/" className="review-back"><ArrowRight size={17}/> العودة لمساحة العيادة</a><div className="review-brand"><div className="brand-symbol"><ClipboardCheck size={21}/></div><div><strong>سِنان</strong><span>مراجعة السجل السريري</span></div></div><span className={`review-status ${isApproved?'approved':''}`}>{isApproved?'معتمد من الطبيب':note?.status==='needs_review'?'بانتظار المراجعة':note?.status||'جارٍ التحميل'}</span></header>
+  return <Localized><main className="review-page">
+    <header className="review-header"><LanguageButton/><a href="/" className="review-back"><ArrowRight size={17}/> العودة لمساحة العيادة</a><div className="review-brand"><div className="brand-symbol"><ClipboardCheck size={21}/></div><div><strong>سِنان</strong><span>مراجعة السجل السريري</span></div></div><span className={`review-status ${isApproved?'approved':''}`}>{isApproved?'معتمد من الطبيب':note?.status==='needs_review'?'بانتظار المراجعة':note?.status||'جارٍ التحميل'}</span></header>
     {error && <div className="review-error"><AlertCircle size={17}/><span>{error}</span><button onClick={() => load().catch(e => setError(String(e)))}>إعادة المحاولة</button></div>}
     {message && <div className="review-success"><Check size={17}/>{message}</div>}
     {!data && !error && <div className="review-loading"><LoaderCircle size={24}/> جارٍ تحميل الزيارة...</div>}
@@ -162,5 +163,5 @@ export default function EncounterReviewPage() {
       @media(max-width:760px){.review-page{padding:0 12px 30px}.review-header{height:auto;min-height:62px;gap:10px;flex-wrap:wrap;padding:12px 0}.review-back{font-size:10px}.review-brand{margin-right:0}.review-brand span{display:none}.review-intro{align-items:flex-start;flex-direction:column;margin-top:22px}.review-intro h1{font-size:22px}.review-actions{width:100%}.review-actions>*{flex:1}.review-card,.review-safety,.review-approval{padding:15px;border-radius:11px}.clinical-review-grid{grid-template-columns:1fr}.clinical-field>p{min-height:0}.review-safety{flex-wrap:wrap}.review-safety>span{margin-right:32px}.review-section-head{gap:8px;flex-wrap:wrap}.review-approval{align-items:stretch;flex-direction:column}.review-approval .review-btn{width:100%}}
       @media print{.review-page{padding:0;background:white}.review-header,.review-actions,.review-approval,.review-error,.review-success,.review-loading{display:none!important}.review-intro{margin:0 auto 15px}.review-card,.review-safety{box-shadow:none;border:1px solid #ddd;break-inside:avoid;padding:12px;margin-top:9px}.clinical-review-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.clinical-field textarea{border:0;background:white;min-height:0}.clinical-field{break-inside:avoid}.transcript-editor{border:0;background:white}.review-intro h1{font-size:20px}}
     `}</style>
-  </main>;
+  </main></Localized>;
 }
