@@ -310,7 +310,7 @@ const dictionary: Record<string, string> = {
   'الشكوى الرئيسية كما ذكرها، دون استنتاج تشخيص': 'Chief complaint as reported, without inferred diagnosis',
   'اكتب ما ذكره المريض دون استنتاج تشخيص': 'Enter what the patient reported without inferring a diagnosis',
   'ابحث باسم المريض أو رقم الملف...': 'Search by patient name or record ID…',
-  'لا توجد سجلات': 'No records',,
+  'لا توجد سجلات': 'No records',
   'تنشئ هذه الخطوة مسودة محفوظة في العيادة. ستفتح شاشة المراجعة لإدخال التاريخ الصحي والفحص والخطة. لا يصبح السجل نهائياً قبل اعتماد الطبيب.': 'This creates a saved clinical draft. Review the history, examination, and plan on the next screen. It is not final until approved by a clinician.',
   'مراجعة السجل السريري': 'Clinical record review',
   'جارٍ تحميل الزيارة...': 'Loading visit…',
