@@ -232,3 +232,15 @@ test('patient edit form is connected to the clinic-scoped patient PATCH endpoint
   assert.match(patientDetailRoute, /eq\('id', patientId\)\.eq\('organization_id', context\.organizationId\)/);
   assert.match(patientDetailRoute, /action: 'patient\.updated'/);
 });
+
+const appointmentStatusRoute = await readFile(new URL('../app/api/appointments/[appointmentId]/route.ts', import.meta.url), 'utf8');
+
+test('appointment status updates are validated, clinic-scoped, role-checked, and audited', () => {
+  assert.match(appointmentStatusRoute, /export async function PATCH/);
+  assert.match(appointmentStatusRoute, /status: z\.enum\(\['scheduled', 'confirmed', 'arrived', 'in_progress', 'completed', 'cancelled', 'no_show'\]\)/);
+  assert.match(appointmentStatusRoute, /resolveOrganization\(supabase, user, request\)/);
+  assert.match(appointmentStatusRoute, /eq\('organization_id', context\.organizationId\)/);
+  assert.match(appointmentStatusRoute, /action: 'appointment\.status_changed'/);
+  assert.match(app, /async function updateAppointmentStatus\(appointmentId: string, status: string\)/);
+  assert.match(app, /className="appointment-state-select"/);
+});
