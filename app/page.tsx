@@ -408,6 +408,14 @@ export default function HomePage() {
 
 function SaveIcon(){return <Check size={16}/>;}
 function appointmentStatus(status:string){const map:Record<string,string>={scheduled:'مجدول',confirmed:'مؤكد',arrived:'وصل',in_progress:'قيد التنفيذ',completed:'مكتمل',cancelled:'ملغي',no_show:'لم يحضر'};return map[status]||status||'مجدول'}
+function ToothGlyph({tooth}:{tooth:number}) {
+  const molar = [16,17,18,26,27,28,36,37,38,46,47,48].includes(tooth);
+  const path = molar
+    ? 'M16 5 C12 1 7 3 6 7 C3 9 4 15 7 22 C9 27 12 26 14 21 L16 17 L18 21 C20 26 23 27 25 22 C28 15 29 9 26 6 C23 2 19 2 16 5 Z'
+    : 'M16 5 C11 1 7 4 7 9 C7 13 10 17 11 22 C12 26 14 26 15 21 L16 16 L17 21 C18 26 20 26 21 22 C22 17 25 13 25 9 C25 4 21 1 16 5 Z';
+  return <svg viewBox="0 0 32 30" aria-hidden="true" focusable="false"><path d={path} fill="currentColor" fillOpacity=".09" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M16 8 V13" fill="none" stroke="currentColor" strokeOpacity=".35" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+}
+
 function StatCard({icon,tone,label,number,foot,alert=false}:{icon:React.ReactNode;tone:string;label:string;number:string;foot:string;alert?:boolean}){return <Localized><div className="stat-card"><div className={`stat-icon ${tone}`}>{icon}</div><div className="stat-label">{label}</div><div className={`stat-number ${alert?'alert-number':''}`}>{number}</div><div className="stat-foot">{alert&&<span className="tiny-alert"/>}{foot}</div></div></Localized>}
 function Appointment({time,period,patient,type,duration,status,color,active=false}:{time:string;period:string;patient:string;type:string;duration:string;status:string;color:string;active?:boolean}){return <Localized><div className={`timeline-item ${active?'active-appointment':''}`}><div className="timeline-time"><strong>{time}</strong><span>{period}</span></div><div className="timeline-track"><i className={active?'track-active':''}/></div><div className={`avatar small ${color}`}>{patient.slice(0,1)}</div><div className="appointment-info"><strong>{patient}</strong><span>{type==='dental_visit'?'زيارة أسنان':type}</span><small><Clock3 size={12}/> {duration}</small></div><span className={`appointment-state ${status==='وصل'?'checked-in':status==='قيد الانتظار'?'waiting':''}`}>{status}</span></div></Localized>}
 function ReviewItem({name,detail,state,color,onClick}:{name:string;detail:string;state:string;color:string;onClick:()=>void}){return <Localized><button className="review-item" onClick={onClick}><div className={`avatar small ${color}`}>{name.slice(0,1)}</div><div className="review-info"><strong>{name}</strong><span>{detail}</span><small><AlertCircle size={12}/>{state}</small></div><ChevronLeft size={16}/></button></Localized>}
