@@ -465,6 +465,9 @@ const dictionary: Record<string, string> = {
   "حالة الموعد غير صالحة.": "Invalid appointment status.",
   "تعذر تحديث حالة الموعد.": "Could not update appointment status.",
   "لا تسمح صلاحيات الحساب بتعديل حالة الموعد.": "Your account does not have permission to update appointment status.",
+  "عرض التقويم": "View calendar",
+  "تحتاج إلى انتباهك": "Needs your attention",
+  "هذه التعديلات تغيّر بيانات العرض الحالية في الذاكرة فقط، ولا تُحفظ في قاعدة بيانات.": "These changes update only the in-memory demo data and are not saved to a database.",
 };
 
 function translate(text: string, language: Language): string {
