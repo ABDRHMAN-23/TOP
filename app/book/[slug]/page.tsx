@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import { useParams } from 'next/navigation';
 import { CalendarDays, CheckCircle2, ChevronLeft, Clock3, LoaderCircle, Phone, ShieldCheck, Stethoscope } from 'lucide-react';
 import { LanguageButton, useLanguage } from '../../i18n';
@@ -11,7 +12,7 @@ type ClinicInfo = {
   advance_booking_days:number; min_notice_minutes:number; require_phone:boolean;
   hours:Array<{weekday:number;shift:'morning'|'evening';start_time:string;end_time:string}>;
 };
-type Slot = {start_at:string;end_at:string;time:string;remaining:number};
+type Slot = {start_at:string;end_at:string;time:string;remaining:number;shift:'morning'|'evening'};
 
 function dateInZone(timeZone:string, value=new Date()) {
   const parts=new Intl.DateTimeFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(value);
@@ -88,11 +89,11 @@ export default function PublicClinicBookingPage() {
 
   const maxDate=useMemo(()=>clinic&&date?moveDate(dateInZone(clinic.timezone||'Asia/Aden'),clinic.advance_booking_days):undefined,[clinic,date]);
   const groupedSlots=useMemo(()=>({
-    morning:slots.filter(slot=>Number(slot.time.slice(0,2))<12),
-    evening:slots.filter(slot=>Number(slot.time.slice(0,2))>=12),
+    morning:slots.filter(slot=>slot.shift==='morning'),
+    evening:slots.filter(slot=>slot.shift==='evening'),
   }),[slots]);
 
-  async function submitBooking(event:React.FormEvent<HTMLFormElement>) {
+  async function submitBooking(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();setError('');
     if(!clinic||!selectedSlot){setError(text('اختر موعداً متاحاً أولاً.','Choose an available time first.',language));return;}
     if(fullName.trim().length<2){setError(text('أدخل الاسم الكامل.','Enter the patient’s full name.',language));return;}
