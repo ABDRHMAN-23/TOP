@@ -113,6 +113,7 @@ export default function HomePage() {
   const [savedReports, setSavedReports] = useState<any[]>([]);
   const [reviewQueue, setReviewQueue] = useState<any[]>([]);
   const [reviewQueueLoading, setReviewQueueLoading] = useState(false);
+  const [reviewQueueAccessDenied, setReviewQueueAccessDenied] = useState(false);
   const [clinicSettings, setClinicSettings] = useState({ clinic_name_ar: '', clinic_name_en: '', address_ar: '', address_en: '', phone: '', email: '', website: '', default_report_language: 'ar', paper_size: 'A4', tooth_notation: 'FDI', recording_policy_version: 'clinic-policy-v1', audio_retention_days: 30 });
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [settingsDirty, setSettingsDirty] = useState(false);
@@ -243,20 +244,22 @@ export default function HomePage() {
     return()=>{cancelled=true};
   },[active,selectedPatient?.id]);
   useEffect(() => {
-    if (demoMode || active !== 'dashboard') return;
+    if (demoMode || active !== 'dashboard' || !activeOrganizationId) return;
     let cancelled = false;
     setReviewQueueLoading(true);
+    setReviewQueueAccessDenied(false);
     fetch('/api/review-queue', { cache: 'no-store' })
       .then(async response => {
         const body = await response.json().catch(() => ({}));
+        if (response.status === 403) return { items: [], accessDenied: true };
         if (!response.ok) throw new Error(body.error || 'تعذر تحميل قائمة مراجعة السجلات.');
         return body;
       })
-      .then(body => { if (!cancelled) setReviewQueue(Array.isArray(body.items) ? body.items : []); })
+      .then(body => { if (!cancelled) { setReviewQueue(Array.isArray(body.items) ? body.items : []); setReviewQueueAccessDenied(Boolean(body.accessDenied)); } })
       .catch(error => { if (!cancelled) notify(error instanceof Error ? error.message : 'تعذر تحميل قائمة المراجعة.'); })
       .finally(() => { if (!cancelled) setReviewQueueLoading(false); });
     return () => { cancelled = true; };
-  }, [active]);
+  }, [active, activeOrganizationId]);
   useEffect(() => {
     if (demoMode || active !== 'reports') return;
     let cancelled=false; fetch('/api/reports',{cache:'no-store'}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'تعذر تحميل التقارير.');return b;}).then(b=>{if(!cancelled)setSavedReports(Array.isArray(b.reports)?b.reports:[])}).catch(e=>{if(!cancelled)notify(e instanceof Error?e.message:'تعذر تحميل التقارير.')});return()=>{cancelled=true};
