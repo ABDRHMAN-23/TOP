@@ -8,7 +8,7 @@ import {
   Stethoscope, Users, X, ArrowUpLeft, FilePlus2, Play, Sparkles, CircleCheck, Menu, Pencil
 } from 'lucide-react';
 
-const samplePatients: Array<{ id: string; displayId: string; name: string; age: string; phone: string; visit: string; reason: string; state: string; initials: string; color: string }> = [];
+type Patient = { id: string; displayId?: string; name: string; age: string; phone: string; visit: string; reason: string; state: string; initials: string; color: string };
 const nav = [
   { key: 'dashboard', label: 'الرئيسية', icon: Activity },
   { key: 'patients', label: 'ملفات المرضى', icon: Users },
@@ -48,7 +48,6 @@ function maskPhoneForDisplay(phone: string | null | undefined): string {
   return `${countryCode ? countryCode + ' ' : ''}${leading} ••• •• ${ending}`;
 }
 
-type Patient = typeof samplePatients[number] & { displayId?: string };
 const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE !== 'false';
 function dateInputForAden(value = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Aden', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(value);
