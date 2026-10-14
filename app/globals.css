@@ -1233,3 +1233,5 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .system-notice span{color:#7e8fa7;font-size:9px;line-height:1.7}
 .system-notice button{display:grid;place-items:center;border:0;background:transparent;color:#6f84a3}
 @media(max-width:760px){.connection-text{font-size:8px}.system-notice{gap:8px;padding:10px;margin-top:12px}.system-notice strong{font-size:9px}.system-notice span{font-size:8px}}
+
+@media(max-width:760px){.connection-text{display:none}}
