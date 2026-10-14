@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const params=new URL(request.url).searchParams;
   const start=params.get('from')||new Date().toISOString();
   const end=params.get('to');
-  let appointmentsQuery=supabase.from('appointments').select('id,patient_id,clinician_id,scheduled_start,scheduled_end,timezone,appointment_type,status,note,booking_source,booking_status,booking_reference,patient_name_snapshot,patient_age_years').eq('organization_id',context.organizationId).gte('scheduled_start',start).order('scheduled_start',{ascending:true});
+  let appointmentsQuery=supabase.from('appointments').select('id,patient_id,clinician_id,scheduled_start,scheduled_end,timezone,appointment_type,status,note,booking_source,booking_status,booking_reference,patient_name_snapshot,patient_age_years,patient_phone_snapshot').eq('organization_id',context.organizationId).gte('scheduled_start',start).order('scheduled_start',{ascending:true});
   if(end) appointmentsQuery=appointmentsQuery.lt('scheduled_start',end);
   const {data,error:dbError}=await appointmentsQuery.limit(100);
   if(dbError)return NextResponse.json({error:'تعذر تحميل المواعيد.'},{status:500});
