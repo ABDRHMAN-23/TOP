@@ -210,7 +210,10 @@ test('Sinan dashboard uses a data-led workbench, real counts, and a global comma
   assert.match(app, /setShowCommandPalette\(open => !open\)/);
   assert.match(app, /commandPatientResults/);
   assert.match(app, /const reviewCount = demoMode \? attentionPatients\.length : reviewQueue\.length/);
-  assert.match(app, /createInitialAppointments\(\)/);
+  assert.match(app, /const \[patients, setPatients\] = useState<Patient\[\]>\(\[\]\)/);
+  assert.doesNotMatch(app, /createInitialAppointments|createDemoAppointments/);
+  assert.doesNotMatch(app, /سارة محمد علي|عمر خالد صالح|ليلى عبدالكريم|عبدالله ياسر/);
+  assert.match(app, /لا توجد ملفات مرضى بعد/);
   assert.doesNotMatch(app, /number="١٢٨"/);
   assert.doesNotMatch(app, /time="٩:٠٠" period="ص" patient=/);
 });
