@@ -239,6 +239,7 @@ export default function HomePage() {
     } catch (error) { setLoadError(error instanceof Error ? error.message : 'تعذر الاتصال بالخادم.'); }
   }
   useEffect(() => { setTodayLabel(language === 'ar' ? arabicDateForAden() : englishDateForAden()); }, [language]);
+  useEffect(() => { if (active === 'settings') setBookingOrigin(window.location.origin); }, [active]);
   useEffect(() => { setBookingOrigin(window.location.origin); }, []);
   useEffect(() => {
     if (active !== 'settings' || demoMode || !activeOrganizationId) return;
@@ -326,7 +327,7 @@ export default function HomePage() {
   const activeClinicRole = organizations.find(item => item.organization_id === activeOrganizationId)?.role;
   const canEditPatient = demoMode || ['owner', 'clinic_admin', 'dentist', 'clinician'].includes(activeClinicRole);
   const pendingBookingRequests = useMemo(() => bookingRequests, [bookingRequests]);
-  const visibleScheduleAppointments = (demoMode ? scheduleAppointments.filter(item => dateInputForAden(new Date(item.scheduled_start)) === appointmentViewDate) : scheduleAppointments).filter(item => !(item.booking_source === 'public_link' && item.booking_status === 'requested'));
+  const visibleScheduleAppointments = (demoMode ? scheduleAppointments.filter(item => dateInputForAden(new Date(item.scheduled_start)) === appointmentViewDate) : scheduleAppointments).filter(item => !(item.booking_source === 'public_link' && ['requested','declined'].includes(item.booking_status)));
   const commandRoutes = useMemo(() => [
     ...nav,
     { key: 'odontogram', label: 'مخطط الأسنان', icon: HeartPulse },
