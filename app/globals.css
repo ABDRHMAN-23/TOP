@@ -1589,3 +1589,113 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
  .signup-card{padding:24px 18px}
 }
 [dir="ltr"] .auth-switch-line{direction:ltr}
+
+
+/* One consistent drawer model on desktop and mobile: workspace remains full width. */
+.app-shell{display:block!important;min-height:100dvh;overflow-x:clip}
+.main-content{width:100%;max-width:none;min-width:0;margin:0;padding:0 clamp(13px,2.5vw,38px) 34px}
+.sidebar{position:fixed!important;top:0;right:0;bottom:0;left:auto;z-index:130;width:min(88vw,340px);min-width:0;height:100dvh;overflow-y:auto;transform:translateX(calc(100% + 22px));transition:transform .24s cubic-bezier(.2,.7,.25,1),box-shadow .24s;box-shadow:none;border-left:1px solid var(--line);border-right:0}
+.sidebar.open,.sidebar[data-open="true"]{transform:translateX(0);box-shadow:-18px 0 55px rgba(20,43,80,.22)}
+[dir="ltr"] .sidebar{right:auto;left:0;transform:translateX(calc(-100% - 22px));border-left:0;border-right:1px solid var(--line)}
+[dir="ltr"] .sidebar.open,[dir="ltr"] .sidebar[data-open="true"]{transform:translateX(0);box-shadow:18px 0 55px rgba(20,43,80,.22)}
+.sidebar-backdrop{position:fixed!important;inset:0;z-index:120;display:block!important;width:100%;height:100%;margin:0;padding:0;border:0;border-radius:0;background:rgba(20,39,67,.24);backdrop-filter:blur(3px);cursor:default;animation:sinan-backdrop-in .16s ease-out}
+@keyframes sinan-backdrop-in{from{opacity:0}to{opacity:1}}
+.mobile-menu-trigger{display:grid!important;place-items:center;flex:none;width:40px;height:40px;order:0;border:1px solid #dbe5f3;border-radius:12px;background:#fff;color:#365985;box-shadow:0 3px 11px rgba(28,59,105,.04)}
+.mobile-menu-trigger:hover{border-color:#9bb7e8;background:#f4f8ff;color:#2458c8}
+.sidebar .brand{gap:10px}
+.sidebar .sidebar-close{display:grid;place-items:center;width:34px;height:34px;margin-inline-start:auto;border:1px solid #e0e8f4;border-radius:10px;background:#f6f8fc;color:#657b98}
+.sidebar .sidebar-close:hover{background:#eaf1fc;color:#2458c8}
+.topbar{gap:12px}
+.breadcrumb{flex:1;min-width:0}
+.top-actions{flex:none;min-width:0}
+@media(min-width:761px){
+ .sidebar{padding:20px 15px 15px}
+ .brand{padding-bottom:19px}
+ .clinic-switch{margin-bottom:20px}
+ .nav-lower{margin-top:20px}
+ .nav-item{min-height:43px}
+ .sidebar-bottom{padding-top:14px}
+ .privacy-card{margin-bottom:13px}
+}
+@media(max-width:760px){
+ .app-shell{display:block!important;padding-bottom:calc(86px + env(safe-area-inset-bottom))}
+ .main-content{padding:0 12px calc(15px + env(safe-area-inset-bottom))}
+ .sidebar{width:min(88vw,340px);min-width:0;max-width:340px;height:100dvh;padding:18px 14px 16px;transform:translateX(calc(100% + 22px))}
+ [dir="ltr"] .sidebar{transform:translateX(calc(-100% - 22px))}
+ .sidebar.open{transform:translateX(0)}
+ [dir="ltr"] .sidebar.open{transform:translateX(0)}
+ .topbar{height:62px;gap:7px}
+ .mobile-menu-trigger{width:37px;height:37px}
+ .top-actions{gap:6px}
+ .main-content .command-launcher{display:none}
+ .sidebar .brand{padding-bottom:18px}
+ .sidebar .sidebar-close{width:32px;height:32px}
+ .dental-chart{overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin;scrollbar-color:#aabbd0 #edf2f8}
+ .dental-chart>.chart-jaw-heading,.dental-chart>.jaw-midline,.dental-chart>.teeth-row.anatomical-teeth:not(.primary-dentition){min-width:720px}
+ .dental-chart>.teeth-row.anatomical-teeth.primary-dentition{min-width:540px}
+ .dental-chart>.chart-jaw-heading{flex-direction:row;align-items:center}
+ .dental-chart>.jaw-midline{font-size:8px}
+ .tooth{min-height:103px}
+ .tooth .tooth-glyph{height:76px;width:100%;max-width:none;border:0;border-radius:0;background:transparent;box-shadow:none}
+ .tooth .anatomical-tooth-glyph{height:100%;width:100%;max-width:50px}
+ .tooth.picked .tooth-glyph,.tooth.selected .tooth-glyph,.tooth.flagged .tooth-glyph,.tooth.recorded .tooth-glyph{border:0;border-radius:0;background:transparent;box-shadow:none}
+ .chart-scroll-hint{display:flex}
+}
+@media(min-width:761px){
+ .dental-chart{overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin;scrollbar-color:#aabbd0 #edf2f8}
+ .dental-chart>.chart-jaw-heading,.dental-chart>.jaw-midline,.dental-chart>.teeth-row.anatomical-teeth:not(.primary-dentition){min-width:min(100%,920px)}
+ .dental-chart>.teeth-row.anatomical-teeth.primary-dentition{min-width:min(100%,700px)}
+ .dental-chart>.chart-jaw-heading{flex-direction:row;align-items:center}
+}
+.teeth-row.anatomical-teeth{display:grid!important;grid-template-columns:repeat(16,minmax(0,1fr));direction:ltr;align-items:end;gap:2px;padding:12px 3px 3px}
+.teeth-row.anatomical-teeth.primary-dentition{grid-template-columns:repeat(10,minmax(0,1fr))}
+.teeth-row.anatomical-teeth:not(.primary-dentition) .tooth:nth-child(8){margin-right:clamp(5px,1vw,14px)}
+.teeth-row.anatomical-teeth:not(.primary-dentition) .tooth:nth-child(9){margin-left:clamp(5px,1vw,14px)}
+.teeth-row.anatomical-teeth.primary-dentition .tooth:nth-child(5){margin-right:clamp(5px,1.2vw,18px)}
+.teeth-row.anatomical-teeth.primary-dentition .tooth:nth-child(6){margin-left:clamp(5px,1.2vw,18px)}
+.tooth{display:flex;align-items:center;justify-content:flex-end;flex-direction:column;min-width:0;min-height:127px;gap:4px;padding:7px 1px 5px;border:1px solid transparent;border-radius:11px;background:transparent;transition:background .16s,border-color .16s}
+.tooth:hover{transform:none;border-color:#d7e4f4;background:#f5f9ff}
+.tooth .tooth-glyph{display:grid;place-items:center;width:100%;height:91px;max-width:none;overflow:visible;border:0;border-radius:0;background:transparent;color:#657fa5;box-shadow:none}
+.tooth .anatomical-tooth-glyph{display:block;width:100%;height:100%;max-width:54px;overflow:visible}
+.tooth .anatomical-tooth-glyph.type-central-incisor{max-width:43px}
+.tooth .anatomical-tooth-glyph.type-lateral-incisor{max-width:37px}
+.tooth .anatomical-tooth-glyph.type-canine{max-width:39px}
+.tooth .anatomical-tooth-glyph.type-premolar{max-width:47px}
+.tooth .anatomical-tooth-glyph.type-molar,.tooth .anatomical-tooth-glyph.type-primary-molar{max-width:54px}
+.tooth .tooth-root-shape{fill:#d7e2ef;fill-opacity:.48;stroke:#7f98b9;stroke-width:1.35}
+.tooth .tooth-crown-shape{fill:#fff;fill-opacity:1;stroke:#718bb0;stroke-width:1.55;filter:drop-shadow(0 2px 2px rgba(28,52,87,.08))}
+.tooth .tooth-grooves,.tooth .tooth-fissures,.tooth .tooth-neck{stroke:#a3b2c7}
+.tooth small{color:#667f9f;font-size:9px;font-weight:750;line-height:1.2}
+.tooth.picked{border-color:#b6cff6;background:#eef5ff;box-shadow:inset 0 0 0 1px rgba(36,88,200,.04)}
+.tooth.picked .tooth-crown-shape{fill:#d9e8ff;stroke:#2d65c6}
+.tooth.picked .tooth-root-shape{fill:#bbd1f4;stroke:#6b92d4}
+.tooth.flagged .tooth-crown-shape{fill:#fff0d2;stroke:#b7822d}
+.tooth.flagged .tooth-root-shape{fill:#f1d8a8;stroke:#b99254}
+.tooth.recorded .tooth-crown-shape{fill:#dff4ea;stroke:#378767}
+.tooth.recorded .tooth-root-shape{fill:#bee4d1;stroke:#64a187}
+.tooth.picked .tooth-glyph,.tooth.flagged .tooth-glyph,.tooth.recorded .tooth-glyph{border:0;border-radius:0;background:transparent;box-shadow:none}
+.chart-jaw-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:0 7px;color:#38577d;font-size:11px;font-weight:800}
+.chart-jaw-heading small{color:#8394aa;font-size:9px;font-weight:500}
+.jaw-midline{min-height:25px;direction:ltr}
+.teeth-row.anatomical-teeth .tooth:nth-child(1),.teeth-row.anatomical-teeth .tooth:nth-child(16){padding-top:13px}
+.teeth-row.anatomical-teeth .tooth:nth-child(2),.teeth-row.anatomical-teeth .tooth:nth-child(15){padding-top:10px}
+.teeth-row.anatomical-teeth .tooth:nth-child(3),.teeth-row.anatomical-teeth .tooth:nth-child(14){padding-top:8px}
+.teeth-row.anatomical-teeth .tooth:nth-child(4),.teeth-row.anatomical-teeth .tooth:nth-child(13){padding-top:5px}
+.teeth-row.anatomical-teeth .tooth:nth-child(5),.teeth-row.anatomical-teeth .tooth:nth-child(12){padding-top:3px}
+.teeth-row.anatomical-teeth .tooth:nth-child(6),.teeth-row.anatomical-teeth .tooth:nth-child(11){padding-top:1px}
+.teeth-row.anatomical-teeth .tooth:nth-child(7),.teeth-row.anatomical-teeth .tooth:nth-child(10){padding-top:0}
+.teeth-row.anatomical-teeth .tooth:nth-child(8),.teeth-row.anatomical-teeth .tooth:nth-child(9){padding-top:0}
+.tooth-surface-picker{padding-top:6px}
+.chart-scroll-hint{display:none;align-items:center;gap:6px;margin:9px 0 0;color:#7a91af;font-size:9px}
+.chart-scroll-hint svg{color:#5a83c6}
+@media(max-width:760px){
+ .tooth{min-height:106px;padding:5px 0 4px}
+ .tooth .tooth-glyph{height:76px}
+ .tooth .anatomical-tooth-glyph.type-central-incisor{max-width:37px}
+ .tooth .anatomical-tooth-glyph.type-lateral-incisor{max-width:31px}
+ .tooth .anatomical-tooth-glyph.type-canine{max-width:31px}
+ .tooth .anatomical-tooth-glyph.type-premolar{max-width:38px}
+ .tooth .anatomical-tooth-glyph.type-molar,.tooth .anatomical-tooth-glyph.type-primary-molar{max-width:44px}
+ .tooth small{font-size:8px}
+ .tooth-surface-diagram{max-width:100%}
+}
