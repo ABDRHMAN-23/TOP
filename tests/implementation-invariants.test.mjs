@@ -164,7 +164,7 @@ test('real audio capture is unavailable unless consent and a valid patient are p
 
 test('mobile navigation has an explicit trigger and dismissible backdrop', async () => {
   const css = await readFile(new URL('../app/globals.css', import.meta.url), 'utf8');
-  assert.match(app, /className="mobile-menu-trigger icon-button"/);
+  assert.match(app, /className="mobile-menu-trigger global-menu-trigger icon-button"/);
   assert.match(app, /className="sidebar-backdrop"/);
   assert.match(app, /aria-label="إغلاق القائمة الجانبية"/);
   assert.match(css, /\.sidebar-backdrop\{[^}]*position:fixed/s);
@@ -418,7 +418,7 @@ test('dental chart stores canonical FDI and correctly renders alternate notation
   assert.match(app, /notation_system: 'FDI'/);
   assert.match(app, /tooth-surface-diagram/);
   assert.match(app, /value:'palatal',label:'حنكي'/);
-  assert.match(app, /transform=\{!lower \? 'translate\(0 78\) scale\(1 -1\)' : undefined\}/);
+  assert.match(app, /transform=\{upper \? 'translate\(0 100\) scale\(1 -1\)' : undefined\}/);
   assert.match(app, /الربع الأول · 18–11/);
   assert.match(app, /الربع الرابع · 48–41/);
 });
@@ -428,4 +428,31 @@ test('clinic shifts cannot overlap and staff appointments share the same capacit
   assert.match(shiftCapacityMigration, /working shifts on the same day may not overlap/);
   assert.match(shiftCapacityMigration, /select \* into v_booking[\s\S]*?for update/);
   assert.match(shiftCapacityMigration, /v_overlaps >= v_booking\.max_bookings_per_slot/);
+});
+
+test('navigation is a true off-canvas drawer on desktop and mobile', () => {
+  assert.match(app, /className=\{\`sidebar \$\{sidebarOpen \? 'open' : ''\}\`\}/);
+  assert.match(app, /className="sidebar-backdrop"/);
+  assert.match(app, /className="sidebar-close icon-button subtle"/);
+  assert.match(app, /className="mobile-menu-trigger global-menu-trigger icon-button"/);
+  assert.match(app, /document\.body\.style\.overflow = 'hidden'/);
+  assert.match(uiStyles, /\.app-shell\{display:block!important/);
+  assert.match(uiStyles, /\.sidebar\{position:fixed!important/);
+  assert.match(uiStyles, /\.sidebar\.open[^}]*transform:translateX\(0\)/);
+  assert.match(uiStyles, /\.sidebar-backdrop\{position:fixed!important/);
+});
+
+test('odontogram uses dental-specific navigation icons and differentiated tooth anatomies', () => {
+  assert.match(app, /function DentalToothIcon/);
+  assert.match(app, /function DentalRootIcon/);
+  assert.match(app, /const upperMolarRoots/);
+  assert.match(app, /const lowerMolarRoots/);
+  assert.match(app, /const primaryMolarRoots/);
+  assert.match(app, /const upperPremolarRoots/);
+  assert.match(app, /central-incisor/);
+  assert.match(app, /lateral-incisor/);
+  assert.match(app, /primary-molar/);
+  assert.match(app, /chart-scroll-hint/);
+  assert.doesNotMatch(app, /HeartPulse size=\{18\}><span>مخطط الأسنان/);
+  assert.match(uiLocales, /Scroll horizontally to view all teeth/);
 });
