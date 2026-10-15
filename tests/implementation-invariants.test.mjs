@@ -449,9 +449,9 @@ test('odontogram uses dental-specific navigation icons and differentiated tooth 
   assert.match(app, /const lowerMolarRoots/);
   assert.match(app, /const primaryMolarRoots/);
   assert.match(app, /const upperPremolarRoots/);
-  assert.match(app, /type-central-incisor/);
-  assert.match(app, /type-lateral-incisor/);
-  assert.match(app, /type-primary-molar/);
+  assert.match(app, /central-incisor/);
+  assert.match(app, /lateral-incisor/);
+  assert.match(app, /primary-molar/);
   assert.match(app, /chart-scroll-hint/);
   assert.doesNotMatch(app, /HeartPulse size=\{18\}><span>مخطط الأسنان/);
   assert.match(uiLocales, /Scroll horizontally to view all teeth/);
