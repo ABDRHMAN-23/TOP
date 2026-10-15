@@ -396,11 +396,19 @@ test('general schedule does not expose public-request phone snapshots to unrelat
 
 test('booking inbox and anatomical tooth-surface controls have English translations', () => {
   for (const label of [
-    'جارٍ تحميل طلبات الحجز','لا توجد طلبات حجز معلّقة',
+    'جارٍ تحميل طلبات الحجز',
+    'لا توجد طلبات حجز معلّقة',
     'تظهر هنا الطلبات المرسلة من رابط العيادة، من كل التواريخ. تأكيد الطلب ينشئ ملف المريض ويربطه بالموعد.',
-    'خريطة سطوح السن','الربع الأول · 18–11','الربع الثاني · 21–28',
-    'الربع الثالث · 31–38','الربع الرابع · 48–41','دهليزي','أنسي','بعيد','لم تُحدد سطوح بعد'
-  ]) assert.match(uiLocales, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\test('dental chart stores canonical FDI and correctly renders alternate notation and surface anatomy', () => {')));
+    'خريطة سطوح السن',
+    'الربع الأول · 18–11',
+    'الربع الثاني · 21–28',
+    'الربع الثالث · 31–38',
+    'الربع الرابع · 48–41',
+    'دهليزي',
+    'أنسي',
+    'بعيد',
+    'لم تُحدد سطوح بعد'
+  ]) assert.ok(uiLocales.includes(JSON.stringify(label).slice(1,-1)) || uiLocales.includes(label), 'missing English translation for: ' + label);
 });
 
 test('dental chart stores canonical FDI and correctly renders alternate notation and surface anatomy', () => {
