@@ -1572,3 +1572,20 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .surface-cell{min-height:43px;padding:5px 2px}
   .surface-cell>small{font-size:7px}
 }
+
+/* Account creation and email-verification states */
+.auth-switch-line{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;margin-top:17px;color:#829187;font-size:11px;text-align:center}
+.auth-switch-line a{color:#2e6b55;font-weight:750;text-decoration:none}
+.auth-switch-line a:hover{text-decoration:underline}
+.auth-success-mark{display:grid;place-items:center;width:58px;height:58px;margin:20px auto 16px;border:1px solid #d0ebde;border-radius:18px;background:#edf9f2;color:#2e8a61}
+.auth-link-button{display:flex;align-items:center;justify-content:center;margin-top:20px;text-decoration:none}
+.signup-card{max-width:500px}
+.signup-card .auth-sub{line-height:1.85}
+.signup-card .form-field{margin-bottom:14px}
+.signup-card .auth-note{margin-top:17px}
+@media(max-width:760px){
+ .auth-switch-line{font-size:10px;line-height:1.8}
+ .auth-success-mark{width:50px;height:50px;border-radius:15px}
+ .signup-card{padding:24px 18px}
+}
+[dir="ltr"] .auth-switch-line{direction:ltr}
