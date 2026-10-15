@@ -1,4 +1,4 @@
-name: Deploy Sinan demo to Cloudflare
+name: Deploy Sinan safe demo to Cloudflare
 
 on:
   push:
@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build and deploy demo to aqarflow-ai1
+    name: Build and deploy safe demo to aqarflow-ai1
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
