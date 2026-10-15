@@ -74,7 +74,7 @@ export async function GET(request: Request) {
     const stored:any = rows.get(row.weekday+'-'+row.shift);
     return stored ? { weekday:row.weekday,shift:row.shift,enabled:stored.enabled,start_time:String(stored.start_time).slice(0,5),end_time:String(stored.end_time).slice(0,5) } : row;
   });
-  return NextResponse.json({ settings: { ...defaults, ...clientSettings(settings) }, hours: completeHours }, { headers: { 'Cache-Control': 'no-store' } });
+  return NextResponse.json({ settings: settings ? clientSettings(settings) : defaults, hours: completeHours }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function PATCH(request: Request) {
