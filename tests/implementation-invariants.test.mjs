@@ -164,7 +164,7 @@ test('real audio capture is unavailable unless consent and a valid patient are p
 
 test('mobile navigation has an explicit trigger and dismissible backdrop', async () => {
   const css = await readFile(new URL('../app/globals.css', import.meta.url), 'utf8');
-  assert.match(app, /className="mobile-menu-trigger icon-button"/);
+  assert.match(app, /className="mobile-menu-trigger global-menu-trigger icon-button"/);
   assert.match(app, /className="sidebar-backdrop"/);
   assert.match(app, /aria-label="إغلاق القائمة الجانبية"/);
   assert.match(css, /\.sidebar-backdrop\{[^}]*position:fixed/s);
@@ -436,10 +436,10 @@ test('navigation is a true off-canvas drawer on desktop and mobile', () => {
   assert.match(app, /className="sidebar-close icon-button subtle"/);
   assert.match(app, /className="mobile-menu-trigger global-menu-trigger icon-button"/);
   assert.match(app, /document\.body\.style\.overflow = 'hidden'/);
-  assert.match(css, /\.app-shell\{display:block!important/);
-  assert.match(css, /\.sidebar\{position:fixed!important/);
-  assert.match(css, /\.sidebar\.open[^}]*transform:translateX\(0\)/);
-  assert.match(css, /\.sidebar-backdrop\{position:fixed!important/);
+  assert.match(uiStyles, /\.app-shell\{display:block!important/);
+  assert.match(uiStyles, /\.sidebar\{position:fixed!important/);
+  assert.match(uiStyles, /\.sidebar\.open[^}]*transform:translateX\(0\)/);
+  assert.match(uiStyles, /\.sidebar-backdrop\{position:fixed!important/);
 });
 
 test('odontogram uses dental-specific navigation icons and differentiated tooth anatomies', () => {
