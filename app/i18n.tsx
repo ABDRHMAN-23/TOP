@@ -583,6 +583,7 @@ const dictionary: Record<string, string> = {
   "إنشاء الحساب والمتابعة": "Create account and continue",
   "جارٍ إنشاء الحساب...": "Creating account…",
   "إظهار كلمة المرور": "Show password",
+  "تأكيد البريد الإلكتروني": "Email confirmation",
 };
 
 function translate(text: string, language: Language): string {
