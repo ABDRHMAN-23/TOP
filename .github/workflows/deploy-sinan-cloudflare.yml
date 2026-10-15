@@ -18,7 +18,7 @@ permissions:
 
 concurrency:
   group: sinan-cloudflare-aqarflow-ai1
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -26,9 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      NEXT_PUBLIC_DEMO_MODE: "false"
-      NEXT_PUBLIC_SUPABASE_URL: "https://djpfjbjjybpquvzacmtj.supabase.co"
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_TkjtLbzWTqXlE18tcvGpow_XFxdTvmz"
+      # Until Sinan has a dedicated Supabase project, deploy the interface in safe demo mode.
+      # Never point the dental clinical app at the shared TOP/Aqarflow database.
+      NEXT_PUBLIC_DEMO_MODE: "true"
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:

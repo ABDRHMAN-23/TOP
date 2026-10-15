@@ -36,3 +36,12 @@
 4. Run dependency-backed typecheck/build and validate consent, tenant isolation, audio upload/retries, clinician approval, and reports before accepting real patient data.
 
 **Status:** source package and local logic tests are available; the real application is not yet deployed end-to-end. Do not use this workspace with real patient data until the above checks are completed.
+
+
+## Addendum — 15 October 2026: shared-database safety check
+
+The current Cloudflare workflow had been compiling the application with `NEXT_PUBLIC_DEMO_MODE=false` and the Supabase project `djpfjbjjybpquvzacmtj` (project name `TOP`). A read-only inspection confirmed that this database contains earlier Aqarflow migrations as well as the Sinan clinical tables. The listed Sinan tables had row-level security enabled and reported zero rows at the time of inspection, but this does not make a shared application database an acceptable destination for real dental records.
+
+The Cloudflare workflow is therefore locked to `NEXT_PUBLIC_DEMO_MODE=true` and no longer injects the TOP Supabase URL or key. The interface can be reviewed, but the demo intentionally does not create or persist real patient data and the microphone workflow remains unavailable. Do not change the deployment to live mode until a dedicated Supabase project for Sinan has been provisioned, verified, migrated, and configured with Auth, private audio storage policies, and the correct runtime secrets. The presence of a table or an RLS flag alone is not an end-to-end clinical validation.
+
+The GitHub workflow does not configure `GEMINI_API_KEY`; whether a Cloudflare Worker secret exists independently was not verified. Audio transcription should not be considered production-ready until that secret and the complete recording-to-approved-report path are tested with consented non-production data.

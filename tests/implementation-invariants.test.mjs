@@ -473,3 +473,12 @@ test('Sinan dental emblem is used as the primary brand and browser icon', async 
   assert.match(onboarding, /sinan-icon\.webp/);
   assert.match(reports, /sinan-icon\.webp/);
 });
+
+
+test('Cloudflare demo deployment cannot write clinical data into the shared TOP database', async () => {
+  const workflow = await readFile(new URL('../.github/workflows/deploy-sinan-cloudflare.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /NEXT_PUBLIC_DEMO_MODE:\s*"true"/);
+  assert.doesNotMatch(workflow, /NEXT_PUBLIC_SUPABASE_URL:/);
+  assert.doesNotMatch(workflow, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:/);
+  assert.doesNotMatch(workflow, /djpfjbjjybpquvzacmtj/);
+});
