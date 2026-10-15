@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: 'Sinan | Dental Clinical Workspace',
   description: 'A secure dental clinical workspace for patient records, visit documentation, review, and reports.',
   applicationName: 'Sinan Clinical Workspace',
+  icons: { icon: [{ url: '/sinan-icon.webp', type: 'image/webp', sizes: '256x256' }], shortcut: '/sinan-icon.webp', apple: '/sinan-icon.webp' },
   robots: { index: false, follow: false },
 };
 

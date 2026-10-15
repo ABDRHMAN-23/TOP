@@ -456,3 +456,20 @@ test('odontogram uses dental-specific navigation icons and differentiated tooth 
   assert.doesNotMatch(app, /HeartPulse size=\{18\}><span>مخطط الأسنان/);
   assert.match(uiLocales, /Scroll horizontally to view all teeth/);
 });
+
+
+test('Sinan dental emblem is used as the primary brand and browser icon', async () => {
+  const layout = await readFile(new URL('../app/layout.tsx', import.meta.url), 'utf8');
+  const signIn = await readFile(new URL('../app/sign-in/page.tsx', import.meta.url), 'utf8');
+  const signUp = await readFile(new URL('../app/sign-up/page.tsx', import.meta.url), 'utf8');
+  const onboarding = await readFile(new URL('../app/onboarding/page.tsx', import.meta.url), 'utf8');
+  const reports = await readFile(new URL('../app/reports/[reportId]/page.tsx', import.meta.url), 'utf8');
+  const icon = await readFile(new URL('../public/sinan-icon.webp', import.meta.url));
+  assert.ok(icon.byteLength > 1000);
+  assert.match(layout, /sinan-icon\.webp/);
+  assert.match(app, /brand-symbol brand-symbol-image/);
+  assert.match(signIn, /sinan-icon\.webp/);
+  assert.match(signUp, /sinan-icon\.webp/);
+  assert.match(onboarding, /sinan-icon\.webp/);
+  assert.match(reports, /sinan-icon\.webp/);
+});

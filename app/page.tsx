@@ -5,7 +5,7 @@ import { LanguageButton, Localized, useLanguage } from './i18n';
 import {
   Activity, AlertCircle, Bell, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight,
   ClipboardList, Clock3, Copy, FileText, HeartPulse, LoaderCircle, Mic, Plus, Search, Settings, ShieldCheck,
-  Stethoscope, Users, X, ArrowUpLeft, FilePlus2, Play, Sparkles, CircleCheck, Menu, Pencil
+  Users, X, ArrowUpLeft, FilePlus2, Play, Sparkles, CircleCheck, Menu, Pencil
 } from 'lucide-react';
 
 type Patient = { id: string; displayId?: string; name: string; age: string; phone: string; visit: string; reason: string; state: string; initials: string; color: string };
@@ -624,7 +624,7 @@ export default function HomePage() {
   return <Localized><div className="app-shell">
     {sidebarOpen && <button className="sidebar-backdrop" type="button" aria-label="إغلاق القائمة الجانبية" onClick={() => setSidebarOpen(false)} />}
     <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`} aria-label="قائمة التنقل الرئيسية">
-      <div className="brand"><div className="brand-symbol"><Stethoscope size={21} strokeWidth={2.1}/></div><div><div className="brand-name">سِنان</div><div className="brand-sub">مساحة العمل السريرية</div></div><button className="sidebar-close icon-button subtle" type="button" aria-label="إغلاق القائمة" onClick={()=>setSidebarOpen(false)}><X size={17}/></button></div>
+      <div className="brand"><div className="brand-symbol brand-symbol-image"><img src="/sinan-icon.webp" alt="" width={44} height={44} className="brand-logo-image" /></div><div><div className="brand-name">سِنان</div><div className="brand-sub">مساحة العمل السريرية</div></div><button className="sidebar-close icon-button subtle" type="button" aria-label="إغلاق القائمة" onClick={()=>setSidebarOpen(false)}><X size={17}/></button></div>
       <button className="clinic-switch" type="button" onClick={()=>{if(!demoMode&&organizations.length>1)setShowOrganizationPicker(true);else notify(demoMode?'إعدادات مساحة العيادة تتطلب اتصال قاعدة البيانات.':'مساحة العيادة الحالية.')}}><div className="clinic-mark">{clinicName.slice(0,1)||'س'}</div><div className="clinic-meta"><strong>{clinicName}</strong><span>{demoMode?'مساحة العمل':activeOrganizationId?'مساحة متصلة':'تحميل المساحة...'}</span></div><ChevronDown size={15}/></button>
       <div className="nav-label">مساحة العيادة</div>
       <nav className="main-nav">{nav.map(item => <button key={item.key} className={`nav-item ${active === item.key ? 'active' : ''}`} onClick={() => { setActive(item.key); setSidebarOpen(false); if (item.key === 'scribe') setShowScribe(true); }}><item.icon size={18}/><span>{item.label}</span>{item.key === 'scribe' && <span className="nav-live"/>}</button>)}</nav>

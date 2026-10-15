@@ -1699,3 +1699,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
  .tooth small{font-size:8px}
  .tooth-surface-diagram{max-width:100%}
 }
+
+
+/* Sinan identity: use the provided dental emblem instead of the old stethoscope mark. */
+.brand-symbol.brand-symbol-image{background:transparent!important;box-shadow:none!important;padding:0;border-radius:12px;overflow:hidden;color:inherit}
+.brand-logo-image{display:block;width:44px;height:44px;object-fit:cover;border-radius:12px}
+.auth-brand .brand-symbol.brand-symbol-image{width:44px;height:44px;flex:0 0 44px}
