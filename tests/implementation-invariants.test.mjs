@@ -293,6 +293,14 @@ test('clinic booking settings validate the whole weekly schedule and save throug
   assert.match(bookingSettingsRoute, /supabase\.rpc\('save_clinic_booking_settings'/);
 });
 
+test('booking settings responses expose only editable fields so save can be repeated safely', () => {
+  assert.match(bookingSettingsRoute, /function clientSettings\(row: any\)/);
+  assert.match(bookingSettingsRoute, /settings: \{ \.\.\.defaults, \.\.\.clientSettings\(settings\) \}/);
+  assert.match(bookingSettingsRoute, /settings: clientSettings\(data\?\.settings\)/);
+  assert.doesNotMatch(bookingSettingsRoute, /\.select\('organization_id,public_slug/);
+  assert.doesNotMatch(bookingSettingsRoute, /return NextResponse\.json\(data,\s*\{ status: 200/);
+});
+
 test('public booking never exposes the clinical patient API and requires explicit consent', () => {
   assert.match(publicBookingRoute, /terms_accepted: z\.literal\(true\)/);
   assert.match(publicBookingRoute, /p_consent_accepted:parsed\.data\.terms_accepted/);
