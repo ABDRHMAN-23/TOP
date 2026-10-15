@@ -624,12 +624,12 @@ export default function HomePage() {
   return <Localized><div className="app-shell">
     {sidebarOpen && <button className="sidebar-backdrop" type="button" aria-label="إغلاق القائمة الجانبية" onClick={() => setSidebarOpen(false)} />}
     <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`} aria-label="قائمة التنقل الرئيسية">
-      <div className="brand"><div className="brand-symbol"><Stethoscope size={21} strokeWidth={2.1}/></div><div><div className="brand-name">سِنان</div><div className="brand-sub">مساحة العمل السريرية</div></div><span className="brand-dot"/></div>
+      <div className="brand"><div className="brand-symbol"><Stethoscope size={21} strokeWidth={2.1}/></div><div><div className="brand-name">سِنان</div><div className="brand-sub">مساحة العمل السريرية</div></div><button className="sidebar-close icon-button subtle" type="button" aria-label="إغلاق القائمة" onClick={()=>setSidebarOpen(false)}><X size={17}/></button></div>
       <button className="clinic-switch" type="button" onClick={()=>{if(!demoMode&&organizations.length>1)setShowOrganizationPicker(true);else notify(demoMode?'إعدادات مساحة العيادة تتطلب اتصال قاعدة البيانات.':'مساحة العيادة الحالية.')}}><div className="clinic-mark">{clinicName.slice(0,1)||'س'}</div><div className="clinic-meta"><strong>{clinicName}</strong><span>{demoMode?'مساحة العمل':activeOrganizationId?'مساحة متصلة':'تحميل المساحة...'}</span></div><ChevronDown size={15}/></button>
       <div className="nav-label">مساحة العيادة</div>
       <nav className="main-nav">{nav.map(item => <button key={item.key} className={`nav-item ${active === item.key ? 'active' : ''}`} onClick={() => { setActive(item.key); setSidebarOpen(false); if (item.key === 'scribe') setShowScribe(true); }}><item.icon size={18}/><span>{item.label}</span>{item.key === 'scribe' && <span className="nav-live"/>}</button>)}</nav>
       <div className="nav-label nav-lower">الأدوات السريرية</div>
-      <nav className="main-nav"><button className="nav-item" onClick={() => {setActive('odontogram');setSidebarOpen(false);if(!selectedPatient)notify('اختر مريضاً لفتح مخطط الأسنان التفاعلي.')}}><HeartPulse size={18}/><span>مخطط الأسنان</span></button><button className="nav-item" onClick={() => {setActive('endodontics');setSidebarOpen(false);if(!selectedPatient)notify('اختر ملف مريض أولاً لفتح علاج العصب.')}}><Activity size={18}/><span>علاج العصب</span></button><button className="nav-item" onClick={() => {setActive('reports');setSidebarOpen(false)}}><ClipboardList size={18}/><span>سجل الزيارات</span></button></nav>
+      <nav className="main-nav"><button className="nav-item" onClick={() => {setActive('odontogram');setSidebarOpen(false);if(!selectedPatient)notify('اختر مريضاً لفتح مخطط الأسنان التفاعلي.')}}><DentalToothIcon size={18}/><span>مخطط الأسنان</span></button><button className="nav-item" onClick={() => {setActive('endodontics');setSidebarOpen(false);if(!selectedPatient)notify('اختر ملف مريض أولاً لفتح علاج العصب.')}}><DentalRootIcon size={18}/><span>علاج العصب</span></button><button className="nav-item" onClick={() => {setActive('reports');setSidebarOpen(false)}}><ClipboardList size={18}/><span>سجل الزيارات</span></button></nav>
       <div className="sidebar-bottom"><button className="nav-item" onClick={() => {setActive('settings');setSidebarOpen(false)}}><Settings size={18}/><span>إعدادات العيادة</span></button><div className="privacy-card"><ShieldCheck size={18}/><div><strong>الخصوصية أولاً</strong><p>يجب اعتماد الصلاحيات والموافقة قبل استخدام بيانات مرضى حقيقية.</p></div></div><div className="profile-row"><div className="avatar doctor-avatar">د</div><div className="profile-text"><strong>حساب العيادة</strong><span>{demoMode ? 'مساحة العمل' : 'جلسة موثقة'}</span></div><button className="icon-button subtle" aria-label="إعدادات الحساب" onClick={() => notify('إدارة الحساب تحتاج إلى تفعيل المصادقة.') }><ChevronLeft size={16}/></button></div></div>
     </aside>
 
@@ -695,8 +695,8 @@ export default function HomePage() {
             <section className="panel workbench-shortcuts">
               <div className="workbench-section-heading"><div><span className="section-kicker">الوحدات</span><h2>انتقال مباشر</h2></div></div>
               <div className="workbench-shortcut-grid">
-                <button type="button" onClick={() => setActive('odontogram')}><HeartPulse size={19}/><span>مخطط الأسنان</span><ChevronLeft size={14}/></button>
-                <button type="button" onClick={() => setActive('endodontics')}><Activity size={19}/><span>علاج العصب</span><ChevronLeft size={14}/></button>
+                <button type="button" onClick={() => setActive('odontogram')}><DentalToothIcon size={19}/><span>مخطط الأسنان</span><ChevronLeft size={14}/></button>
+                <button type="button" onClick={() => setActive('endodontics')}><DentalRootIcon size={19}/><span>علاج العصب</span><ChevronLeft size={14}/></button>
                 <button type="button" onClick={() => setActive('reports')}><FileText size={19}/><span>التقارير والسجلات</span><ChevronLeft size={14}/></button>
                 <button type="button" onClick={() => setActive('settings')}><Settings size={19}/><span>إعدادات العيادة</span><ChevronLeft size={14}/></button>
               </div>
@@ -854,39 +854,76 @@ export default function HomePage() {
 
 function SaveIcon(){return <Check size={16}/>;}
 function appointmentStatus(status:string){const map:Record<string,string>={scheduled:'مجدول',confirmed:'مؤكد',arrived:'وصل',in_progress:'قيد التنفيذ',completed:'مكتمل',cancelled:'ملغي',no_show:'لم يحضر'};return map[status]||status||'مجدول'}
+function DentalToothIcon({size=18}:{size?:number}) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+    <path d="M6.8 3.8C4.1 3.1 2.2 5.2 2.8 8.1c.5 2.7 2.4 4.7 3.4 7.8.8 2.8 2.5 4.1 4.2 1.3l1.3-2.5 1.2 2.5c1.5 2.9 3.5 1.7 4.2-1.1.9-3.2 2.9-5.1 3.8-7.8 1-3-.9-5.5-3.9-4.6-2.6.8-6.6.8-10.2.1Z" fill="currentColor" fillOpacity=".09" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M5.4 8.7c2.2 1.1 4.1.5 6.1-.2 2.1.8 4.4 1.1 7.1-.1" stroke="currentColor" strokeOpacity=".55" strokeWidth="1.05" strokeLinecap="round"/>
+  </svg>;
+}
+function DentalRootIcon({size=18}:{size?:number}) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+    <path d="M6.9 3.3C4.1 2.7 2.4 5 3 7.7c.4 2.2 2.5 4.7 4 6.7.8 1.2 1.2 4 2.2 5.3.8 1 1.7.4 2-1 .6-2.9 1.4-5.3 2.5-6.8 1.2 1.8 1.8 4.3 2.1 6.3.3 1.9 1.7 2.7 2.5.7.8-2 1.5-4.8 2.1-6.8 1.1-3.8 2.2-6.1 1.2-8.2-1.2-2.7-3.3-2.8-5.4-2C12.5 3.4 9.7 3.9 6.9 3.3Z" fill="currentColor" fillOpacity=".08" stroke="currentColor" strokeWidth="1.35" strokeLinejoin="round"/>
+    <path d="M12 7.3c-.7 3.1-.8 6.8-.3 10.2M8.7 10.7l2.1 2M15.3 10.7l-2.1 2" stroke="currentColor" strokeWidth="1.05" strokeLinecap="round"/>
+  </svg>;
+}
+
 function ToothGlyph({tooth}:{tooth:number}) {
+  const quadrant = Math.floor(tooth / 10);
   const unit = tooth % 10;
-  const primary = tooth >= 50;
-  const lower = (tooth >= 30 && tooth <= 48) || (tooth >= 70 && tooth <= 85);
-  const molar = primary ? unit <= 5 && unit >= 4 : unit >= 6;
-  const premolar = !primary && unit >= 4 && unit <= 5;
-  const canine = unit === 3;
-  const incisor = unit <= 2 || (primary && unit <= 2);
-  const crown = molar
-    ? 'M17 36 C10 36 7 32 8 26 C6 19 11 14 17 15 C21 12 29 14 30 20 C36 17 42 22 41 28 C44 34 37 38 31 36 C27 40 21 40 17 36 Z'
-    : premolar
-      ? 'M17 36 C11 34 9 29 11 24 C9 18 14 15 19 18 C23 14 30 16 31 22 C35 27 31 34 25 36 C22 39 19 39 17 36 Z'
+  const primary = quadrant >= 5 && quadrant <= 8;
+  const upper = [1,2,5,6].includes(quadrant);
+  const type = primary
+    ? unit >= 4 ? 'primary-molar' : unit === 3 ? 'canine' : unit === 2 ? 'lateral-incisor' : 'central-incisor'
+    : unit >= 6 ? 'molar' : unit >= 4 ? 'premolar' : unit === 3 ? 'canine' : unit === 2 ? 'lateral-incisor' : 'central-incisor';
+  const central = type === 'central-incisor';
+  const lateral = type === 'lateral-incisor';
+  const canine = type === 'canine';
+  const premolar = type === 'premolar';
+  const molar = type === 'molar' || type === 'primary-molar';
+  const primaryMolar = type === 'primary-molar';
+  const upperFirstPremolar = upper && unit === 4 && premolar;
+  const crown = central
+    ? 'M12 7 C9 7 7 10 8 16 L10 29 C11 36 16 41 22 42 L42 42 C48 41 53 36 54 29 L56 16 C57 10 54 7 51 7 C42 9 22 9 12 7 Z'
+    : lateral
+      ? 'M16 8 C12 8 10 11 11 17 L13 29 C14 36 19 41 25 42 L39 42 C46 40 50 35 51 28 L52 17 C52 12 49 8 45 8 C37 10 25 10 16 8 Z'
       : canine
-        ? 'M21 13 C16 18 12 22 14 29 C15 34 19 38 22 37 C27 36 29 30 28 25 C27 20 24 16 21 13 Z'
-        : 'M14 17 C10 17 8 21 10 26 L14 36 Q16 39 19 36 L23 36 Q26 39 28 35 L32 25 C34 20 30 16 26 18 C22 20 18 20 14 17 Z';
-  const roots = molar
-    ? 'M14 34 C12 43 11 49 8 57 C6 62 9 68 13 63 L19 43 M28 35 C31 44 32 50 36 57 C40 63 36 68 32 63 L23 43'
-    : premolar
-      ? 'M18 36 C17 44 17 51 14 59 C12 64 16 68 19 62 L23 43 M25 36 C27 44 29 51 31 58 C33 64 29 66 26 61 L22 43'
-      : canine
-        ? 'M21 35 C20 45 22 55 20 66 C19 72 24 74 26 66 L26 39'
-        : 'M17 35 C16 44 17 51 18 60 C18 66 22 68 23 60 L24 37';
-  return <svg className="anatomical-tooth-glyph" viewBox="0 0 50 78" aria-hidden="true" focusable="false">
-    <g transform={!lower ? 'translate(0 78) scale(1 -1)' : undefined}>
-      <path className="tooth-root-shape" d={roots} fill="none" stroke="currentColor" strokeOpacity=".72" strokeWidth={primary?5:4.6} strokeLinecap="round" strokeLinejoin="round"/>
-      <path className="tooth-crown-shape" d={crown} fill="currentColor" fillOpacity=".16" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-      {molar&&<path d="M15 21 Q20 26 24 21 M18 31 L22 26 L27 31" fill="none" stroke="currentColor" strokeOpacity=".45" strokeWidth="1.25" strokeLinecap="round"/>}
-      {premolar&&<path d="M16 23 L22 28 L27 23" fill="none" stroke="currentColor" strokeOpacity=".45" strokeWidth="1.25" strokeLinecap="round"/>}
-      {canine&&<path d="M21 22 L22 31" fill="none" stroke="currentColor" strokeOpacity=".4" strokeWidth="1.2" strokeLinecap="round"/>}
-      {incisor&&<path d="M14 21 Q21 23 29 21" fill="none" stroke="currentColor" strokeOpacity=".45" strokeWidth="1.2" strokeLinecap="round"/>}
+        ? 'M31 4 C27 9 21 15 16 20 C12 25 14 32 19 37 C22 40 27 42 32 43 C38 42 43 38 47 32 C50 26 47 20 43 17 C39 12 35 7 31 4 Z'
+        : premolar
+          ? 'M13 13 C14 7 19 5 24 8 L29 13 Q32 16 35 13 L40 8 C45 5 51 7 53 13 C57 23 52 34 45 40 C39 43 25 43 19 39 C12 34 8 24 13 13 Z'
+          : primaryMolar
+            ? 'M10 12 C12 6 19 6 24 9 Q29 14 32 11 Q38 5 45 9 C51 7 55 13 55 19 L53 30 C52 37 47 41 40 43 L23 43 C16 42 10 37 9 30 L7 20 C7 16 8 13 10 12 Z'
+            : 'M10 11 C13 5 20 6 24 9 Q29 14 32 10 Q38 5 43 8 C49 5 54 9 55 15 L55 28 C53 37 47 42 40 43 L22 43 C15 42 10 37 8 29 L7 18 C7 14 8 12 10 11 Z';
+
+  const singleRoot = 'M17 39 C20 45 23 53 26 63 C28 74 30 85 32 96 C34 84 37 73 39 62 C42 52 45 45 47 39 C40 43 24 43 17 39 Z';
+  const canineRoot = 'M21 40 C24 46 27 55 29 66 C30 77 31 88 32 97 C34 87 36 76 38 65 C40 54 42 46 44 40 C38 43 26 43 21 40 Z';
+  const upperPremolarRoots = 'M14 39 C18 44 22 48 22 56 C22 67 19 78 17 89 C16 95 11 95 12 89 C14 75 15 62 14 53 C14 47 12 43 10 40 Z M43 39 C40 45 38 50 39 58 C40 69 45 79 48 90 C49 96 54 95 53 89 C50 75 47 63 48 54 C48 47 50 43 53 40 Z';
+  const lowerMolarRoots = 'M12 39 C16 42 22 45 24 52 C27 62 22 77 17 91 C15 97 10 96 11 90 C13 77 15 64 13 54 C12 47 10 43 9 40 Z M43 39 C40 45 39 51 41 60 C44 72 48 83 49 91 C50 97 55 96 54 90 C52 76 48 64 49 54 C50 47 52 43 54 40 Z';
+  const upperMolarRoots = 'M11 39 C15 43 20 47 20 54 C20 64 15 74 11 84 C9 90 5 88 7 82 C12 67 13 55 11 47 C10 44 9 41 8 40 Z M28 40 C30 47 31 54 32 64 C33 76 33 86 32 96 C30 86 29 75 27 64 C25 54 25 47 24 40 Z M47 39 C43 43 40 48 41 56 C42 66 48 78 52 87 C54 93 59 90 56 84 C50 70 48 57 50 48 C51 44 53 41 54 40 Z';
+  const primaryMolarRoots = upper
+    ? 'M12 40 C17 44 22 49 21 57 C20 69 14 81 11 90 C9 96 4 94 7 87 C13 72 14 58 11 48 C10 44 9 42 8 41 Z M29 41 C31 49 31 58 32 68 C33 78 33 88 32 95 C30 86 29 76 27 66 C25 56 25 48 24 41 Z M48 40 C43 45 40 51 42 60 C44 71 50 82 53 90 C55 96 60 93 57 86 C51 72 49 59 51 49 C52 45 54 42 55 41 Z'
+    : 'M12 40 C17 43 23 48 24 57 C25 69 19 82 15 92 C13 98 8 96 10 90 C15 76 17 63 14 53 C13 47 11 43 9 41 Z M43 40 C40 45 38 52 40 62 C43 74 48 84 49 92 C50 98 55 96 54 90 C51 76 47 64 49 54 C50 48 52 43 54 41 Z';
+  const roots = canine ? canineRoot : premolar && upperFirstPremolar ? upperPremolarRoots : molar ? (primaryMolar ? primaryMolarRoots : upper ? upperMolarRoots : lowerMolarRoots) : singleRoot;
+  const grooves = central || lateral
+    ? 'M13 13 Q32 15 51 13 M18 33 Q32 36 46 33'
+    : canine
+      ? 'M31 15 Q32 24 32 32'
+      : premolar
+        ? 'M19 15 Q24 23 30 20 Q36 23 44 15 M21 31 Q32 26 43 31'
+        : 'M16 14 Q23 19 29 14 Q34 19 41 14 M20 31 L28 25 L34 30 L43 24';
+  const scaleX = central ? 0.9 : lateral ? 0.78 : canine ? 0.83 : premolar ? 0.93 : 1;
+  return <svg className={'anatomical-tooth-glyph type-' + type} viewBox="0 0 64 100" aria-hidden="true" focusable="false">
+    <g transform={upper ? 'translate(0 100) scale(1 -1)' : undefined}>
+      <g transform={'translate(32 0) scale(' + scaleX + ' 1) translate(-32 0)'}>
+        <path className="tooth-root-shape" d={roots} fill="currentColor" fillOpacity=".07" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/>
+        <path className="tooth-crown-shape" d={crown} fill="currentColor" fillOpacity=".2" stroke="currentColor" strokeWidth="1.55" strokeLinejoin="round"/>
+        <path className="tooth-grooves" d={grooves} fill="none" stroke="currentColor" strokeOpacity=".55" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round"/>
+        {molar && <path className="tooth-fissures" d="M32 19 L31 27 M24 22 L32 27 L40 21" fill="none" stroke="currentColor" strokeOpacity=".35" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>}
+        {!molar && !canine && <path className="tooth-neck" d="M19 39 Q32 43 45 39" fill="none" stroke="currentColor" strokeOpacity=".32" strokeWidth="1.05" strokeLinecap="round"/>}
+      </g>
     </g>
   </svg>;
 }
+
 
 function StatCard({icon,tone,label,number,foot,alert=false}:{icon:React.ReactNode;tone:string;label:string;number:string;foot:string;alert?:boolean}){return <Localized><div className="stat-card"><div className={`stat-icon ${tone}`}>{icon}</div><div className="stat-label">{label}</div><div className={`stat-number ${alert?'alert-number':''}`}>{number}</div><div className="stat-foot">{alert&&<span className="tiny-alert"/>}{foot}</div></div></Localized>}
 function Appointment({time,period,patient,type,duration,status,color,active=false,statusKey,onStatusChange}:{time:string;period:string;patient:string;type:string;duration:string;status:string;color:string;active?:boolean;statusKey?:string;onStatusChange?:(status:string)=>void}){return <Localized><div className={`timeline-item ${active?'active-appointment':''}`}><div className="timeline-time"><strong>{time}</strong><span>{period}</span></div><div className="timeline-track"><i className={active?'track-active':''}/></div><div className={`avatar small ${color}`}>{patient.slice(0,1)}</div><div className="appointment-info"><strong>{patient}</strong><span>{type==='dental_visit'?'زيارة أسنان':type}</span><small><Clock3 size={12}/> {duration}</small></div>{onStatusChange&&statusKey?<select className="appointment-state-select" value={statusKey} onChange={event=>onStatusChange(event.target.value)} aria-label="تغيير حالة الموعد"><option value="scheduled">مجدول</option><option value="confirmed">مؤكد</option><option value="arrived">وصل</option><option value="in_progress">قيد التنفيذ</option><option value="completed">مكتمل</option><option value="cancelled">ملغي</option><option value="no_show">لم يحضر</option></select>:<span className={`appointment-state ${status==='وصل'?'checked-in':status==='قيد الانتظار'?'waiting':''}`}>{status}</span>}</div></Localized>}
