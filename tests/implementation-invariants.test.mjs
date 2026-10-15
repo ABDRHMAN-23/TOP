@@ -249,6 +249,8 @@ test('appointment status updates are validated, clinic-scoped, role-checked, and
 });
 
 const signInUi = await readFile(new URL('../app/sign-in/page.tsx', import.meta.url), 'utf8');
+const signUpUi = await readFile(new URL('../app/sign-up/page.tsx', import.meta.url), 'utf8');
+const authCallback = await readFile(new URL('../app/auth/callback/route.ts', import.meta.url), 'utf8');
 const uiStyles = await readFile(new URL('../app/globals.css', import.meta.url), 'utf8');
 const uiLocales = await readFile(new URL('../app/i18n.tsx', import.meta.url), 'utf8');
 
@@ -291,6 +293,26 @@ test('clinic booking settings validate the whole weekly schedule and save throug
   assert.match(bookingSettingsRoute, /weekday: z\.number\(\)\.int\(\)\.min\(0\)\.max\(6\)/);
   assert.match(bookingSettingsRoute, /shift: z\.enum\(\['morning','evening'\]\)/);
   assert.match(bookingSettingsRoute, /supabase\.rpc\('save_clinic_booking_settings'/);
+});
+
+test('first-time doctor registration supports email confirmation and safe clinic onboarding redirect', () => {
+  assert.match(signInUi, /href="\/sign-up"/);
+  assert.match(signUpUi, /supabase\.auth\.signUp/);
+  assert.match(signUpUi, /emailRedirectTo:redirectTo/);
+  assert.match(signUpUi, /router\.replace\('\/onboarding'\)/);
+  assert.match(signUpUi, /setConfirmationEmail\(email\.trim\(\)\)/);
+  assert.match(authCallback, /NEXT_PUBLIC_SUPABASE_ANON_KEY \|\| process\.env\.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
+  assert.match(authCallback, /safeInternalPath/);
+  assert.match(authCallback, /exchangeCodeForSession\(code\)/);
+});
+
+test('booking settings responses expose only editable fields so save can be repeated safely', () => {
+  assert.match(bookingSettingsRoute, /function clientSettings\(row: any\)/);
+  assert.match(bookingSettingsRoute, /settings: settings \? clientSettings\(settings\) : defaults/);
+  assert.match(bookingSettingsRoute, /settings: clientSettings\(data\?\.settings\)/);
+  assert.match(bookingSettingsRoute, /settings: settings \? clientSettings\(settings\) : defaults/);
+  assert.doesNotMatch(bookingSettingsRoute, /\.select\('organization_id,public_slug/);
+  assert.doesNotMatch(bookingSettingsRoute, /return NextResponse\.json\(data,\s*\{ status: 200/);
 });
 
 test('public booking never exposes the clinical patient API and requires explicit consent', () => {
