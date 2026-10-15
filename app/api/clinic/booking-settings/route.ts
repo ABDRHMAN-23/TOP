@@ -32,6 +32,21 @@ function defaultHours() {
     end_time: shift === 'morning' ? '12:00' : '20:00',
   })));
 }
+function clientSettings(row: any) {
+  return {
+    public_slug: row?.public_slug ?? '',
+    booking_enabled: row?.booking_enabled ?? false,
+    slot_minutes: row?.slot_minutes ?? 30,
+    max_bookings_per_slot: row?.max_bookings_per_slot ?? 1,
+    advance_booking_days: row?.advance_booking_days ?? 30,
+    min_notice_minutes: row?.min_notice_minutes ?? 60,
+    public_title_ar: row?.public_title_ar ?? '',
+    public_title_en: row?.public_title_en ?? '',
+    public_message_ar: row?.public_message_ar ?? '',
+    public_message_en: row?.public_message_en ?? '',
+    require_phone: row?.require_phone ?? true,
+  };
+}
 function responseError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status, headers: { 'Cache-Control': 'no-store' } });
 }
@@ -44,7 +59,7 @@ export async function GET(request: Request) {
   if (!context) return responseError(error || 'لا توجد صلاحية للوصول إلى العيادة.',403);
   if (!['owner','clinic_admin','dentist','clinician'].includes(context.role)) return responseError('إعداد رابط الحجز متاح للطبيب أو مدير العيادة فقط.',403);
   const [{ data: settings, error: settingsError }, { data: hours, error: hoursError }] = await Promise.all([
-    supabase.from('clinic_booking_settings').select('organization_id,public_slug,booking_enabled,slot_minutes,max_bookings_per_slot,advance_booking_days,min_notice_minutes,public_title_ar,public_title_en,public_message_ar,public_message_en,require_phone').eq('organization_id',context.organizationId).maybeSingle(),
+    supabase.from('clinic_booking_settings').select('public_slug,booking_enabled,slot_minutes,max_bookings_per_slot,advance_booking_days,min_notice_minutes,public_title_ar,public_title_en,public_message_ar,public_message_en,require_phone').eq('organization_id',context.organizationId).maybeSingle(),
     supabase.from('clinic_booking_hours').select('weekday,shift,enabled,start_time,end_time').eq('organization_id',context.organizationId),
   ]);
   if (settingsError || hoursError) return responseError('تعذر تحميل إعدادات الحجز الإلكتروني. تحقق من تطبيق ترحيل قاعدة البيانات.',500);
@@ -59,7 +74,7 @@ export async function GET(request: Request) {
     const stored:any = rows.get(row.weekday+'-'+row.shift);
     return stored ? { weekday:row.weekday,shift:row.shift,enabled:stored.enabled,start_time:String(stored.start_time).slice(0,5),end_time:String(stored.end_time).slice(0,5) } : row;
   });
-  return NextResponse.json({ settings: { ...defaults, ...(settings || {}) }, hours: completeHours }, { headers: { 'Cache-Control': 'no-store' } });
+  return NextResponse.json({ settings: { ...defaults, ...clientSettings(settings) }, hours: completeHours }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function PATCH(request: Request) {
@@ -90,7 +105,7 @@ export async function PATCH(request: Request) {
       if (saveError.code === '23505') return responseError('هذا الاسم المختصر مستخدم لرابط عيادة أخرى. اختر اسماً مختلفاً.',409);
       return responseError(saveError.message.includes('at least one working shift') ? 'فعّل فترة عمل واحدة على الأقل قبل نشر رابط الحجز.' : 'تعذر حفظ إعدادات الحجز. راجع ساعات العمل ثم حاول مجدداً.',400);
     }
-    return NextResponse.json(data, { status: 200, headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json({ settings: clientSettings(data?.settings), hours: Array.isArray(data?.hours) ? data.hours : parsed.data.hours }, { status: 200, headers: { 'Cache-Control': 'no-store' } });
   } catch {
     return responseError('تعذر حفظ إعدادات الحجز.',500);
   }
