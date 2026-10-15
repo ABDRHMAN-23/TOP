@@ -584,6 +584,22 @@ const dictionary: Record<string, string> = {
   "جارٍ إنشاء الحساب...": "Creating account…",
   "إظهار كلمة المرور": "Show password",
   "تأكيد البريد الإلكتروني": "Email confirmation",
+  "تظهر هنا الطلبات المرسلة من رابط العيادة، من كل التواريخ. تأكيد الطلب ينشئ ملف المريض ويربطه بالموعد.": "Requests from the clinic's booking link appear here across all dates. Confirming a request creates the patient file and links it to the appointment.",
+  "جارٍ تحميل طلبات الحجز": "Loading booking requests",
+  "لا توجد طلبات حجز معلّقة": "No pending booking requests",
+  "ستظهر هنا الطلبات التي يرسلها المرضى من رابط الحجز العام.": "Requests patients submit through the public booking link will appear here.",
+  "الجهة اليمنى للمريض · خط المنتصف · الجهة اليسرى للمريض": "Patient's right · midline · patient's left",
+  "الربع الأول · 18–11": "Quadrant 1 · 18–11",
+  "خط المنتصف": "Midline",
+  "الربع الثاني · 21–28": "Quadrant 2 · 21–28",
+  "الربع الرابع · 48–41": "Quadrant 4 · 48–41",
+  "الربع الثالث · 31–38": "Quadrant 3 · 31–38",
+  "خريطة سطوح السن": "Tooth surface map",
+  "اختر السطح أو أكثر بحسب موضع الحالة.": "Select one or more surfaces based on the location of the finding.",
+  "دهليزي": "Buccal",
+  "أنسي": "Mesial",
+  "بعيد": "Distal",
+  "لم تُحدد سطوح بعد": "No surfaces selected",
 };
 
 function translate(text: string, language: Language): string {
