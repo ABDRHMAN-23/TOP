@@ -600,6 +600,9 @@ const dictionary: Record<string, string> = {
   "أنسي": "Mesial",
   "بعيد": "Distal",
   "لم تُحدد سطوح بعد": "No surfaces selected",
+  "اسحب المخطط أفقيًا لرؤية جميع الأسنان": "Scroll horizontally to view all teeth",
+  "فتح القائمة": "Open navigation menu",
+  "إغلاق القائمة": "Close navigation menu",
 };
 
 function translate(text: string, language: Language): string {
