@@ -483,3 +483,14 @@ test('Cloudflare demo deployment cannot write clinical data into the shared TOP 
   assert.doesNotMatch(workflow, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:/);
   assert.doesNotMatch(workflow, /djpfjbjjybpquvzacmtj/);
 });
+
+
+test('approved report snapshots preserve the saved transcript for the printable clinical report', async () => {
+  const reportApi = await readFile(new URL('../app/api/reports/route.ts', import.meta.url), 'utf8');
+  const reportPage = await readFile(new URL('../app/reports/[reportId]/page.tsx', import.meta.url), 'utf8');
+  assert.match(reportApi, /transcript_text,created_at,approved_at/);
+  assert.match(reportApi, /transcriptText:note\\.transcript_text/);
+  assert.match(reportPage, /report\\.content_snapshot\\?\\.transcriptText/);
+  assert.match(reportPage, /className="report-transcript"/);
+  assert.match(reportPage, /window\\.print\\(\\)/);
+});
