@@ -295,7 +295,7 @@ test('clinic booking settings validate the whole weekly schedule and save throug
 
 test('booking settings responses expose only editable fields so save can be repeated safely', () => {
   assert.match(bookingSettingsRoute, /function clientSettings\(row: any\)/);
-  assert.match(bookingSettingsRoute, /settings: \{ \.\.\.defaults, \.\.\.clientSettings\(settings\) \}/);
+  assert.match(bookingSettingsRoute, /settings: settings \? clientSettings\(settings\) : defaults/);
   assert.match(bookingSettingsRoute, /settings: clientSettings\(data\?\.settings\)/);
   assert.match(bookingSettingsRoute, /settings: settings \? clientSettings\(settings\) : defaults/);
   assert.doesNotMatch(bookingSettingsRoute, /\.select\('organization_id,public_slug/);
