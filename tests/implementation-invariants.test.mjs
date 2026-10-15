@@ -364,10 +364,11 @@ test('clinician can review a public booking and the patient file is only created
   assert.match(publicBookingMigration, /set booking_status='declined',status='cancelled'/);
 });
 
-test('the deployed clinic workflow uses the real database configuration rather than demo-only runtime', () => {
-  assert.match(bookingWorkflow, /NEXT_PUBLIC_DEMO_MODE: "false"/);
-  assert.match(bookingWorkflow, /NEXT_PUBLIC_SUPABASE_URL:/);
-  assert.match(bookingWorkflow, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:/);
+test('the deployed clinic workflow stays in safe demo mode until a dedicated clinical database is configured', () => {
+  assert.match(bookingWorkflow, /NEXT_PUBLIC_DEMO_MODE:\s*"true"/);
+  assert.doesNotMatch(bookingWorkflow, /NEXT_PUBLIC_SUPABASE_URL:/);
+  assert.doesNotMatch(bookingWorkflow, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:/);
+  assert.doesNotMatch(bookingWorkflow, /djpfjbjjybpquvzacmtj/);
   assert.match(bookingWorkflow, /npm run typecheck/);
   assert.match(bookingWorkflow, /npm test/);
   assert.match(bookingWorkflow, /npm run build:cloudflare/);
