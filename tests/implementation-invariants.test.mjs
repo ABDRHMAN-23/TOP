@@ -509,3 +509,14 @@ test('readiness endpoint checks live Supabase and runtime Gemini configuration w
   assert.match(ready, /status: ready \? 200 : 503/);
   assert.doesNotMatch(ready, /JSON\.stringify\(process\.env\)/);
 });
+
+
+test('Gemini credentials are read from Cloudflare bindings when process.env is unavailable', async () => {
+  const runtimeEnv = await readFile(new URL('../lib/cloudflare/runtime-env.ts', import.meta.url), 'utf8');
+  const ready = await readFile(new URL('../app/api/health/ready/route.ts', import.meta.url), 'utf8');
+  assert.match(runtimeEnv, /getCloudflareContext\(\)/);
+  assert.match(runtimeEnv, /environment\[name\]/);
+  assert.match(runtimeEnv, /process\.env\[name\]/);
+  assert.match(aiRoute, /getRuntimeEnv\('GEMINI_API_KEY'\)/);
+  assert.match(ready, /getRuntimeEnv\('GEMINI_API_KEY'\)/);
+});
