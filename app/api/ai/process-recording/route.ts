@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireUser } from '@/lib/supabase/server';
 import { resolveOrganization } from '@/lib/supabase/organization';
 import { sanitizeModelDraft, validateRecordingByteCount } from '@/lib/clinical/safety.mjs';
-import { getRuntimeEnv } from '@/lib/cloudflare/runtime-env';
+import { getGeminiApiKey, getRuntimeEnv } from '@/lib/cloudflare/runtime-env';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   if (!context) return NextResponse.json({ error }, { status: 403 });
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'معرّف التسجيل أو المهمة غير صالح.' }, { status: 400 });
-  const key = getRuntimeEnv('GEMINI_API_KEY');
+  const key = getGeminiApiKey();
   if (!key) return NextResponse.json({ error: 'لم يُضبط GEMINI_API_KEY على الخادم؛ بقي التسجيل محفوظاً دون معالجة.' }, { status: 503 });
   const model = getRuntimeEnv('GEMINI_MODEL') || 'gemini-2.5-flash';
   const { data: job, error: jobErr } = await supabase.from('ai_processing_jobs').select('id,status,recording_session_id,encounter_id,attempts,started_at').eq('id', parsed.data.job_id).eq('organization_id', context.organizationId).maybeSingle();
