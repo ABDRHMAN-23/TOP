@@ -503,7 +503,7 @@ test('approved report snapshots preserve the saved transcript for the printable 
 test('readiness endpoint checks live Supabase and runtime Gemini configuration without exposing secrets', async () => {
   const ready = await readFile(new URL('../app/api/health/ready/route.ts', import.meta.url), 'utf8');
   assert.match(ready, /NEXT_PUBLIC_SUPABASE_URL/);
-  assert.match(ready, /GEMINI_API_KEY/);
+  assert.match(ready, /getGeminiApiKey\(\)/);
   assert.match(ready, /supabaseReachable/);
   assert.match(ready, /AbortSignal\.timeout\(5000\)/);
   assert.match(ready, /status: ready \? 200 : 503/);
