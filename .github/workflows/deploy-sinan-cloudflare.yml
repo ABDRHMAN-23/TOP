@@ -129,6 +129,33 @@ jobs:
           console.log(JSON.stringify({ bindingMetadataAvailable: true, relevantBindings: relevant }));
           NODE
 
+      - name: Check previous Worker versions for existing Gemini bindings (names only)
+        shell: bash
+        run: |
+          curl --silent --show-error --fail \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/aqarflow-ai1/versions?per_page=10" \
+            -o /tmp/sinan-worker-versions.json
+          node - /tmp/sinan-worker-versions.json <<'NODE'
+          const fs = require('node:fs');
+          const p = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const versions = Array.isArray(p.result) ? p.result : [];
+          console.log(JSON.stringify({previousWorkerVersionCount: Math.max(0,versions.length-1), versions: versions.map(v=>({id:v.id,number:v.number,created_on:v.metadata?.created_on,source:v.metadata?.source}))}));
+          NODE
+          for version in $(node -e "const p=require('/tmp/sinan-worker-versions.json'); console.log((p.result||[]).slice(1,10).map(v=>v.id).filter(Boolean).join(' '))"); do
+            curl --silent --show-error --fail \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/aqarflow-ai1/versions/$version" \
+              -o /tmp/sinan-old-version.json
+            node - /tmp/sinan-old-version.json <<'NODE'
+          const fs = require('node:fs');
+          const p = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const bindings = p.result?.resources?.bindings || p.result?.bindings || [];
+          const relevant = bindings.filter(b=>/GEMINI|GOOGLE.*API|GENAI/i.test(String(b.name||''))).map(b=>({name:b.name,type:b.type}));
+          if (relevant.length) console.log(JSON.stringify({versionNumber:p.result?.number,geminiBindingNames:relevant}));
+          NODE
+          done
+
       - name: Smoke-test deployed Supabase and runtime configuration
         shell: bash
         run: |
