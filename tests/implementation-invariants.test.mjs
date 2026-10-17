@@ -505,6 +505,9 @@ test('readiness endpoint checks live Supabase and runtime Gemini configuration w
   assert.match(ready, /NEXT_PUBLIC_SUPABASE_URL/);
   assert.match(ready, /getGeminiApiKey\(\)/);
   assert.match(ready, /supabaseReachable/);
+  assert.match(ready, /signupEnabled/);
+  assert.match(ready, /emailConfirmationRequired/);
+  assert.match(ready, /const aiReady = ready && geminiConfigured/);
   assert.match(ready, /AbortSignal\.timeout\(5000\)/);
   assert.match(ready, /status: ready \? 200 : 503/);
   assert.doesNotMatch(ready, /JSON\.stringify\(process\.env\)/);
