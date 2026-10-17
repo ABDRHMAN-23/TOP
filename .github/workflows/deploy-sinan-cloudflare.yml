@@ -84,6 +84,19 @@ jobs:
       - name: Deploy Sinan app to Cloudflare Workers
         run: npx wrangler deploy --config wrangler.jsonc
 
+      - name: Check Gemini secret binding names without reading secret values
+        shell: bash
+        run: |
+          npx wrangler secret list --config wrangler.jsonc > /tmp/sinan-secret-names.json
+          node - /tmp/sinan-secret-names.json <<'NODE'
+          const fs = require('node:fs');
+          const payload = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const list = Array.isArray(payload) ? payload : (Array.isArray(payload.result) ? payload.result : []);
+          const names = list.map(item => String(item.name || '')).filter(name => /GEMINI|GOOGLE.*API|GENAI/i.test(name));
+          const expected = ['GEMINI_API_KEY','GOOGLE_API_KEY','GOOGLE_GEMINI_API_KEY','GOOGLE_GENAI_API_KEY','GOOGLE_GENERATIVE_AI_API_KEY','GEMINI_KEY'];
+          console.log(JSON.stringify({ geminiSecretBindingNames: names, knownNamePresent: expected.some(name => names.includes(name)) }));
+          NODE
+
       - name: Smoke-test deployed Supabase and runtime configuration
         shell: bash
         run: |
