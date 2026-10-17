@@ -84,6 +84,18 @@ jobs:
       - name: Deploy Sinan app to Cloudflare Workers
         run: npx wrangler deploy --config wrangler.jsonc
 
+      - name: Attach Gemini server secret from repository secret when available
+        shell: bash
+        env:
+          GEMINI_SECRET_INPUT: ${{ secrets.GEMINI_API_KEY || secrets.GOOGLE_API_KEY || secrets.GOOGLE_GEMINI_API_KEY || secrets.GOOGLE_GENAI_API_KEY }}
+        run: |
+          if [[ -n "${GEMINI_SECRET_INPUT:-}" ]]; then
+            printf '%s' "$GEMINI_SECRET_INPUT" | npx wrangler secret put GEMINI_API_KEY --config wrangler.jsonc
+            echo "Gemini server secret was attached to the deployed Worker without printing its value."
+          else
+            echo "::warning::No supported Gemini key was available as a GitHub Actions secret. Existing Worker secret bindings remain untouched."
+          fi
+
       - name: Check Gemini secret binding names without reading secret values
         shell: bash
         run: |
