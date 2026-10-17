@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getRuntimeEnv } from '@/lib/cloudflare/runtime-env';
+import { getGeminiApiKey, getRuntimeEnv } from '@/lib/cloudflare/runtime-env';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,7 +17,7 @@ export async function GET() {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
     ''
   ).trim();
-  const geminiConfigured = Boolean(getRuntimeEnv('GEMINI_API_KEY'));
+  const geminiConfigured = Boolean(getGeminiApiKey());
   const audioBucketConfigured = Boolean(
     (getRuntimeEnv('CLINICAL_AUDIO_BUCKET') || 'clinical-audio-private').trim(),
   );
