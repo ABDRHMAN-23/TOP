@@ -109,6 +109,26 @@ jobs:
           console.log(JSON.stringify({ geminiSecretBindingNames: names, knownNamePresent: expected.some(name => names.includes(name)) }));
           NODE
 
+      - name: Read deployed binding names only (never log values)
+        shell: bash
+        run: |
+          curl --silent --show-error --fail \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/aqarflow-ai1/settings" \
+            -o /tmp/sinan-worker-settings.json
+          node - /tmp/sinan-worker-settings.json <<'NODE'
+          const fs = require('node:fs');
+          const payload = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (payload.success !== true) {
+            console.log(JSON.stringify({ bindingMetadataAvailable: false }));
+            process.exit(0);
+          }
+          const bindings = Array.isArray(payload.result?.bindings) ? payload.result.bindings : [];
+          const safeBindings = bindings.map(({name, type}) => ({name, type}));
+          const relevant = safeBindings.filter(x => /SUPABASE|DEMO|GEMINI|GOOGLE|GENAI|AUDIO|MODEL/i.test(String(x.name || '')));
+          console.log(JSON.stringify({ bindingMetadataAvailable: true, relevantBindings: relevant }));
+          NODE
+
       - name: Smoke-test deployed Supabase and runtime configuration
         shell: bash
         run: |
