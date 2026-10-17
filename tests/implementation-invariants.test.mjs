@@ -519,6 +519,6 @@ test('Gemini credentials are read from Cloudflare bindings when process.env is u
   assert.match(runtimeEnv, /GOOGLE_API_KEY/);
   assert.match(runtimeEnv, /environment\[name\]/);
   assert.match(runtimeEnv, /process\.env\[name\]/);
-  assert.match(aiRoute, /getRuntimeEnv\('GEMINI_API_KEY'\)/);
-  assert.match(ready, /getRuntimeEnv\('GEMINI_API_KEY'\)/);
+  assert.match(aiRoute, /getGeminiApiKey\(\)/);
+  assert.match(ready, /getGeminiApiKey\(\)/);
 });
