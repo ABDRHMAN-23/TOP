@@ -83,3 +83,18 @@ jobs:
 
       - name: Deploy Sinan app to Cloudflare Workers
         run: npx wrangler deploy --config wrangler.jsonc
+
+      - name: Smoke-test deployed Supabase and runtime configuration
+        shell: bash
+        run: |
+          url="https://aqarflow-ai1.abdrhmanahmd2022.workers.dev/api/health/ready"
+          curl --silent --show-error --retry 5 --retry-delay 2 --retry-connrefused \
+            --output /tmp/sinan-readiness.json --write-out "%{http_code}" "$url" > /tmp/sinan-readiness-status
+          status="$(cat /tmp/sinan-readiness-status)"
+          node - "$status" /tmp/sinan-readiness.json <<'NODE'
+          const fs = require('node:fs');
+          const status = Number(process.argv[2]);
+          const payload = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+          console.log(JSON.stringify({ httpStatus: status, ready: payload.ready, checks: payload.checks }));
+          if (status !== 200 || payload.ready !== true) process.exit(1);
+          NODE
