@@ -24,6 +24,8 @@ export async function GET() {
   const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE !== 'false';
 
   let supabaseReachable: boolean | null = null;
+  let signupEnabled: boolean | null = null;
+  let emailConfirmationRequired: boolean | null = null;
   if (supabaseUrl && supabaseKey) {
     try {
       const base = new URL(supabaseUrl);
@@ -36,8 +38,19 @@ export async function GET() {
           signal: AbortSignal.timeout(5000),
         });
         supabaseReachable = response.ok;
-        // Consume/close the small response without returning its contents.
-        await response.body?.cancel().catch(() => undefined);
+        if (response.ok) {
+          const settings = await response.json().catch(() => null) as {
+            disable_signup?: boolean;
+            mailer_autoconfirm?: boolean;
+            external?: { email?: boolean };
+          } | null;
+          if (settings) {
+            signupEnabled = settings.disable_signup !== true && settings.external?.email !== false;
+            emailConfirmationRequired = settings.mailer_autoconfirm === false;
+          }
+        } else {
+          await response.body?.cancel().catch(() => undefined);
+        }
       } else {
         supabaseReachable = false;
       }
@@ -50,6 +63,8 @@ export async function GET() {
     mode: demoMode ? 'demo' : 'live',
     supabaseConfigured: Boolean(supabaseUrl && supabaseKey),
     supabaseReachable,
+    signupEnabled,
+    emailConfirmationRequired,
     geminiConfigured,
     audioBucketConfigured,
   };
@@ -57,11 +72,12 @@ export async function GET() {
     !demoMode &&
     checks.supabaseConfigured &&
     supabaseReachable === true &&
-    geminiConfigured &&
+    signupEnabled === true &&
     audioBucketConfigured;
+  const aiReady = ready && geminiConfigured;
 
   return NextResponse.json(
-    { ready, service: 'sinan-clinical-workspace', checks, timestamp: new Date().toISOString() },
+    { ready, aiReady, service: 'sinan-clinical-workspace', checks, timestamp: new Date().toISOString() },
     { status: ready ? 200 : 503, headers: noStore },
   );
 }
