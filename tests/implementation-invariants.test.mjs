@@ -515,6 +515,8 @@ test('Gemini credentials are read from Cloudflare bindings when process.env is u
   const runtimeEnv = await readFile(new URL('../lib/cloudflare/runtime-env.ts', import.meta.url), 'utf8');
   const ready = await readFile(new URL('../app/api/health/ready/route.ts', import.meta.url), 'utf8');
   assert.match(runtimeEnv, /getCloudflareContext\(\)/);
+  assert.match(runtimeEnv, /getGeminiApiKey/);
+  assert.match(runtimeEnv, /GOOGLE_API_KEY/);
   assert.match(runtimeEnv, /environment\[name\]/);
   assert.match(runtimeEnv, /process\.env\[name\]/);
   assert.match(aiRoute, /getRuntimeEnv\('GEMINI_API_KEY'\)/);
