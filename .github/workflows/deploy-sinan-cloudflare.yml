@@ -156,6 +156,36 @@ jobs:
           NODE
           done
 
+      - name: Verify signup page and compiled browser Supabase configuration
+        shell: bash
+        run: |
+          base="https://aqarflow-ai1.abdrhmanahmd2022.workers.dev"
+          page_status="$(curl --silent --show-error --retry 5 --retry-delay 2 --retry-connrefused --output /tmp/sinan-sign-up.html --write-out "%{http_code}" "$base/sign-up")"
+          node - "$page_status" /tmp/sinan-sign-up.html <<'NODE'
+          const fs = require('node:fs');
+          const status = Number(process.argv[2]);
+          const html = fs.readFileSync(process.argv[3], 'utf8');
+          const formRendered = html.includes('إنشاء حساب طبيب أو مدير عيادة');
+          const directEntryRendered = html.includes('إنشاء حساب') || html.includes('sign-up');
+          console.log(JSON.stringify({ signupPageStatus: status, signupFormRendered: formRendered, signupEntryRendered: directEntryRendered }));
+          if (status !== 200 || !formRendered) process.exit(1);
+          NODE
+          grep -oE '/_next/static/[^" ]+\.js' /tmp/sinan-sign-up.html | sort -u > /tmp/sinan-js-chunks.txt
+          : > /tmp/sinan-client-bundle.js
+          while IFS= read -r chunk; do
+            curl --silent --show-error --fail --retry 3 --retry-delay 1 "$base$chunk" >> /tmp/sinan-client-bundle.js
+            printf '\\n' >> /tmp/sinan-client-bundle.js
+          done < /tmp/sinan-js-chunks.txt
+          node - /tmp/sinan-client-bundle.js <<'NODE'
+          const fs = require('node:fs');
+          const js = fs.readFileSync(process.argv[2], 'utf8');
+          const projectUrlPresent = js.includes('djpfjbjjybpquvzacmtj.supabase.co');
+          const publishableKeyPresent = js.includes('sb_publishable_');
+          const placeholderPresent = /YOUR_PROJECT\\.supabase\\.co|YOUR_SUPABASE_ANON_KEY/.test(js);
+          console.log(JSON.stringify({ compiledSupabaseProjectPresent: projectUrlPresent, compiledPublicKeyPresent: publishableKeyPresent, stalePlaceholderPresent: placeholderPresent }));
+          if (!projectUrlPresent || !publishableKeyPresent || placeholderPresent) process.exit(1);
+          NODE
+
       - name: Smoke-test deployed Supabase and runtime configuration
         shell: bash
         run: |
