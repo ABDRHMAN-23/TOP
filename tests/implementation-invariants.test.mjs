@@ -364,14 +364,15 @@ test('clinician can review a public booking and the patient file is only created
   assert.match(publicBookingMigration, /set booking_status='declined',status='cancelled'/);
 });
 
-test('the deployed clinic workflow stays in safe demo mode until a dedicated clinical database is configured', () => {
-  assert.match(bookingWorkflow, /NEXT_PUBLIC_DEMO_MODE:\s*"true"/);
-  assert.doesNotMatch(bookingWorkflow, /NEXT_PUBLIC_SUPABASE_URL:/);
-  assert.doesNotMatch(bookingWorkflow, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:/);
-  assert.doesNotMatch(bookingWorkflow, /djpfjbjjybpquvzacmtj/);
+test('Cloudflare deploy builds Sinan in live mode with the correct public Supabase project configuration', async () => {
+  assert.match(bookingWorkflow, /NEXT_PUBLIC_DEMO_MODE:\s*"false"/);
+  assert.match(bookingWorkflow, /NEXT_PUBLIC_SUPABASE_URL:\s*"https:\/\/djpfjbjjybpquvzacmtj\.supabase\.co"/);
+  assert.match(bookingWorkflow, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:\s*"sb_publishable_/);
   assert.match(bookingWorkflow, /npm run typecheck/);
   assert.match(bookingWorkflow, /npm test/);
   assert.match(bookingWorkflow, /npm run build:cloudflare/);
+  const wrangler = await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
+  assert.match(wrangler, /nodejs_compat_populate_process_env/);
 });
 
 
@@ -476,12 +477,14 @@ test('Sinan dental emblem is used as the primary brand and browser icon', async 
 });
 
 
-test('Cloudflare demo deployment cannot write clinical data into the shared TOP database', async () => {
+test('Cloudflare runtime exposes bound variables to the server while keeping demo mode disabled for the live app', async () => {
   const workflow = await readFile(new URL('../.github/workflows/deploy-sinan-cloudflare.yml', import.meta.url), 'utf8');
-  assert.match(workflow, /NEXT_PUBLIC_DEMO_MODE:\s*"true"/);
-  assert.doesNotMatch(workflow, /NEXT_PUBLIC_SUPABASE_URL:/);
-  assert.doesNotMatch(workflow, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:/);
-  assert.doesNotMatch(workflow, /djpfjbjjybpquvzacmtj/);
+  const wrangler = await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
+  assert.match(workflow, /NEXT_PUBLIC_DEMO_MODE:\s*"false"/);
+  assert.match(workflow, /NEXT_PUBLIC_SUPABASE_URL:/);
+  assert.match(workflow, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:/);
+  assert.match(wrangler, /nodejs_compat_populate_process_env/);
+  assert.doesNotMatch(workflow, /SUPABASE_SERVICE_ROLE_KEY/);
 });
 
 
