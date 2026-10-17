@@ -22,7 +22,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: sinan-cloudflare-aqarflow-ai1
+  group: sinan-cloudflare-sinan-live
   cancel-in-progress: true
 
 jobs:
