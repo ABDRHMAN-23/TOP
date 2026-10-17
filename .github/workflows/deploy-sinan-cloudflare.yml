@@ -1,4 +1,4 @@
-name: Deploy Sinan safe demo to Cloudflare
+name: Deploy Sinan runtime-enabled app to Cloudflare
 
 on:
   push:
@@ -27,13 +27,16 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build and deploy safe demo to aqarflow-ai1
+    name: Build and deploy Sinan runtime-enabled app
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      # Until Sinan has a dedicated Supabase project, deploy the interface in safe demo mode.
-      # Never point the dental clinical app at the shared TOP/Aqarflow database.
-      NEXT_PUBLIC_DEMO_MODE: "true"
+      # Next.js embeds NEXT_PUBLIC_* variables into the browser bundle at BUILD time.
+      # These are Supabase's public URL and publishable key; RLS and Auth remain the security boundary.
+      NEXT_PUBLIC_SUPABASE_URL: "https://djpfjbjjybpquvzacmtj.supabase.co"
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_TkjtLbzWTqXlE18tcvGpow_XFxdTvmz"
+      NEXT_PUBLIC_DEMO_MODE: "false"
+      # Private Gemini key and other private settings are read from Cloudflare Worker runtime secrets/vars.
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
@@ -66,7 +69,7 @@ jobs:
       - name: Type-check
         run: npm run typecheck
 
-      - name: Validate demo configuration
+      - name: Validate live public configuration
         run: npm run preflight
 
       - name: Build for Cloudflare Workers
@@ -78,5 +81,5 @@ jobs:
           test -s .open-next/worker.js
           test -d .open-next/assets
 
-      - name: Deploy Sinan demo to aqarflow-ai1
+      - name: Deploy Sinan app to Cloudflare Workers
         run: npx wrangler deploy --config wrangler.jsonc
