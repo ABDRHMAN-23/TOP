@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "aqarflow-ai1",
-  "keep_vars": true,
+  "keep_vars": false,
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-13",
   "compatibility_flags": [
@@ -27,6 +27,7 @@
     "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_TkjtLbzWTqXlE18tcvGpow_XFxdTvmz",
     "NEXT_PUBLIC_DEMO_MODE": "false",
     "CLINICAL_AUDIO_BUCKET": "clinical-audio-private",
-    "GEMINI_MODEL": "gemini-2.5-flash"
+    "GEMINI_MODEL": "gemini-2.5-flash",
+    "MAX_AUDIO_CHUNK_MB": "12"
   }
 }
