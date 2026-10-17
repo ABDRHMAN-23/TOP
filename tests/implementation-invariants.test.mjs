@@ -489,6 +489,11 @@ test('Cloudflare runtime exposes bound variables to the server while keeping dem
 });
 
 
+test('live workspace exposes a direct signup link when an unauthenticated user lands on the app', () => {
+  assert.match(app, /href="\/sign-up" className="sign-in-link">إنشاء حساب/);
+  assert.match(app, /className="text-link" href="\/sign-up">إنشاء حساب/);
+});
+
 test('approved report snapshots preserve the saved transcript for the printable clinical report', async () => {
   const reportApi = await readFile(new URL('../app/api/reports/route.ts', import.meta.url), 'utf8');
   const reportPage = await readFile(new URL('../app/reports/[reportId]/page.tsx', import.meta.url), 'utf8');
