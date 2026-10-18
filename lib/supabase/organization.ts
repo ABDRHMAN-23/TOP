@@ -6,7 +6,16 @@ export async function resolveOrganization(
   user: User,
   request: Request,
 ): Promise<{ context: OrganizationContext | null; error?: string }> {
-  const requested = request.headers.get('x-organization-id');
+  // The clinic picker stores the selected tenant in an httpOnly cookie. Prefer an
+  // explicit header for API clients, then honor that cookie for browser requests.
+  const cookieHeader = request.headers.get('cookie') || '';
+  const selectedCookie = cookieHeader.split(';').map(part => part.trim()).find(part => part.startsWith('sinan-org-id='));
+  let cookieOrganizationId: string | null = null;
+  if (selectedCookie) {
+    try { cookieOrganizationId = decodeURIComponent(selectedCookie.slice('sinan-org-id='.length)); }
+    catch { cookieOrganizationId = null; }
+  }
+  const requested = request.headers.get('x-organization-id') || cookieOrganizationId;
   let query = supabase.from('organization_memberships')
     .select('organization_id,role,status')
     .eq('user_id', user.id)
