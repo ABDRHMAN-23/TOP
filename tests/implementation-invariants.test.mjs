@@ -489,6 +489,14 @@ test('Cloudflare runtime exposes bound variables to the server while keeping dem
 });
 
 
+test('selected clinic cookie is honored by API tenant resolution after the clinic picker saves it', async () => {
+  const resolver = await readFile(new URL('../lib/supabase/organization.ts', import.meta.url), 'utf8');
+  assert.match(resolver, /request\.headers\.get\('cookie'\)/);
+  assert.match(resolver, /sinan-org-id=/);
+  assert.match(resolver, /request\.headers\.get\('x-organization-id'\) \|\| cookieOrganizationId/);
+  assert.match(resolver, /if \(!requested && data\.length > 1\)/);
+});
+
 test('live workspace exposes a direct signup link when an unauthenticated user lands on the app', () => {
   assert.match(app, /href="\/sign-up" className="sign-in-link">إنشاء حساب/);
   assert.match(app, /className="text-link" href="\/sign-up">إنشاء حساب/);
