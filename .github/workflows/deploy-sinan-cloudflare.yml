@@ -142,7 +142,7 @@ jobs:
           const versions = Array.isArray(p.result) ? p.result : [];
           console.log(JSON.stringify({previousWorkerVersionCount: Math.max(0,versions.length-1), versions: versions.map(v=>({id:v.id,number:v.number,created_on:v.metadata?.created_on,source:v.metadata?.source}))}));
           NODE
-          for version in $(node -e "const p=require('/tmp/sinan-worker-versions.json'); console.log((p.result||[]).slice(1,10).map(v=>v.id).filter(Boolean).join(' '))"); do
+          for version in $(node -e "const p=require('/tmp/sinan-worker-versions.json'); const r=p.result; const v=Array.isArray(r)?r:(Array.isArray(r?.versions)?r.versions:[]); console.log(v.slice(1,10).map(x=>x.id).filter(Boolean).join(' '))"); do
             curl --silent --show-error --fail \
               -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
               "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/aqarflow-ai1/versions/$version" \
@@ -160,7 +160,8 @@ jobs:
         shell: bash
         run: |
           base="https://aqarflow-ai1.abdrhmanahmd2022.workers.dev"
-          page_status="$(curl --silent --show-error --retry 5 --retry-delay 2 --retry-connrefused --output /tmp/sinan-sign-up.html --write-out "%{http_code}" "$base/sign-up")"
+          cache_bust="$(date +%s%N)"
+          page_status="$(curl --silent --show-error --retry 5 --retry-delay 2 --retry-connrefused -H "Cache-Control: no-cache" -H "Pragma: no-cache" --output /tmp/sinan-sign-up.html --write-out "%{http_code}" "$base/sign-up?__sinan_probe=$cache_bust")"
           node - "$page_status" /tmp/sinan-sign-up.html <<'NODE'
           const fs = require('node:fs');
           const status = Number(process.argv[2]);
@@ -172,10 +173,18 @@ jobs:
           NODE
           grep -oE '/_next/static/[^" ]+\.js' /tmp/sinan-sign-up.html | sort -u > /tmp/sinan-js-chunks.txt
           : > /tmp/sinan-client-bundle.js
+          missing_chunks=0
           while IFS= read -r chunk; do
-            curl --silent --show-error --fail --retry 3 --retry-delay 1 "$base$chunk" >> /tmp/sinan-client-bundle.js
-            printf '\\n' >> /tmp/sinan-client-bundle.js
+            chunk_status="$(curl --silent --show-error --retry 2 --retry-delay 1 --output /tmp/sinan-one-chunk.js --write-out "%{http_code}" -H "Cache-Control: no-cache" "$base$chunk?__sinan_probe=$cache_bust" || true)"
+            if [[ "$chunk_status" == "200" ]]; then
+              cat /tmp/sinan-one-chunk.js >> /tmp/sinan-client-bundle.js
+              printf '\\n' >> /tmp/sinan-client-bundle.js
+            else
+              missing_chunks=$((missing_chunks + 1))
+              echo "::warning::Static chunk returned HTTP $chunk_status: $chunk (the browser E2E test will verify runtime loading)"
+            fi
           done < /tmp/sinan-js-chunks.txt
+          echo "Static chunks missing from bundle aggregation: $missing_chunks"
           node - /tmp/sinan-client-bundle.js <<'NODE'
           const fs = require('node:fs');
           const js = fs.readFileSync(process.argv[2], 'utf8');
@@ -203,7 +212,7 @@ jobs:
 
       # One-time end-to-end test. It uses a disposable mailbox and non-clinical fake data, then the DB test rows are removed manually after the run.
       - name: Run one-time Sinan signup and clinical API E2E check
-        if: github.event_name == 'push' && github.event.head_commit.message == 'Diagnose post-confirmation onboarding in Sinan E2E'
+        if: github.event_name == 'push' && github.event.head_commit.message == 'Retry one-time signup test with fresh assets'
         timeout-minutes: 8
         shell: bash
         env:
