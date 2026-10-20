@@ -397,7 +397,7 @@ test('Cloudflare deploy builds Sinan in live mode with the correct public Supaba
   assert.match(bookingWorkflow, /npm run build:cloudflare/);
   const wrangler = await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
   assert.match(wrangler, /nodejs_compat_populate_process_env/);
-  assert.match(wrangler, /"keep_vars": false/);
+  assert.match(wrangler, /"keep_vars": true/);
 });
 
 
