@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getGeminiApiKey, getRuntimeEnv } from '@/lib/cloudflare/runtime-env';
+import { getGeminiApiKey, getRuntimeEnv, getRuntimeEnvAny } from '@/lib/cloudflare/runtime-env';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,17 +11,19 @@ const noStore = { 'Cache-Control': 'no-store, max-age=0' };
  * Never returns environment values, API keys, organization IDs, or clinical data.
  */
 export async function GET() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || '';
-  const supabaseKey = (
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    ''
-  ).trim();
+  // Read from the actual Worker runtime first-class binding path as well as process.env.
+  // This avoids falsely reporting demo mode when a variable exists in Cloudflare but
+  // is not exposed through the Node-compatible process.env shim.
+  const supabaseUrl = getRuntimeEnv('NEXT_PUBLIC_SUPABASE_URL') || '';
+  const supabaseKey = getRuntimeEnvAny([
+    'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  ]) || '';
   const geminiConfigured = Boolean(getGeminiApiKey());
   const audioBucketConfigured = Boolean(
     (getRuntimeEnv('CLINICAL_AUDIO_BUCKET') || 'clinical-audio-private').trim(),
   );
-  const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE !== 'false';
+  const demoMode = getRuntimeEnv('NEXT_PUBLIC_DEMO_MODE') !== 'false';
 
   let supabaseReachable: boolean | null = null;
   let signupEnabled: boolean | null = null;
