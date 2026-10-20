@@ -35,10 +35,11 @@ export default function SignUpPage() {
       if(signUpError) {
         const details = `${signUpError.code || ''} ${signUpError.message || ''}`.toLowerCase();
         if(details.includes('already registered') || details.includes('user_already_exists')) throw new Error('هذا البريد مسجل بالفعل. سجّل الدخول بدلاً من إنشاء حساب جديد.');
-        if(details.includes('email address not authorized') || details.includes('email_not_authorized')) throw new Error('Supabase رفض إرسال رسالة التأكيد إلى هذا البريد. فعّل SMTP مخصصاً في Supabase Auth؛ خدمة البريد الافتراضية لا ترسل إلى كل العناوين.');
-        if(details.includes('redirect') && (details.includes('not allowed') || details.includes('allow list') || details.includes('whitelist'))) throw new Error('عنوان العودة بعد تأكيد البريد غير مسموح في Supabase. أضف عنوان الموقع المنشور ضمن Authentication ← URL Configuration.');
+        if(details.includes('email_address_not_authorized') || details.includes('email address not authorized') || details.includes('email_not_authorized')) throw new Error('Supabase رفض إرسال رسالة التأكيد إلى هذا البريد. فعّل SMTP مخصصاً في Supabase Auth؛ خدمة البريد الافتراضية لا ترسل إلى كل العناوين.');
+        if(details.includes('email_address_invalid') || details.includes('invalid email') || (details.includes('email address') && details.includes('invalid'))) throw new Error('عنوان البريد الإلكتروني غير صالح أو أن نطاقه مخصص للاختبار ولا يقبل التسجيل. استخدم بريدًا حقيقيًا يمكنه استقبال رسالة التأكيد.');
+        if(details.includes('redirect_uri_not_allowed') || details.includes('redirect_to_not_allowed') || (details.includes('redirect') && (details.includes('not allowed') || details.includes('allow list') || details.includes('whitelist')))) throw new Error('عنوان العودة بعد تأكيد البريد غير مسموح في Supabase. أضف عنوان الموقع المنشور ضمن Authentication ← URL Configuration.');
         if(details.includes('signup') && (details.includes('disabled') || details.includes('not allowed'))) throw new Error('التسجيل الجديد معطّل في إعدادات Supabase Auth. فعّل Allow new users to sign up.');
-        if(details.includes('rate limit') || details.includes('email rate limit')) throw new Error('وصلت خدمة البريد إلى حد الإرسال المؤقت في Supabase. انتظر قبل المحاولة مجدداً أو اضبط SMTP مخصصاً.');
+        if(details.includes('over_email_send_rate_limit') || details.includes('email_rate_limit') || details.includes('rate_limit') || details.includes('rate limit')) throw new Error('وصلت خدمة البريد إلى حد الإرسال المؤقت في Supabase. انتظر حتى ينتهي الحد المؤقت، أو اضبط SMTP مخصصاً؛ لا تكرر المحاولة سريعاً.');
         if(details.includes('password') && (details.includes('weak') || details.includes('length'))) throw new Error('كلمة المرور لا تحقق متطلبات الأمان في Supabase. استخدم كلمة مرور أطول وأقوى.');
         throw new Error('تعذر إنشاء الحساب في Supabase. تحقق من إعدادات البريد الإلكتروني وعنوان العودة المسموح به، ثم حاول مجدداً.');
       }
