@@ -201,40 +201,226 @@ jobs:
           if (status !== 200 || payload.ready !== true) process.exit(1);
           NODE
 
-      # One-time diagnostic, guarded by this exact commit title so it never runs on later deployments.
-      - name: Probe live signup endpoint once with a disposable invalid-domain address
-        if: github.event_name == 'push' && github.event.head_commit.message == 'Probe live signup endpoint once for Sinan smoke test'
+      # One-time end-to-end test. It uses a disposable mailbox and non-clinical fake data, then the DB test rows are removed manually after the run.
+      - name: Run one-time Sinan signup and clinical API E2E check
+        if: github.event_name == 'push' && github.event.head_commit.message == 'Run one-time Sinan account and clinic smoke test'
+        timeout-minutes: 8
         shell: bash
         env:
           AUTH_BASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
           AUTH_PUBLIC_KEY: ${{ env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          APP_BASE_URL: "https://aqarflow-ai1.abdrhmanahmd2022.workers.dev"
         run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
           node <<'NODE'
           const crypto = require('node:crypto');
-          const email = `sinan-smoke-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}@example.invalid`;
-          const password = `SinanSmoke-${crypto.randomBytes(24).toString('hex')}!A`;
+          const { chromium } = require('playwright');
+
+          const runId = process.env.GITHUB_RUN_ID;
+          const testName = `Sinan E2E Clinic ${runId}`;
+          const patientName = `Sinan Test Patient ${runId}`;
+          const pass = `Sinan-E2E-${crypto.randomBytes(20).toString('hex')}!A`;
+          let email = '';
+          let mailboxId = '';
+          let mailboxToken = '';
+          let browser;
+          const results = {
+            signupPage: false,
+            signupFormSubmitted: false,
+            confirmationEmailRequired: null,
+            confirmationEmailReceived: false,
+            emailConfirmed: false,
+            clinicCreated: false,
+            patientCreated: false,
+            patientReadBack: false,
+            appointmentCreated: false,
+            manualVisitCreated: false,
+            recordingSessionCreated: false,
+            emptyRecordingSafelyRejected: false,
+            blockers: [],
+          };
+          async function jsonFetch(url, options = {}) {
+            const response = await fetch(url, { ...options, signal: AbortSignal.timeout(15000) });
+            let body = {};
+            try { body = await response.json(); } catch {}
+            return { response, body };
+          }
+          async function mailboxRequest(path, options = {}) {
+            return jsonFetch(`https://api.mail.tm${path}`, options);
+          }
+
           (async () => {
             try {
-              const response = await fetch(`${process.env.AUTH_BASE_URL}/auth/v1/signup`, {
-                method: 'POST',
-                headers: { apikey: process.env.AUTH_PUBLIC_KEY, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, data: { full_name: 'Sinan automated smoke test', account_type: 'clinic_owner' } }),
-                signal: AbortSignal.timeout(15000),
+              const { response: domainResponse, body: domainBody } = await mailboxRequest('/domains');
+              const domains = domainBody['hydra:member'] || [];
+              const domain = domains.find(d => d.isActive && !d.isPrivate)?.domain || domains.find(d => d.isActive)?.domain;
+              if (!domainResponse.ok || !domain) throw new Error('Temporary mailbox provider did not return an active domain.');
+
+              email = `sinan-e2e-${runId}-${process.env.GITHUB_RUN_ATTEMPT}@${domain}`;
+              const mailboxPassword = `Mbox-${crypto.randomBytes(24).toString('hex')}!A`;
+              const { response: createMailboxResponse, body: mailbox } = await mailboxRequest('/accounts', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address: email, password: mailboxPassword }),
               });
-              const payload = await response.json().catch(() => ({}));
-              const user = payload.user || payload;
-              const errorCode = payload.error_code || payload.code || null;
-              console.log(JSON.stringify({
-                diagnostic: 'one_time_signup_probe',
-                httpStatus: response.status,
-                userReturned: Boolean(user && user.id),
-                confirmationRequired: Boolean(user && user.id && !payload.session),
-                sessionReturned: Boolean(payload.session),
-                errorCode: typeof errorCode === 'string' ? errorCode.slice(0, 80) : null,
-                cleanupTag: `sinan-smoke-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}@example.invalid`,
-              }));
+              if (!createMailboxResponse.ok || !mailbox.id) throw new Error(`Temporary mailbox creation failed (HTTP ${createMailboxResponse.status}).`);
+              mailboxId = mailbox.id;
+              const { response: tokenResponse, body: tokenBody } = await mailboxRequest('/token', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address: email, password: mailboxPassword }),
+              });
+              if (!tokenResponse.ok || !tokenBody.token) throw new Error('Temporary mailbox authentication failed.');
+              mailboxToken = tokenBody.token;
+
+              browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+              const context = await browser.newContext();
+              const page = await context.newPage();
+              await page.goto(`${process.env.APP_BASE_URL}/sign-up`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+              results.signupPage = (await page.title()).length > 0 && await page.locator('form').count() > 0;
+              await page.locator('input[autocomplete="name"]').fill('Sinan Automated Test');
+              await page.locator('input[type="email"]').fill(email);
+              await page.locator('input[autocomplete="new-password"]').nth(0).fill(pass);
+              await page.locator('input[autocomplete="new-password"]').nth(1).fill(pass);
+              await page.getByRole('button', { name: 'إنشاء الحساب والمتابعة' }).click();
+              results.signupFormSubmitted = true;
+
+              let signupState = 'pending';
+              for (let i = 0; i < 12; i++) {
+                if (await page.locator('.inline-error').count()) {
+                  const errorText = (await page.locator('.inline-error').first().innerText()).trim();
+                  results.blockers.push(errorText.includes('SMTP') || errorText.includes('إرسال رسالة التأكيد') || errorText.includes('email') ? 'email_delivery_rejected' : 'signup_form_error');
+                  console.log(JSON.stringify({ stage: 'signup', outcome: 'error', error: errorText.slice(0, 240) }));
+                  signupState = 'error';
+                  break;
+                }
+                if (await page.getByRole('heading', { name: 'تحقق من بريدك الإلكتروني' }).count()) {
+                  results.confirmationEmailRequired = true;
+                  signupState = 'confirmation';
+                  break;
+                }
+                if (new URL(page.url()).pathname === '/onboarding') {
+                  results.confirmationEmailRequired = false;
+                  signupState = 'onboarding';
+                  break;
+                }
+                await page.waitForTimeout(1500);
+              }
+
+              if (signupState === 'confirmation') {
+                let verifyUrl = '';
+                for (let i = 0; i < 18 && !verifyUrl; i++) {
+                  const { response: inboxResponse, body: inboxBody } = await mailboxRequest('/messages', {
+                    headers: { Authorization: `Bearer ${mailboxToken}` },
+                  });
+                  const messages = inboxBody['hydra:member'] || [];
+                  for (const message of messages) {
+                    const { response: messageResponse, body: detail } = await mailboxRequest(`/messages/${encodeURIComponent(message.id)}`, {
+                      headers: { Authorization: `Bearer ${mailboxToken}` },
+                    });
+                    if (!messageResponse.ok) continue;
+                    const rawBody = [detail.text || '', ...(Array.isArray(detail.html) ? detail.html : [detail.html || '']), detail.intro || ''].join('\n')
+                      .replace(/&amp;/g, '&').replace(/&#x3D;/gi, '=').replace(/&quot;/g, '"');
+                    const hrefs = [...rawBody.matchAll(/href\s*=\s*["']([^"']+)["']/gi)].map(m => m[1]);
+                    const plainUrls = rawBody.match(/https?:\/\/[^\s"'<>]+/g) || [];
+                    verifyUrl = [...hrefs, ...plainUrls].map(u => u.replace(/&amp;/g, '&')).find(u => {
+                      try { const parsed = new URL(u); return parsed.pathname.includes('/auth/v1/verify'); } catch { return false; }
+                    }) || '';
+                    if (verifyUrl) break;
+                  }
+                  if (!verifyUrl) await page.waitForTimeout(3000);
+                }
+                results.confirmationEmailReceived = Boolean(verifyUrl);
+                if (verifyUrl) {
+                  await page.goto(verifyUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {});
+                  await page.waitForTimeout(2500);
+                  const url = new URL(page.url());
+                  results.emailConfirmed = url.pathname === '/onboarding' || url.pathname === '/';
+                  if (url.pathname !== '/onboarding' && url.pathname !== '/') {
+                    await page.waitForURL(u => u.pathname === '/onboarding' || u.pathname === '/', { timeout: 20000 }).catch(() => {});
+                    const settled = new URL(page.url());
+                    results.emailConfirmed = settled.pathname === '/onboarding' || settled.pathname === '/';
+                  }
+                } else {
+                  results.blockers.push('confirmation_email_not_received');
+                }
+              }
+
+              if (signupState === 'onboarding' || results.emailConfirmed) {
+                if (new URL(page.url()).pathname !== '/onboarding') await page.goto(`${process.env.APP_BASE_URL}/onboarding`, { waitUntil: 'domcontentloaded' });
+                await page.locator('input').nth(0).fill(testName);
+                await page.locator('input').nth(1).fill(`Sinan Smoke ${runId}`);
+                await page.getByRole('button', { name: 'إنشاء العيادة' }).click();
+                await page.waitForTimeout(3000);
+                results.clinicCreated = new URL(page.url()).pathname === '/';
+                if (results.clinicCreated) {
+                  const apiResults = await page.evaluate(async ({ runId, patientName }) => {
+                    async function call(path, method = 'GET', payload) {
+                      const options = { method, headers: { 'Content-Type': 'application/json' }, cache: 'no-store' };
+                      if (payload !== undefined) options.body = JSON.stringify(payload);
+                      const response = await fetch(path, options);
+                      const body = await response.json().catch(() => ({}));
+                      return { status: response.status, body };
+                    }
+                    const output = {};
+                    const patient = await call('/api/patients', 'POST', {
+                      full_name: patientName, reported_age_years: 35,
+                      chief_complaint: 'Automated smoke test only — no real clinical information',
+                    });
+                    output.patient = { status: patient.status, hasId: Boolean(patient.body.patient?.id) };
+                    if (!patient.body.patient?.id || patient.status !== 201) return output;
+                    const patientId = patient.body.patient.id;
+                    const list = await call('/api/patients');
+                    output.patientReadBack = { status: list.status, found: (list.body.patients || []).some(p => p.id === patientId) };
+                    const start = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+                    start.setSeconds(0, 0);
+                    const end = new Date(start.getTime() + 30 * 60 * 1000);
+                    const appointment = await call('/api/appointments', 'POST', {
+                      patient_id: patientId, scheduled_start: start.toISOString(),
+                      scheduled_end: end.toISOString(), timezone: 'Asia/Aden',
+                      appointment_type: 'dental_visit', note: 'Automated E2E smoke test; remove after test',
+                    });
+                    output.appointment = { status: appointment.status, hasId: Boolean(appointment.body.appointment?.id) };
+                    const visit = await call(`/api/patients/${patientId}/encounters`, 'POST', {
+                      chief_complaint: 'Automated smoke test only — no real clinical information',
+                      encounter_type: 'dental_visit',
+                    });
+                    output.visit = { status: visit.status, hasEncounter: Boolean(visit.body.encounter?.id), hasNote: Boolean(visit.body.note?.id) };
+                    const recording = await call('/api/recordings', 'POST', {
+                      patient_id: patientId, content_type: 'audio/webm', consent_confirmed: true,
+                    });
+                    output.recording = { status: recording.status, hasId: Boolean(recording.body.recording_id), hasEncounter: Boolean(recording.body.encounter_id) };
+                    if (recording.body.recording_id) {
+                      const finish = await call(`/api/recordings/${recording.body.recording_id}/finish`, 'POST', {});
+                      output.emptyRecordingGuard = {
+                        status: finish.status,
+                        rejectedAsExpected: finish.status === 409 && String(finish.body.error || '').includes('لم يصل أي مقطع صوت'),
+                      };
+                    }
+                    return output;
+                  }, { runId: String(runId), patientName });
+                  results.patientCreated = apiResults.patient?.status === 201;
+                  results.patientReadBack = apiResults.patientReadBack?.status === 200 && apiResults.patientReadBack?.found === true;
+                  results.appointmentCreated = apiResults.appointment?.status === 201;
+                  results.manualVisitCreated = apiResults.visit?.status === 201 && apiResults.visit?.hasNote;
+                  results.recordingSessionCreated = apiResults.recording?.status === 201 && apiResults.recording?.hasId;
+                  results.emptyRecordingSafelyRejected = apiResults.emptyRecordingGuard?.rejectedAsExpected === true;
+                  for (const [key, value] of Object.entries(apiResults)) {
+                    const status = value?.status;
+                    if (typeof status === 'number' && status >= 400) results.blockers.push(`${key}_http_${status}`);
+                  }
+                }
+              }
             } catch (error) {
-              console.log(JSON.stringify({ diagnostic: 'one_time_signup_probe', requestFailed: true, errorType: error?.name || 'Error' }));
+              results.blockers.push(error?.name || 'unknown_error');
+              console.log(JSON.stringify({ stage: 'e2e_exception', errorType: error?.name || 'Error', message: String(error?.message || '').slice(0, 180) }));
+            } finally {
+              if (browser) await browser.close().catch(() => {});
+              if (mailboxId && mailboxToken) {
+                await mailboxRequest(`/accounts/${encodeURIComponent(mailboxId)}`, {
+                  method: 'DELETE', headers: { Authorization: `Bearer ${mailboxToken}` },
+                }).catch(() => {});
+              }
+              console.log(JSON.stringify({ diagnostic: 'sinan_one_time_live_e2e', testEmail: email || null, testClinicName: testName, results }));
             }
           })();
           NODE
