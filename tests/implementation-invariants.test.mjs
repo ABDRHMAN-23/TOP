@@ -321,6 +321,15 @@ test('first-time doctor registration supports email confirmation and safe clinic
   assert.match(authCallback, /exchangeCodeForSession\(code\)/);
 });
 
+
+test('signup maps current Supabase email authorization, invalid-address, and rate-limit codes to actionable guidance', () => {
+  assert.match(signUpUi, /email_address_not_authorized/);
+  assert.match(signUpUi, /email_address_invalid/);
+  assert.match(signUpUi, /over_email_send_rate_limit/);
+  assert.match(signUpUi, /email_rate_limit/);
+  assert.match(signUpUi, /redirect_uri_not_allowed/);
+});
+
 test('booking settings responses expose only editable fields so save can be repeated safely', () => {
   assert.match(bookingSettingsRoute, /function clientSettings\(row: any\)/);
   assert.match(bookingSettingsRoute, /settings: settings \? clientSettings\(settings\) : defaults/);
