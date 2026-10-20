@@ -203,7 +203,7 @@ jobs:
 
       # One-time end-to-end test. It uses a disposable mailbox and non-clinical fake data, then the DB test rows are removed manually after the run.
       - name: Run one-time Sinan signup and clinical API E2E check
-        if: github.event_name == 'push' && github.event.head_commit.message == 'Run one-time Sinan account and clinic smoke test'
+        if: github.event_name == 'push' && github.event.head_commit.message == 'Diagnose post-confirmation onboarding in Sinan E2E'
         timeout-minutes: 8
         shell: bash
         env:
@@ -238,6 +238,10 @@ jobs:
             manualVisitCreated: false,
             recordingSessionCreated: false,
             emptyRecordingSafelyRejected: false,
+            postConfirmationAuthStatus: null,
+            fallbackSignInSucceeded: false,
+            clinicError: null,
+            clinicPagePath: null,
             blockers: [],
           };
           async function jsonFetch(url, options = {}) {
@@ -346,12 +350,36 @@ jobs:
               }
 
               if (signupState === 'onboarding' || results.emailConfirmed) {
-                if (new URL(page.url()).pathname !== '/onboarding') await page.goto(`${process.env.APP_BASE_URL}/onboarding`, { waitUntil: 'domcontentloaded' });
+                // Check the authenticated API after email confirmation. If callback cookies were not retained,
+                // sign in explicitly with the same disposable test account before testing clinic creation.
+                results.postConfirmationAuthStatus = await page.evaluate(async () => {
+                  const r = await fetch('/api/organizations', { cache: 'no-store' });
+                  return r.status;
+                }).catch(() => 0);
+                if (results.postConfirmationAuthStatus !== 200) {
+                  await page.goto(`${process.env.APP_BASE_URL}/sign-in`, { waitUntil: 'domcontentloaded' });
+                  await page.locator('input[type="email"]').fill(email);
+                  await page.locator('input[autocomplete="current-password"]').fill(pass);
+                  await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
+                  await page.waitForTimeout(2500);
+                  const signInStatus = await page.evaluate(async () => {
+                    const r = await fetch('/api/organizations', { cache: 'no-store' });
+                    return r.status;
+                  }).catch(() => 0);
+                  results.fallbackSignInSucceeded = signInStatus === 200;
+                  results.postConfirmationAuthStatus = signInStatus;
+                }
+                await page.goto(`${process.env.APP_BASE_URL}/onboarding`, { waitUntil: 'domcontentloaded' });
                 await page.locator('input').nth(0).fill(testName);
                 await page.locator('input').nth(1).fill(`Sinan Smoke ${runId}`);
                 await page.getByRole('button', { name: 'إنشاء العيادة' }).click();
                 await page.waitForTimeout(3000);
-                results.clinicCreated = new URL(page.url()).pathname === '/';
+                results.clinicPagePath = new URL(page.url()).pathname;
+                results.clinicCreated = results.clinicPagePath === '/';
+                if (!results.clinicCreated) {
+                  results.clinicError = (await page.locator('.inline-error').first().innerText().catch(() => '')).trim().slice(0, 260) || 'No inline error rendered';
+                  results.blockers.push('clinic_create_failed');
+                }
                 if (results.clinicCreated) {
                   const apiResults = await page.evaluate(async ({ runId, patientName }) => {
                     async function call(path, method = 'GET', payload) {
