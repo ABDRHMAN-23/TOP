@@ -6,7 +6,7 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,6 +26,21 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
           NEXT_PUBLIC_DEMO_MODE: "true"
+      # Validate the actual Cloudflare/OpenNext build on PRs without deploying or
+      # requiring Cloudflare credentials. This catches failures that plain next build misses.
+      - name: Build for Cloudflare Workers (validation only)
+        run: npm run build:cloudflare
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-publishable-key
+          NEXT_PUBLIC_DEMO_MODE: "false"
+
+      - name: Verify OpenNext output exists
+        run: |
+          test -s .open-next/worker.js
+          test -d .open-next/assets
+
       - name: Upload generated npm lockfile
         if: success()
         uses: actions/upload-artifact@v4
