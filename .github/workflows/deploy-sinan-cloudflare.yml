@@ -200,3 +200,41 @@ jobs:
           console.log(JSON.stringify({ httpStatus: status, ready: payload.ready, checks: payload.checks }));
           if (status !== 200 || payload.ready !== true) process.exit(1);
           NODE
+
+      # One-time diagnostic, guarded by this exact commit title so it never runs on later deployments.
+      - name: Probe live signup endpoint once with a disposable invalid-domain address
+        if: github.event_name == 'push' && github.event.head_commit.message == 'Probe live signup endpoint once for Sinan smoke test'
+        shell: bash
+        env:
+          AUTH_BASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
+          AUTH_PUBLIC_KEY: ${{ env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          node <<'NODE'
+          const crypto = require('node:crypto');
+          const email = `sinan-smoke-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}@example.invalid`;
+          const password = `SinanSmoke-${crypto.randomBytes(24).toString('hex')}!A`;
+          (async () => {
+            try {
+              const response = await fetch(`${process.env.AUTH_BASE_URL}/auth/v1/signup`, {
+                method: 'POST',
+                headers: { apikey: process.env.AUTH_PUBLIC_KEY, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, data: { full_name: 'Sinan automated smoke test', account_type: 'clinic_owner' } }),
+                signal: AbortSignal.timeout(15000),
+              });
+              const payload = await response.json().catch(() => ({}));
+              const user = payload.user || payload;
+              const errorCode = payload.error_code || payload.code || null;
+              console.log(JSON.stringify({
+                diagnostic: 'one_time_signup_probe',
+                httpStatus: response.status,
+                userReturned: Boolean(user && user.id),
+                confirmationRequired: Boolean(user && user.id && !payload.session),
+                sessionReturned: Boolean(payload.session),
+                errorCode: typeof errorCode === 'string' ? errorCode.slice(0, 80) : null,
+                cleanupTag: `sinan-smoke-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}@example.invalid`,
+              }));
+            } catch (error) {
+              console.log(JSON.stringify({ diagnostic: 'one_time_signup_probe', requestFailed: true, errorType: error?.name || 'Error' }));
+            }
+          })();
+          NODE
