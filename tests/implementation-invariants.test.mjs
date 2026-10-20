@@ -8,6 +8,21 @@ const finishRoute = await readFile(new URL('../app/api/recordings/[recordingId]/
 const pauseRoute = await readFile(new URL('../app/api/recordings/[recordingId]/pause/route.ts', import.meta.url), 'utf8');
 const resumeRoute = await readFile(new URL('../app/api/recordings/[recordingId]/resume/route.ts', import.meta.url), 'utf8');
 const aiRoute = await readFile(new URL('../app/api/ai/process-recording/route.ts', import.meta.url), 'utf8');
+const grantsMigration = await readFile(new URL('../supabase/migrations/20261020125256_sinan_scope_authenticated_table_grants.sql', import.meta.url), 'utf8');
+
+
+test('authenticated API grants enable clinical writes without exposing protected direct-write paths', () => {
+  assert.match(grantsMigration, /grant select, insert, update on table public\.patients to authenticated/i);
+  assert.match(grantsMigration, /grant select, insert, update on table public\.encounters to authenticated/i);
+  assert.match(grantsMigration, /grant select, update on table public\.recording_sessions to authenticated/i);
+  assert.match(grantsMigration, /grant select, insert, update on table public\.recording_chunks to authenticated/i);
+  assert.match(grantsMigration, /grant select, insert, update on table public\.ai_processing_jobs to authenticated/i);
+  assert.match(grantsMigration, /grant select, insert on table public\.clinical_notes to authenticated/i);
+  assert.match(grantsMigration, /grant select on table public\.organizations, public\.organization_memberships to authenticated/i);
+  assert.match(grantsMigration, /grant select on table public\.approvals to authenticated/i);
+  assert.doesNotMatch(grantsMigration, /grant update on table public\.clinical_notes to authenticated/i);
+  assert.match(grantsMigration, /transcript_retry_cleanup[\s\S]*?j\.requested_by = auth\.uid\(\)[\s\S]*?j\.status = 'transcribing'/i);
+});
 
 test('every public application table created by the migration enables row-level security', () => {
   const tables = [...migration.matchAll(/create table if not exists public\.([a-z_]+)/gi)].map(m => m[1]);
