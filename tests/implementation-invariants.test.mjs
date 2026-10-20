@@ -171,9 +171,11 @@ test('patient initials use the first character of the first and last name tokens
   assert.match(app, /initials: getInitials\(p\.full_name \|\| 'م'\)/);
 });
 
-test('real audio capture is unavailable unless consent and a valid patient are present', () => {
-  assert.match(app, /disabled=\{!consent \|\| !patient\?\.id \|\| isDemo\}/);
-  assert.match(app, /if\(!consent\)\{setRecordingError\('يجب توثيق الموافقة قبل تشغيل الميكروفون\.'/);
+test('audio capture requires consent and a patient; demo recordings stay local', () => {
+  assert.match(app, /disabled=\{!consent \|\| !patient\?\.id\}/);
+  assert.match(app, /if\(isDemo\)\{[\s\S]*?localDemoChunksRef\.current\.push\(event\.data\)/);
+  assert.match(app, /if\(isDemo\)\{[\s\S]*?URL\.createObjectURL\(blob\)/);
+  assert.match(app, /if\(!isDemo\)void setRemoteState\('pause'\)/);
   assert.match(recordingStartRoute, /consent_confirmed: z\.literal\(true\)/);
 });
 
