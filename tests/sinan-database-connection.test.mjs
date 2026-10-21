@@ -11,6 +11,7 @@ const homePage = await readFile(new URL('app/page.tsx', root), 'utf8');
 const modulesMigration = await readFile(new URL('supabase/migrations/20261021095130_sinan_test_workspace_modules.sql', root), 'utf8');
 const workspaceRoute = await readFile(new URL('app/api/test-workspace/[...resource]/route.ts', root), 'utf8');
 const middleware = await readFile(new URL('middleware.ts', root), 'utf8');
+const workspaceHelpers = await readFile(new URL('lib/supabase/test-workspace.ts', root), 'utf8');
 
 test('Supabase URL normalization strips one or more PostgREST path suffixes', () => {
   assert.ok(urlHelper.includes(".replace(/(?:\\/rest\\/v1)+\\/?$/i, '')"));
@@ -38,8 +39,8 @@ test('other direct-workspace modules persist in a separate RLS-protected test ta
   assert.ok(modulesMigration.includes('revoke all on table public.sinan_test_workspace_records from public, anon, authenticated'));
   assert.match(modulesMigration, /security definer/i);
   assert.ok(modulesMigration.includes('grant execute on function public.sinan_test_upsert_record(uuid, text, uuid, uuid, jsonb) to anon, authenticated;'));
-  assert.ok((await readFile(new URL('lib/supabase/test-workspace.ts', root), 'utf8')).includes("client.rpc('sinan_test_list_records'"));
-  assert.ok((await readFile(new URL('lib/supabase/test-workspace.ts', root), 'utf8')).includes("client.rpc('sinan_test_upsert_record'"));
+  assert.ok(workspaceHelpers.includes("client.rpc('sinan_test_list_records'"));
+  assert.ok(workspaceHelpers.includes("client.rpc('sinan_test_upsert_record'"));
   assert.ok(workspaceRoute.includes('findPatient(payload.patient_id)'));
 });
 
