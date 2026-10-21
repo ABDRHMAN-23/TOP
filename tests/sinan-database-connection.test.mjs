@@ -59,7 +59,7 @@ test('anonymous workspace records audio only in isolated consent-gated test tabl
   assert.ok(workspaceRoute.includes('لا يمكن إنشاء تقرير قبل وجود مسودة سريرية محفوظة ومعتمدة.'));
   assert.ok(homePage.includes('isDemo={demoMode}'));
   assert.ok(homePage.includes('isTestWorkspace={Boolean(testWorkspaceToken)}'));
-  assert.ok(homePage.includes('مساحة اختبار بلا تسجيل دخول'));
+  assert.ok(homePage.includes('تنبيه خصوصية: هذه المساحة تعمل بدون تسجيل دخول'));
   assert.match(homePage, /disabled=\{!consent \|\| !patient\?\.id \|\| isDemo\}/);
   assert.ok(voiceWorkspaceRoute.includes("sinan_test_start_recording"));
   assert.ok(voiceWorkspaceRoute.includes("sinan_test_save_recording_chunk"));
