@@ -216,8 +216,7 @@ export default function HomePage() {
     if (!patientResponse.ok) { setDatabaseStatus('disconnected'); throw new Error(patientBody.error || 'تعذر تحميل بيانات العيادة.'); }
     const rows = Array.isArray(patientBody.patients) ? patientBody.patients : [];
     const mapped: Patient[] = rows.map((p: any, i: number) => ({ id: p.id, displayId: p.patient_number || String(p.id).slice(0, 8), name: p.full_name, age: p.date_of_birth ? `${Math.max(0,new Date().getFullYear() - new Date(p.date_of_birth).getFullYear())} سنة` : p.reported_age_years ? `${p.reported_age_years} سنة` : 'العمر غير مسجل', phone: maskPhoneForDisplay(p.phone), visit: 'راجع سجل الزيارات', reason: p.chief_complaint || 'لم تسجل الشكوى بعد', state: p.record_status === 'active' ? 'ملف نشط' : 'ملف مؤرشف', initials: getInitials(p.full_name || 'م'), color: ['mint','blue','peach','lilac'][i%4] }));
-    setDatabaseStatus('connected');
-    setPatients(mapped); setSelectedPatient(current => current && mapped.some(p=>p.id===current.id) ? mapped.find(p=>p.id===current.id) || null : mapped[0] || null); setLoadError('');
+    setPatients(mapped); setSelectedPatient(current => current && mapped.some(p=>p.id===current.id) ? mapped.find(p=>p.id===current.id) || null : mapped[0] || null);
     const [appointmentsResult, settingsResult, reportsResult] = await Promise.allSettled([
       workspaceFetch('/api/appointments?from=' + encodeURIComponent(new Date(dateInputForAden() + 'T00:00:00+03:00').toISOString()) + '&to=' + encodeURIComponent(new Date(new Date(dateInputForAden() + 'T00:00:00+03:00').getTime()+86400000).toISOString()), { cache: 'no-store' }).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'appointments unavailable');return b;}),
       workspaceFetch('/api/clinic/settings', { cache: 'no-store' }).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'settings unavailable');return b;}),
@@ -226,6 +225,17 @@ export default function HomePage() {
     if (appointmentsResult.status==='fulfilled') { setTodayAppointments(appointmentsResult.value.appointments || []); setScheduleAppointments(appointmentsResult.value.appointments || []); }
     if (settingsResult.status==='fulfilled' && settingsResult.value.settings) setClinicSettings(current=>({...current,...settingsResult.value.settings}));
     if (reportsResult.status==='fulfilled') setSavedReports(reportsResult.value.reports || []);
+    const unavailableModules: string[] = [];
+    if (appointmentsResult.status === 'rejected') unavailableModules.push('المواعيد');
+    if (settingsResult.status === 'rejected') unavailableModules.push('إعدادات العيادة');
+    if (reportsResult.status === 'rejected') unavailableModules.push('التقارير');
+    if (unavailableModules.length) {
+      setDatabaseStatus('disconnected');
+      setLoadError('تم تحميل ملفات المرضى، لكن تعذر تحميل ' + unavailableModules.join(' و') + ' من قاعدة البيانات.');
+    } else {
+      setDatabaseStatus('connected');
+      setLoadError('');
+    }
   }
   async function loadAppointmentsForDate(date: string) {
     setAppointmentViewDate(date);
