@@ -493,8 +493,8 @@ test('Sinan dental emblem is used as the primary brand and browser icon', async 
   assert.ok(icon.byteLength > 1000);
   assert.match(layout, /sinan-icon\.webp/);
   assert.match(app, /brand-symbol brand-symbol-image/);
-  assert.match(signIn, /sinan-icon\.webp/);
-  assert.match(signUp, /sinan-icon\.webp/);
+  assert.match(signIn, /redirect\('\/'\)/);
+  assert.match(signUp, /router\.replace\('\/'\)/);
   assert.match(onboarding, /sinan-icon\.webp/);
   assert.match(reports, /sinan-icon\.webp/);
 });
