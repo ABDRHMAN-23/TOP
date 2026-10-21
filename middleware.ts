@@ -14,12 +14,12 @@ export function middleware(request: NextRequest) {
     pathname === '/api/clinic/booking-settings' ||
     pathname === '/api/reports' ||
     pathname === '/api/review-queue' ||
-    /^\\/api\\/patients\\/[0-9a-f-]{36}(?:\\/(?:odontogram|endodontics|history|encounters))?$/i.test(pathname);
+    /^\/api\/patients\/[0-9a-f-]{36}(?:\/(?:odontogram|endodontics|history|encounters))?$/i.test(pathname);
 
   let response: Response;
   if (hasTestWorkspaceToken && supportedTestWorkspaceRoute && pathname !== '/api/patients') {
     const target = request.nextUrl.clone();
-    target.pathname = pathname.replace(/^\\/api(?=\\/)/, '/api/test-workspace');
+    target.pathname = pathname.replace(/^\/api(?=\/)/, '/api/test-workspace');
     response = NextResponse.rewrite(target, { request: { headers: requestHeaders } });
   } else {
     response = NextResponse.next({ request: { headers: requestHeaders } });
