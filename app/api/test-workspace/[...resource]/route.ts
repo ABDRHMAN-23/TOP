@@ -116,7 +116,7 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
       }, { patientId: patient.id });
       return NextResponse.json({ appointment: { ...appointment, patients: { full_name: patient.full_name } } }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
     }
-    if (first === 'appointments' && second && uuidPattern.test(second) && third === 'review-booking' && method === 'POST') {
+    if (first === 'appointments' && second && uuidPattern.test(second) && third === 'review-booking' && rest === 3 && method === 'POST') {
       const item = await get('appointments', second);
       if (!item) return errorResponse('طلب الموعد غير موجود في مساحة الاختبار.', 404);
       const action = payload?.action;
