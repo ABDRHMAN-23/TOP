@@ -543,6 +543,8 @@ test('readiness endpoint checks live Supabase and runtime Gemini configuration w
   assert.match(ready, /supabaseReachable/);
   assert.match(ready, /signupEnabled/);
   assert.match(ready, /emailConfirmationRequired/);
+  assert.doesNotMatch(ready, /signupEnabled === true/);
+  assert.match(ready, /Auth signup availability is reported for diagnostics, but is not a core readiness dependency/);
   assert.match(ready, /const aiReady = ready && geminiConfigured/);
   assert.match(ready, /AbortSignal\.timeout\(5000\)/);
   assert.match(ready, /status: ready \? 200 : 503/);
