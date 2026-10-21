@@ -41,7 +41,7 @@ test('other direct-workspace modules persist in a separate RLS-protected test ta
   assert.ok(modulesMigration.includes('grant execute on function public.sinan_test_upsert_record(uuid, text, uuid, uuid, jsonb) to anon, authenticated;'));
   assert.ok(workspaceHelpers.includes("client.rpc('sinan_test_list_records'"));
   assert.ok(workspaceHelpers.includes("client.rpc('sinan_test_upsert_record'"));
-  assert.ok(workspaceRoute.includes('findPatient(payload.patient_id)'));
+  assert.ok(workspaceRoute.includes('findPatient(input.patient_id)'));
 });
 
 test('only explicit token-bearing supported API paths are rewritten into test-workspace handlers', () => {
@@ -53,7 +53,7 @@ test('only explicit token-bearing supported API paths are rewritten into test-wo
 });
 
 test('anonymous workspace refuses to simulate clinical report generation and disables unsecured audio capture', () => {
-  assert.match(workspaceRoute, /لا يُنشئ سِنان تقريراً وهمياً/);
+  assert.ok(workspaceRoute.includes('لا يمكن إنشاء تقرير قبل وجود مسودة سريرية محفوظة ومعتمدة.'));
   assert.ok(homePage.includes('isDemo={demoMode || Boolean(testWorkspaceToken)}'));
   assert.ok(homePage.includes('التسجيل الصوتي غير مفعّل في مساحة العمل الحالية قبل توصيل التخزين الآمن والمعالجة السريرية'));
 });
