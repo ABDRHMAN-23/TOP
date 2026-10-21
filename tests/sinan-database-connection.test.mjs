@@ -37,10 +37,10 @@ test('other direct-workspace modules persist in a separate RLS-protected test ta
   assert.match(modulesMigration, /enable row level security/i);
   assert.match(modulesMigration, /revoke all on table public\\.sinan_test_workspace_records from public, anon, authenticated/i);
   assert.match(modulesMigration, /security definer/i);
-  assert.match(modulesMigration, /grant execute on function public\\.sinan_test_upsert_record\\(uuid, uuid, uuid, uuid, jsonb\\) to anon, authenticated/i);
+  assert.match(modulesMigration, /grant execute on function public\\.sinan_test_upsert_record\\(uuid, text, uuid, uuid, jsonb\\) to anon, authenticated/i);
   assert.match(workspaceRoute, /sinan_test_list_records/);
   assert.match(workspaceRoute, /sinan_test_upsert_record/);
-  assert.match(workspaceRoute, /patient not found in this workspace/);
+  assert.match(workspaceRoute, /findPatient\\(payload\\.patient_id\\)/);
 });
 
 test('only explicit token-bearing supported API paths are rewritten into test-workspace handlers', () => {
