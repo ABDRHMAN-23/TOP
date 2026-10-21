@@ -46,13 +46,15 @@ export async function DELETE(request: Request, context: { params: Promise<{ reso
 async function handle(request: Request, context: { params: Promise<{ resource: string[] }> }, method: string) {
   const token = getTestWorkspaceToken(request);
   if (!token) return errorResponse('مساحة الاختبار غير معرّفة. أعد تحميل الصفحة.', 401);
-  const client = getTestWorkspaceClient();
-  if (!client) return errorResponse('اتصال قاعدة البيانات غير مهيأ.', 503);
+  const resolvedClient = getTestWorkspaceClient();
+  if (!resolvedClient) return errorResponse('اتصال قاعدة البيانات غير مهيأ.', 503);
+  const client = resolvedClient;
   const { resource = [] } = await context.params;
   const [first, second, third] = resource;
   const rest = resource.length;
   const payload = method === 'POST' || method === 'PATCH' ? await readBody(request) : null;
   if ((method === 'POST' || method === 'PATCH') && !payload) return errorResponse('بيانات الطلب غير صالحة.');
+  const input: Record<string, any> = payload ?? {};
 
   async function records(type: TestWorkspaceResource) {
     const result = await listTestWorkspaceRecords(client, token, type);
@@ -97,19 +99,19 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
       return NextResponse.json({ appointments: rows.map((row: any) => ({ ...row, patients: byId.has(row.patient_id) ? { full_name: (byId.get(row.patient_id) as any).full_name } : null })) }, { headers: { 'Cache-Control': 'no-store' } });
     }
     if (first === 'appointments' && rest === 1 && method === 'POST') {
-      if (!payload || typeof payload.patient_id !== 'string' || !uuidPattern.test(payload.patient_id)) return errorResponse('اختر ملف مريض صحيحاً.');
-      const patient = await findPatient(payload.patient_id);
+      if (!payload || typeof input.patient_id !== 'string' || !uuidPattern.test(input.patient_id)) return errorResponse('اختر ملف مريض صحيحاً.');
+      const patient = await findPatient(input.patient_id);
       if (!patient) return errorResponse('المريض غير موجود في مساحة العمل الحالية.', 404);
-      const start = Date.parse(String(payload.scheduled_start || ''));
-      const end = Date.parse(String(payload.scheduled_end || ''));
+      const start = Date.parse(String(input.scheduled_start || ''));
+      const end = Date.parse(String(input.scheduled_end || ''));
       if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return errorResponse('تحقق من وقت بداية الموعد ونهايته.');
       const appointment = await put('appointments', {
         patient_id: patient.id,
         scheduled_start: new Date(start).toISOString(),
         scheduled_end: new Date(end).toISOString(),
-        timezone: String(payload.timezone || 'Asia/Aden').slice(0, 80),
-        appointment_type: String(payload.appointment_type || 'dental_visit').slice(0, 80),
-        note: typeof payload.note === 'string' ? payload.note.slice(0, 2000) : null,
+        timezone: String(input.timezone || 'Asia/Aden').slice(0, 80),
+        appointment_type: String(input.appointment_type || 'dental_visit').slice(0, 80),
+        note: typeof input.note === 'string' ? input.note.slice(0, 2000) : null,
         status: 'scheduled',
         booking_source: 'workspace',
         booking_status: null,
@@ -119,7 +121,7 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
     if (first === 'appointments' && second && uuidPattern.test(second) && third === 'review-booking' && rest === 3 && method === 'POST') {
       const item = await get('appointments', second);
       if (!item) return errorResponse('طلب الموعد غير موجود في مساحة الاختبار.', 404);
-      const action = payload?.action;
+      const action = input?.action;
       if (action !== 'confirm' && action !== 'decline') return errorResponse('قرار الحجز غير صالح.');
       const updated = await put('appointments', { ...item, status: action === 'confirm' ? 'confirmed' : 'cancelled', booking_status: action === 'confirm' ? 'confirmed' : 'declined' }, { id: second, patientId: item.patient_id });
       return NextResponse.json({ appointment: updated, message: action === 'confirm' ? 'تم تأكيد الموعد.' : 'تم رفض الطلب.' });
@@ -127,7 +129,7 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
     if (first === 'appointments' && second && uuidPattern.test(second) && rest === 2 && method === 'PATCH') {
       const item = await get('appointments', second);
       if (!item) return errorResponse('الموعد غير موجود في مساحة الاختبار.', 404);
-      const status = String(payload?.status || '');
+      const status = String(input?.status || '');
       if (!validAppointmentStatuses.has(status)) return errorResponse('حالة الموعد غير صالحة.');
       const updated = await put('appointments', { ...item, status }, { id: second, patientId: item.patient_id });
       return NextResponse.json({ appointment: updated }, { headers: { 'Cache-Control': 'no-store' } });
@@ -139,17 +141,17 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
         return NextResponse.json({ settings: rows[0] || null }, { headers: { 'Cache-Control': 'no-store' } });
       }
       if (method === 'PATCH') {
-        const name = String(payload?.clinic_name_ar || '').trim();
+        const name = String(input?.clinic_name_ar || '').trim();
         if (name.length < 2 || name.length > 180) return errorResponse('أدخل اسم العيادة بالعربية بشكل صحيح.');
         const settings = await put('clinic_settings', {
-          ...payload, clinic_name_ar: name,
-          clinic_name_en: typeof payload?.clinic_name_en === 'string' ? payload.clinic_name_en.slice(0, 180) : null,
-          address_ar: typeof payload?.address_ar === 'string' ? payload.address_ar.slice(0, 500) : null,
-          address_en: typeof payload?.address_en === 'string' ? payload.address_en.slice(0, 500) : null,
-          phone: typeof payload?.phone === 'string' ? payload.phone.slice(0, 40) : null,
-          email: typeof payload?.email === 'string' ? payload.email.slice(0, 254) : null,
-          website: typeof payload?.website === 'string' ? payload.website.slice(0, 500) : null,
-          settings_version: Number(payload?.settings_version || 0) + 1,
+          ...input, clinic_name_ar: name,
+          clinic_name_en: typeof input?.clinic_name_en === 'string' ? input.clinic_name_en.slice(0, 180) : null,
+          address_ar: typeof input?.address_ar === 'string' ? input.address_ar.slice(0, 500) : null,
+          address_en: typeof input?.address_en === 'string' ? input.address_en.slice(0, 500) : null,
+          phone: typeof input?.phone === 'string' ? input.phone.slice(0, 40) : null,
+          email: typeof input?.email === 'string' ? input.email.slice(0, 254) : null,
+          website: typeof input?.website === 'string' ? input.website.slice(0, 500) : null,
+          settings_version: Number(input?.settings_version || 0) + 1,
         }, { id: SINGLETON_ID });
         return NextResponse.json({ settings }, { headers: { 'Cache-Control': 'no-store' } });
       }
@@ -162,7 +164,7 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
         return NextResponse.json({ settings: saved.settings || saved, hours: Array.isArray(saved.hours) ? saved.hours : defaultBookingHours() }, { headers: { 'Cache-Control': 'no-store' } });
       }
       if (method === 'PATCH') {
-        const { hours, ...settings } = payload || {};
+        const { hours, ...settings } = input || {};
         const safeHours = Array.isArray(hours) ? hours.slice(0, 14).map((item: any) => ({
           weekday: Math.max(0, Math.min(6, Number(item.weekday) || 0)),
           shift: item.shift === 'evening' ? 'evening' : 'morning',
@@ -195,9 +197,9 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
         return NextResponse.json({ patient: { ...patient, ...(detail || {}) }, history, encounters }, { headers: { 'Cache-Control': 'no-store' } });
       }
       if (rest === 2 && method === 'PATCH') {
-        const fullName = String(payload?.full_name ?? patient.full_name).trim();
-        const age = Object.prototype.hasOwnProperty.call(payload, 'reported_age_years') ? payload.reported_age_years : patient.reported_age_years;
-        const complaint = Object.prototype.hasOwnProperty.call(payload, 'chief_complaint') ? payload.chief_complaint : patient.chief_complaint;
+        const fullName = String(input?.full_name ?? patient.full_name).trim();
+        const age = Object.prototype.hasOwnProperty.call(payload, 'reported_age_years') ? input.reported_age_years : patient.reported_age_years;
+        const complaint = Object.prototype.hasOwnProperty.call(payload, 'chief_complaint') ? input.chief_complaint : patient.chief_complaint;
         if (fullName.length < 2 || fullName.length > 180 || (age != null && (!Number.isInteger(Number(age)) || Number(age) < 1 || Number(age) > 120))) return errorResponse('تحقق من اسم المريض والعمر.');
         const result = await client.rpc('sinan_test_update_patient', {
           p_workspace_token: token, p_patient_id: second, p_full_name: fullName,
@@ -207,7 +209,7 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
         if (result.error || !result.data) return errorResponse('تعذر تحديث ملف المريض في قاعدة البيانات.', 503);
         let detail: any = {};
         if (Object.prototype.hasOwnProperty.call(payload, 'phone')) {
-          const phone = String(payload.phone || '').slice(0, 40);
+          const phone = String(input.phone || '').slice(0, 40);
           const savedDetail = await put('patient_details', { phone }, { id: second, patientId: second });
           detail = savedDetail;
         } else {
@@ -226,24 +228,24 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
       }
       if (kind === 'encounters' && rest === 3 && method === 'POST') {
         const encounter = await put('encounters', {
-          patient_id: second, encounter_type: String(payload?.encounter_type || 'dental_visit').slice(0, 80),
-          chief_complaint: typeof payload?.chief_complaint === 'string' ? payload.chief_complaint.slice(0, 2000) : null,
+          patient_id: second, encounter_type: String(input?.encounter_type || 'dental_visit').slice(0, 80),
+          chief_complaint: typeof input?.chief_complaint === 'string' ? input.chief_complaint.slice(0, 2000) : null,
           status: 'draft',
         }, { patientId: second });
         return NextResponse.json({ encounter }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
       }
       if (kind && rest === 3 && method === 'POST' && kind !== 'encounters') {
-        let clean: Record<string, any> = { ...payload, patient_id: second };
+        let clean: Record<string, any> = { ...input, patient_id: second };
         if (kind === 'odontogram') {
-          const surfaces = Array.isArray(payload?.surfaces) ? payload.surfaces.filter((value: any) => toothSurfaces.has(value)).slice(0, 8) : [];
-          if (!String(payload?.tooth_number || '').trim() || !String(payload?.status || '').trim()) return errorResponse('اكتب رقم السن والحالة.');
-          clean = { tooth_number: String(payload.tooth_number).slice(0, 12), notation_system: ['FDI','Universal','Palmer'].includes(payload.notation_system) ? payload.notation_system : 'FDI', status: String(payload.status).slice(0, 100), surfaces, note: typeof payload.note === 'string' ? payload.note.slice(0, 4000) : null, state: ['needs_review','clinician_confirmed','corrected'].includes(payload.state) ? payload.state : 'needs_review', patient_id: second };
+          const surfaces = Array.isArray(input?.surfaces) ? input.surfaces.filter((value: any) => toothSurfaces.has(value)).slice(0, 8) : [];
+          if (!String(input?.tooth_number || '').trim() || !String(input?.status || '').trim()) return errorResponse('اكتب رقم السن والحالة.');
+          clean = { tooth_number: String(input.tooth_number).slice(0, 12), notation_system: ['FDI','Universal','Palmer'].includes(input.notation_system) ? input.notation_system : 'FDI', status: String(input.status).slice(0, 100), surfaces, note: typeof input.note === 'string' ? input.note.slice(0, 4000) : null, state: ['needs_review','clinician_confirmed','corrected'].includes(input.state) ? input.state : 'needs_review', patient_id: second };
         } else if (kind === 'medical_history') {
-          if (!historyCategories.has(String(payload?.category)) || !historyStates.has(String(payload?.state)) || !String(payload?.title || '').trim()) return errorResponse('تحقق من تصنيف المعلومة الصحية وحالتها.');
-          clean = { category: payload.category, title: String(payload.title).trim().slice(0, 180), value: payload.value ?? null, state: payload.state, source: typeof payload.source === 'string' ? payload.source.slice(0, 3000) : null, patient_id: second };
+          if (!historyCategories.has(String(input?.category)) || !historyStates.has(String(input?.state)) || !String(input?.title || '').trim()) return errorResponse('تحقق من تصنيف المعلومة الصحية وحالتها.');
+          clean = { category: input.category, title: String(input.title).trim().slice(0, 180), value: input.value ?? null, state: input.state, source: typeof input.source === 'string' ? input.source.slice(0, 3000) : null, patient_id: second };
         } else if (kind === 'endodontics') {
-          if (!String(payload?.tooth_number || '').trim() || !Array.isArray(payload?.canals)) return errorResponse('أدخل رقم السن وبيانات القنوات.');
-          clean = { ...payload, patient_id: second };
+          if (!String(input?.tooth_number || '').trim() || !Array.isArray(input?.canals)) return errorResponse('أدخل رقم السن وبيانات القنوات.');
+          clean = { ...input, patient_id: second };
         }
         const saved = await put(kind, clean, { patientId: second });
         return NextResponse.json(kind === 'odontogram' ? { entry: saved } : kind === 'endodontics' ? { case: saved } : { item: saved }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
