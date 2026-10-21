@@ -38,8 +38,8 @@ test('other direct-workspace modules persist in a separate RLS-protected test ta
   assert.ok(modulesMigration.includes('revoke all on table public.sinan_test_workspace_records from public, anon, authenticated'));
   assert.match(modulesMigration, /security definer/i);
   assert.ok(modulesMigration.includes('grant execute on function public.sinan_test_upsert_record(uuid, text, uuid, uuid, jsonb) to anon, authenticated;'));
-  assert.match(workspaceRoute, /sinan_test_list_records/);
-  assert.match(workspaceRoute, /sinan_test_upsert_record/);
+  assert.ok((await readFile(new URL('lib/supabase/test-workspace.ts', root), 'utf8')).includes("client.rpc('sinan_test_list_records'"));
+  assert.ok((await readFile(new URL('lib/supabase/test-workspace.ts', root), 'utf8')).includes("client.rpc('sinan_test_upsert_record'"));
   assert.ok(workspaceRoute.includes('findPatient(payload.patient_id)'));
 });
 
