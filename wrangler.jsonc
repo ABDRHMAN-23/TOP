@@ -25,7 +25,7 @@
     "NEXT_PUBLIC_SUPABASE_URL": "https://djpfjbjjybpquvzacmtj.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_TkjtLbzWTqXlE18tcvGpow_XFxdTvmz",
     "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_TkjtLbzWTqXlE18tcvGpow_XFxdTvmz",
-    "NEXT_PUBLIC_DEMO_MODE": "false",
+    "NEXT_PUBLIC_DEMO_MODE": "true",
     "CLINICAL_AUDIO_BUCKET": "clinical-audio-private",
     "GEMINI_MODEL": "gemini-2.5-flash",
     "MAX_AUDIO_CHUNK_MB": "12"

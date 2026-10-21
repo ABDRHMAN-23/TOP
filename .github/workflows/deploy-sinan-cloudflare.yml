@@ -35,7 +35,7 @@ jobs:
       # These are Supabase's public URL and publishable key; RLS and Auth remain the security boundary.
       NEXT_PUBLIC_SUPABASE_URL: "https://djpfjbjjybpquvzacmtj.supabase.co"
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_TkjtLbzWTqXlE18tcvGpow_XFxdTvmz"
-      NEXT_PUBLIC_DEMO_MODE: "false"
+      NEXT_PUBLIC_DEMO_MODE: "true"
       # Private Gemini key and other private settings are read from Cloudflare Worker runtime secrets/vars.
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -207,7 +207,8 @@ jobs:
           const status = Number(process.argv[2]);
           const payload = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
           console.log(JSON.stringify({ httpStatus: status, ready: payload.ready, checks: payload.checks }));
-          if (status !== 200 || payload.ready !== true) process.exit(1);
+          // The current release intentionally serves isolated local test mode; readiness is false by design.
+          if (status !== 503 || payload.ready !== false || payload.checks?.mode !== 'demo') process.exit(1);
           NODE
 
       # One-time end-to-end test. It uses a disposable mailbox and non-clinical fake data, then the DB test rows are removed manually after the run.
