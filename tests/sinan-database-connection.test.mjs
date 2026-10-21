@@ -55,5 +55,5 @@ test('only explicit token-bearing supported API paths are rewritten into test-wo
 test('anonymous workspace refuses to simulate clinical report generation and disables unsecured audio capture', () => {
   assert.match(workspaceRoute, /لا يُنشئ سِنان تقريراً وهمياً/);
   assert.ok(homePage.includes('isDemo={demoMode || Boolean(testWorkspaceToken)}'));
-  assert.ok(homePage.includes('التسجيل الصوتي غير مفعّل في مساحة الاختبار حتى يُربط بتخزين آمن ومعالجة سريرية'));
+  assert.ok(homePage.includes('التسجيل الصوتي غير مفعّل في مساحة العمل الحالية قبل توصيل التخزين الآمن والمعالجة السريرية'));
 });
