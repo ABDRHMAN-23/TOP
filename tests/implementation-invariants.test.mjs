@@ -315,7 +315,7 @@ test('clinic booking settings validate the whole weekly schedule and save throug
 
 test('account creation and sign-in are removed from the direct-entry flow', () => {
   assert.match(signInUi, /redirect\('\/'\)/);
-  assert.match(signUpUi, /redirect\('\/'\)/);
+  assert.match(signUpUi, /router\.replace\('\/'\)/);
   assert.doesNotMatch(signInUi, /signInWithPassword/);
   assert.doesNotMatch(signUpUi, /supabase\.auth\.signUp/);
   assert.match(app, /sinan-test-workspace-v1/);
@@ -325,7 +325,7 @@ test('account creation and sign-in are removed from the direct-entry flow', () =
 test('retired signup routes contain no account form or password handling', () => {
   assert.doesNotMatch(signUpUi, /email_address_not_authorized|email_address_invalid|over_email_send_rate_limit/);
   assert.doesNotMatch(signUpUi, /password|signUp/);
-  assert.match(signUpUi, /redirect\('\/'\)/);
+  assert.match(signUpUi, /router\.replace\('\/'\)/);
 });
 
 test('booking settings responses expose only editable fields so save can be repeated safely', () => {
