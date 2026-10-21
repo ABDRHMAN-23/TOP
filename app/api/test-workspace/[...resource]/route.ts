@@ -181,13 +181,22 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
       return NextResponse.json({ reports: await records('reports') }, { headers: { 'Cache-Control': 'no-store' } });
     }
     if (first === 'reports' && method === 'POST') {
-      return errorResponse('إنشاء تقرير طبي يحتاج إلى مسودة سريرية محفوظة ومعتمدة؛ لا يُنشئ سِنان تقريراً وهمياً في مساحة الاختبار.', 409);
+      return errorResponse('إنشاء تقرير طبي يحتاج إلى مسودة سريرية محفوظة ومعتمدة؛ لا يمكن إنشاء تقرير قبل وجود مسودة سريرية محفوظة ومعتمدة.', 409);
     }
     if (first === 'review-queue' && rest === 1 && method === 'GET') {
       return NextResponse.json({ items: [] }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
     if (first === 'patients' && second && uuidPattern.test(second)) {
+      if (rest === 2 && method === 'DELETE') {
+        const result = await client.rpc('sinan_test_delete_patient', {
+          p_workspace_token: token,
+          p_patient_id: second,
+        });
+        if (result.error) return errorResponse('تعذر حذف الملف من مساحة العمل الحالية.', 503);
+        if (!result.data) return errorResponse('المريض غير موجود في مساحة العمل الحالية.', 404);
+        return NextResponse.json({ deleted: true }, { headers: { 'Cache-Control': 'no-store' } });
+      }
       const patient = await findPatient(second);
       if (!patient) return errorResponse('المريض غير موجود في مساحة العمل الحالية.', 404);
       if (rest === 2 && method === 'GET') {
