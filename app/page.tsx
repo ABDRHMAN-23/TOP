@@ -127,6 +127,7 @@ export default function HomePage() {
   const [patientAgeYears, setPatientAgeYears] = useState('');
   const [complaint, setComplaint] = useState('');
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [testWorkspaceToken, setTestWorkspaceToken] = useState('');
   const [loadError, setLoadError] = useState('');
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [activeOrganizationId, setActiveOrganizationId] = useState('');
@@ -191,7 +192,7 @@ export default function HomePage() {
 
   function organizationName(item: any) { const linked = Array.isArray(item?.organizations) ? item.organizations[0] : item?.organizations; return linked?.name || linked?.name_en || 'عيادة'; }
   async function loadLiveCollections() {
-    const patientResponse = await fetch('/api/patients', { cache: 'no-store' });
+    const patientResponse = await fetch('/api/patients', { cache: 'no-store', headers: { 'x-sinan-test-workspace': testWorkspaceToken } });
     const patientBody = await patientResponse.json().catch(() => ({}));
     if (!patientResponse.ok) throw new Error(patientBody.error || 'تعذر تحميل بيانات العيادة.');
     const rows = Array.isArray(patientBody.patients) ? patientBody.patients : [];
@@ -278,7 +279,28 @@ export default function HomePage() {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = previousOverflow; };
   }, [sidebarOpen]);
-  useEffect(() => { if (demoMode) return; let cancelled=false; bootstrapOrganization().catch(e=>{if(!cancelled)setLoadError(e instanceof Error?e.message:'تعذر تحميل مساحة العيادة.')}); return ()=>{cancelled=true}; }, []);
+  useEffect(() => {
+    try {
+      let token = window.localStorage.getItem('sinan-test-workspace-v1') || '';
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token)) {
+        token = window.crypto.randomUUID();
+        window.localStorage.setItem('sinan-test-workspace-v1', token);
+      }
+      setTestWorkspaceToken(token);
+      setActiveOrganizationId(token);
+      setClinicName('مساحة العمل');
+    } catch {
+      setLoadError('تعذر تهيئة مساحة العمل على هذا الجهاز. فعّل التخزين المحلي ثم أعد تحميل الصفحة.');
+    }
+  }, []);
+  useEffect(() => {
+    if (!testWorkspaceToken) return;
+    let cancelled = false;
+    loadLiveCollections().catch(error => {
+      if (!cancelled) setLoadError(error instanceof Error ? error.message : 'تعذر تحميل ملفات المرضى.');
+    });
+    return () => { cancelled = true; };
+  }, [testWorkspaceToken]);
   useEffect(() => {
     if (demoMode || active !== 'odontogram' || !selectedPatient?.id) return;
     let cancelled=false; fetch(`/api/patients/${selectedPatient.id}/odontogram`,{cache:'no-store'}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'تعذر تحميل مخطط الأسنان.');return b;}).then(b=>{if(!cancelled)setToothEntries(Array.isArray(b.entries)?b.entries:[])}).catch(e=>{if(!cancelled)notify(e instanceof Error?e.message:'تعذر تحميل مخطط الأسنان.')});
@@ -362,7 +384,7 @@ export default function HomePage() {
       const ageValue=patientAgeYears.trim()?Number(patientAgeYears):null; if(ageValue!==null&&(!Number.isInteger(ageValue)||ageValue<1||ageValue>120)){notify('أدخل عمراً بين سنة و120 سنة.');return;} const next: Patient = { id: `SN-${1050 + patients.length}`, displayId: `SN-${1050 + patients.length}`, name: name.trim(), age: ageValue!==null?`${ageValue} سنة`:'العمر غير مسجل', phone: '—', visit: 'لم يحدد موعد', reason: complaint.trim() || 'لم تسجل الشكوى بعد', state: 'مسودة', initials: getInitials(name.trim()), color: 'mint' };
       setPatients([next, ...patients]); setSelectedPatient(next); setName(''); setPatientAgeYears(''); setComplaint(''); setShowNewPatient(false); setActive('patients'); notify('تمت إضافة الملف إلى مساحة العمل الحالية. الحفظ الدائم يتطلب اتصال قاعدة البيانات.'); return;
     }
-    try { const response = await fetch('/api/patients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ full_name: name.trim(), reported_age_years: patientAgeYears.trim()?Number(patientAgeYears):null, chief_complaint: complaint.trim() || null }) }); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || 'تعذر إنشاء ملف المريض.'); const p = body.patient; const next: Patient = { id: p.id, displayId: p.patient_number || String(p.id).slice(0,8), name: p.full_name, age: p.date_of_birth?`${Math.max(0,new Date().getFullYear()-new Date(p.date_of_birth).getFullYear())} سنة`:p.reported_age_years?`${p.reported_age_years} سنة`:'العمر غير مسجل', phone: maskPhoneForDisplay(p.phone), visit: 'لا توجد زيارة مسجلة', reason: p.chief_complaint || 'لم تسجل الشكوى بعد', state: 'مسودة', initials: getInitials(p.full_name || 'م'), color: 'mint' }; setPatients([next,...patients]); setSelectedPatient(next); setName(''); setPatientAgeYears(''); setComplaint(''); setShowNewPatient(false); setActive('patients'); notify('تم إنشاء ملف المريض في قاعدة البيانات.'); } catch (error) { notify(error instanceof Error ? error.message : 'تعذر إنشاء ملف المريض.'); }
+    try { const response = await fetch('/api/patients', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-sinan-test-workspace': testWorkspaceToken }, body: JSON.stringify({ full_name: name.trim(), reported_age_years: patientAgeYears.trim()?Number(patientAgeYears):null, chief_complaint: complaint.trim() || null }) }); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || 'تعذر إنشاء ملف المريض.'); const p = body.patient; const next: Patient = { id: p.id, displayId: p.patient_number || String(p.id).slice(0,8), name: p.full_name, age: p.date_of_birth?`${Math.max(0,new Date().getFullYear()-new Date(p.date_of_birth).getFullYear())} سنة`:p.reported_age_years?`${p.reported_age_years} سنة`:'العمر غير مسجل', phone: maskPhoneForDisplay(p.phone), visit: 'لا توجد زيارة مسجلة', reason: p.chief_complaint || 'لم تسجل الشكوى بعد', state: 'مسودة', initials: getInitials(p.full_name || 'م'), color: 'mint' }; setPatients([next,...patients]); setSelectedPatient(next); setName(''); setPatientAgeYears(''); setComplaint(''); setShowNewPatient(false); setActive('patients'); notify('تم إنشاء ملف المريض في قاعدة البيانات.'); } catch (error) { notify(error instanceof Error ? error.message : 'تعذر إنشاء ملف المريض.'); }
   }
 
   function openPatientEdit() {
