@@ -191,7 +191,8 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
       if (rest === 2 && method === 'GET') {
         const detail = await get('patient_details', second);
         const history = (await records('medical_history')).filter((item: any) => item.patient_id === second);
-        return NextResponse.json({ patient: { ...patient, ...(detail || {}) }, history }, { headers: { 'Cache-Control': 'no-store' } });
+        const encounters = (await records('encounters')).filter((item: any) => item.patient_id === second);
+        return NextResponse.json({ patient: { ...patient, ...(detail || {}) }, history, encounters }, { headers: { 'Cache-Control': 'no-store' } });
       }
       if (rest === 2 && method === 'PATCH') {
         const fullName = String(payload?.full_name ?? patient.full_name).trim();
