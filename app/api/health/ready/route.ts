@@ -70,11 +70,12 @@ export async function GET() {
     geminiConfigured,
     audioBucketConfigured,
   };
+  // Sinan's current direct-entry workspace is intentionally usable without accounts.
+  // Auth signup availability is reported for diagnostics, but is not a core readiness dependency.
   const ready =
     !demoMode &&
     checks.supabaseConfigured &&
     supabaseReachable === true &&
-    signupEnabled === true &&
     audioBucketConfigured;
   const aiReady = ready && geminiConfigured;
 
