@@ -313,24 +313,19 @@ test('clinic booking settings validate the whole weekly schedule and save throug
   assert.match(bookingSettingsRoute, /supabase\.rpc\('save_clinic_booking_settings'/);
 });
 
-test('first-time doctor registration supports email confirmation and safe clinic onboarding redirect', () => {
-  assert.match(signInUi, /href="\/sign-up"/);
-  assert.match(signUpUi, /supabase\.auth\.signUp/);
-  assert.match(signUpUi, /emailRedirectTo:redirectTo/);
-  assert.match(signUpUi, /router\.replace\('\/onboarding'\)/);
-  assert.match(signUpUi, /setConfirmationEmail\(email\.trim\(\)\)/);
-  assert.match(authCallback, /NEXT_PUBLIC_SUPABASE_ANON_KEY \|\| process\.env\.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
-  assert.match(authCallback, /safeInternalPath/);
-  assert.match(authCallback, /exchangeCodeForSession\(code\)/);
+test('account creation and sign-in are removed from the direct-entry flow', () => {
+  assert.match(signInUi, /redirect\('\/'\)/);
+  assert.match(signUpUi, /redirect\('\/'\)/);
+  assert.doesNotMatch(signInUi, /signInWithPassword/);
+  assert.doesNotMatch(signUpUi, /supabase\.auth\.signUp/);
+  assert.match(app, /sinan-test-workspace-v1/);
 });
 
 
-test('signup maps current Supabase email authorization, invalid-address, and rate-limit codes to actionable guidance', () => {
-  assert.match(signUpUi, /email_address_not_authorized/);
-  assert.match(signUpUi, /email_address_invalid/);
-  assert.match(signUpUi, /over_email_send_rate_limit/);
-  assert.match(signUpUi, /email_rate_limit/);
-  assert.match(signUpUi, /redirect_uri_not_allowed/);
+test('retired signup routes contain no account form or password handling', () => {
+  assert.doesNotMatch(signUpUi, /email_address_not_authorized|email_address_invalid|over_email_send_rate_limit/);
+  assert.doesNotMatch(signUpUi, /password|signUp/);
+  assert.match(signUpUi, /redirect\('\/'\)/);
 });
 
 test('booking settings responses expose only editable fields so save can be repeated safely', () => {
