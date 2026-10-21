@@ -570,5 +570,5 @@ test('direct Sinan entry uses persistent isolated workspace data without exposin
   assert.match(anonymousWorkspaceMigration, /revoke all on table public\.sinan_test_patients from anon, authenticated/i);
   assert.match(anonymousWorkspaceMigration, /grant execute on function public\.sinan_test_list_patients\(uuid\) to anon, authenticated/i);
   assert.match(signInPage, /redirect\('\/'\)/);
-  assert.match(signUpPage, /redirect\('\/'\)/);
+  assert.match(signUpPage, /router\.replace\('\/'\)/);
 });
