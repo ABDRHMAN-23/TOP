@@ -373,7 +373,7 @@ export default function HomePage() {
   const attentionPatients = useMemo(() => [] as Patient[], []);
   const reviewCount = demoMode ? attentionPatients.length : reviewQueue.length;
   const activeClinicRole = organizations.find(item => item.organization_id === activeOrganizationId)?.role;
-  const canEditPatient = demoMode || ['owner', 'clinic_admin', 'dentist', 'clinician'].includes(activeClinicRole);
+  const canEditPatient = demoMode || Boolean(testWorkspaceToken) || ['owner', 'clinic_admin', 'dentist', 'clinician'].includes(activeClinicRole);
   const pendingBookingRequests = useMemo(() => bookingRequests, [bookingRequests]);
   const visibleScheduleAppointments = (demoMode ? scheduleAppointments.filter(item => dateInputForAden(new Date(item.scheduled_start)) === appointmentViewDate) : scheduleAppointments).filter(item => !(item.booking_source === 'public_link' && ['requested','declined'].includes(item.booking_status)));
   const commandRoutes = useMemo(() => [
