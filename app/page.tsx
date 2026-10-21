@@ -133,6 +133,7 @@ export default function HomePage() {
   const [showEditPatient, setShowEditPatient] = useState(false);
   const [editPatientName, setEditPatientName] = useState('');
   const [editPatientPhone, setEditPatientPhone] = useState('');
+  const [editPatientAge, setEditPatientAge] = useState('');
   const [editPatientComplaint, setEditPatientComplaint] = useState('');
   const [patientSaving, setPatientSaving] = useState(false);
   const [showScribe, setShowScribe] = useState(false);
@@ -421,6 +422,7 @@ export default function HomePage() {
     if (!selectedPatient) { notify('اختر ملف المريض أولاً.'); return; }
     setEditPatientName(selectedPatient.name);
     setEditPatientPhone(demoMode ? '' : (patientDetails?.patient?.id === selectedPatient.id ? String(patientDetails.patient.phone || '') : ''));
+    setEditPatientAge(demoMode ? (selectedPatient.age.match(/\\d+/)?.[0] || '') : (patientDetails?.patient?.id === selectedPatient.id && patientDetails.patient.reported_age_years != null ? String(patientDetails.patient.reported_age_years) : (selectedPatient.age.match(/\\d+/)?.[0] || '')));
     setEditPatientComplaint(demoMode ? selectedPatient.reason : (patientDetails?.patient?.id === selectedPatient.id ? String(patientDetails.patient.chief_complaint || '') : ''));
     setShowEditPatient(true);
   }
@@ -436,7 +438,8 @@ export default function HomePage() {
         name: fullName,
         initials: getInitials(fullName),
         reason: complaintValue || 'لم تسجل الشكوى بعد',
-        phone: editPatientPhone.trim() ? maskPhoneForDisplay(editPatientPhone.trim()) : selectedPatient.phone,
+        phone: editPatientPhone.trim() ? maskPhoneForDisplay(editPatientPhone.trim()) : '—',
+        age: editPatientAge.trim() ? `${Number(editPatientAge)} سنة` : 'العمر غير مسجل',
       };
       setPatients(current => current.map(patient => patient.id === selectedPatient.id ? updated : patient));
       setSelectedPatient(updated);
@@ -447,11 +450,17 @@ export default function HomePage() {
 
     const payload: Record<string, unknown> = {};
     if (fullName !== selectedPatient.name) payload.full_name = fullName;
+    const ageText = editPatientAge.trim();
+    const ageValue = ageText ? Number(ageText) : null;
+    if (ageText && (!Number.isInteger(ageValue) || ageValue! < 1 || ageValue! > 120)) { notify('أدخل عمراً صحيحاً بين سنة و120 سنة، أو اتركه فارغاً لمسح العمر المبلغ عنه.'); return; }
     const detailMatchesSelection = patientDetails?.patient?.id === selectedPatient.id;
     const originalComplaint = detailMatchesSelection ? String(patientDetails.patient.chief_complaint || '') : '';
     if (complaintValue !== originalComplaint) payload.chief_complaint = complaintValue || null;
     const originalPhone = detailMatchesSelection ? String(patientDetails.patient.phone || '') : '';
-    if (editPatientPhone.trim() && editPatientPhone.trim() !== originalPhone) payload.phone = editPatientPhone.trim();
+    const nextPhone = editPatientPhone.trim();
+    if (nextPhone !== originalPhone) payload.phone = nextPhone || null;
+    const originalAge = detailMatchesSelection && patientDetails.patient.reported_age_years != null ? Number(patientDetails.patient.reported_age_years) : null;
+    if (ageValue !== originalAge) payload.reported_age_years = ageValue;
     if (Object.keys(payload).length === 0) {
       setShowEditPatient(false);
       notify('لا توجد تغييرات جديدة لحفظها.');
@@ -879,7 +888,8 @@ export default function HomePage() {
       <div className="modal-head"><div><div className="eyebrow">الملفات السريرية</div><h2 id="edit-patient-title">تعديل بيانات المريض</h2></div><button className="icon-button" type="button" onClick={() => setShowEditPatient(false)} disabled={patientSaving} aria-label="إغلاق"><X size={18}/></button></div>
       <p className="modal-intro">راجع البيانات الأساسية فقط. لا تغيّر الشكوى إلا إذا أكدها المريض، ولا تستبدل التاريخ الصحي أو التشخيصات بهذه الخانات.</p>
       <label className="form-field">اسم المريض <span>*</span><input value={editPatientName} onChange={event => setEditPatientName(event.target.value)} minLength={2} maxLength={180} required/></label>
-      <label className="form-field">رقم الهاتف<input type="tel" value={editPatientPhone} onChange={event => setEditPatientPhone(event.target.value)} maxLength={40} placeholder='اتركه فارغاً للإبقاء على الرقم الحالي'/></label>
+      <label className="form-field">العمر بالسنوات<input type="number" min={1} max={120} step={1} value={editPatientAge} onChange={event => setEditPatientAge(event.target.value)} placeholder="اتركه فارغاً إذا لم يُعرف"/></label>
+      <label className="form-field">رقم الهاتف<input type="tel" value={editPatientPhone} onChange={event => setEditPatientPhone(event.target.value)} maxLength={40} placeholder='اتركه فارغاً لمسح رقم الهاتف'/></label>
       <label className="form-field">الشكوى الرئيسية<textarea value={editPatientComplaint} onChange={event => setEditPatientComplaint(event.target.value)} maxLength={2000} rows={3} placeholder="ما ذكره المريض، دون استنتاج تشخيص"/></label>
       {demoMode && <div className="modal-warning"><AlertCircle size={16}/> لا يتوفر الحفظ الدائم حالياً لأن قاعدة بيانات العيادة غير متصلة.</div>}
       <div className="modal-actions"><button className="secondary-button" type="button" onClick={() => setShowEditPatient(false)} disabled={patientSaving}>إلغاء</button><button className="primary-button" type="button" onClick={savePatientEdits} disabled={patientSaving || editPatientName.trim().length < 2}><SaveIcon/>{patientSaving ? 'جارٍ حفظ التعديلات...' : 'حفظ التعديلات'}</button></div>
