@@ -198,8 +198,8 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
       }
       if (rest === 2 && method === 'PATCH') {
         const fullName = String(input?.full_name ?? patient.full_name).trim();
-        const age = Object.prototype.hasOwnProperty.call(payload, 'reported_age_years') ? input.reported_age_years : patient.reported_age_years;
-        const complaint = Object.prototype.hasOwnProperty.call(payload, 'chief_complaint') ? input.chief_complaint : patient.chief_complaint;
+        const age = Object.prototype.hasOwnProperty.call(input, 'reported_age_years') ? input.reported_age_years : patient.reported_age_years;
+        const complaint = Object.prototype.hasOwnProperty.call(input, 'chief_complaint') ? input.chief_complaint : patient.chief_complaint;
         if (fullName.length < 2 || fullName.length > 180 || (age != null && (!Number.isInteger(Number(age)) || Number(age) < 1 || Number(age) > 120))) return errorResponse('تحقق من اسم المريض والعمر.');
         const result = await client.rpc('sinan_test_update_patient', {
           p_workspace_token: token, p_patient_id: second, p_full_name: fullName,
@@ -208,7 +208,7 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
         });
         if (result.error || !result.data) return errorResponse('تعذر تحديث ملف المريض في قاعدة البيانات.', 503);
         let detail: any = {};
-        if (Object.prototype.hasOwnProperty.call(payload, 'phone')) {
+        if (Object.prototype.hasOwnProperty.call(input, 'phone')) {
           const phone = String(input.phone || '').slice(0, 40);
           const savedDetail = await put('patient_details', { phone }, { id: second, patientId: second });
           detail = savedDetail;
