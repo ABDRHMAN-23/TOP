@@ -26,6 +26,16 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
           NEXT_PUBLIC_DEMO_MODE: "true"
+      - name: Build Cloudflare Worker package
+        run: npm run build:cloudflare
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          NEXT_PUBLIC_DEMO_MODE: "false"
+      - name: Verify OpenNext output exists
+        run: |
+          test -s .open-next/worker.js
+          test -d .open-next/assets
       - name: Upload generated npm lockfile
         if: success()
         uses: actions/upload-artifact@v4
