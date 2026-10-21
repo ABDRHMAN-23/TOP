@@ -60,6 +60,23 @@ function maskPhoneForDisplay(phone: string | null | undefined): string {
 }
 
 const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+function workspaceFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  if (typeof window === 'undefined') return fetch(input, init);
+  try {
+    const source = input instanceof Request ? input.url : String(input);
+    const url = new URL(source, window.location.href);
+    if (url.origin !== window.location.origin || !url.pathname.startsWith('/api/')) return fetch(input, init);
+    const token = window.localStorage.getItem('sinan-test-workspace-v1');
+    if (!token) return fetch(input, init);
+    const headers = new Headers(input instanceof Request ? input.headers : undefined);
+    if (init?.headers) new Headers(init.headers).forEach((value, key) => headers.set(key, value));
+    headers.set('x-sinan-test-workspace', token);
+    return fetch(input, { ...init, headers });
+  } catch {
+    return fetch(input, init);
+  }
+}
+
 function dateInputForAden(value = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Aden', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(value);
   const part = (type: string) => parts.find(item => item.type === type)?.value || '';
@@ -194,7 +211,7 @@ export default function HomePage() {
   function organizationName(item: any) { const linked = Array.isArray(item?.organizations) ? item.organizations[0] : item?.organizations; return linked?.name || linked?.name_en || 'عيادة'; }
   async function loadLiveCollections() {
     setDatabaseStatus('checking');
-    const patientResponse = await fetch('/api/patients', { cache: 'no-store', headers: { 'x-sinan-test-workspace': testWorkspaceToken } });
+    const patientResponse = await workspaceFetch('/api/patients', { cache: 'no-store', headers: { 'x-sinan-test-workspace': testWorkspaceToken } });
     const patientBody = await patientResponse.json().catch(() => ({}));
     if (!patientResponse.ok) { setDatabaseStatus('disconnected'); throw new Error(patientBody.error || 'تعذر تحميل بيانات العيادة.'); }
     const rows = Array.isArray(patientBody.patients) ? patientBody.patients : [];
@@ -202,9 +219,9 @@ export default function HomePage() {
     setDatabaseStatus('connected');
     setPatients(mapped); setSelectedPatient(current => current && mapped.some(p=>p.id===current.id) ? mapped.find(p=>p.id===current.id) || null : mapped[0] || null); setLoadError('');
     const [appointmentsResult, settingsResult, reportsResult] = await Promise.allSettled([
-      fetch('/api/appointments?from=' + encodeURIComponent(new Date(dateInputForAden() + 'T00:00:00+03:00').toISOString()) + '&to=' + encodeURIComponent(new Date(new Date(dateInputForAden() + 'T00:00:00+03:00').getTime()+86400000).toISOString()), { cache: 'no-store' }).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'appointments unavailable');return b;}),
-      fetch('/api/clinic/settings', { cache: 'no-store' }).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'settings unavailable');return b;}),
-      fetch('/api/reports', { cache: 'no-store' }).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'reports unavailable');return b;}),
+      workspaceFetch('/api/appointments?from=' + encodeURIComponent(new Date(dateInputForAden() + 'T00:00:00+03:00').toISOString()) + '&to=' + encodeURIComponent(new Date(new Date(dateInputForAden() + 'T00:00:00+03:00').getTime()+86400000).toISOString()), { cache: 'no-store' }).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'appointments unavailable');return b;}),
+      workspaceFetch('/api/clinic/settings', { cache: 'no-store' }).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'settings unavailable');return b;}),
+      workspaceFetch('/api/reports', { cache: 'no-store' }).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'reports unavailable');return b;}),
     ]);
     if (appointmentsResult.status==='fulfilled') { setTodayAppointments(appointmentsResult.value.appointments || []); setScheduleAppointments(appointmentsResult.value.appointments || []); }
     if (settingsResult.status==='fulfilled' && settingsResult.value.settings) setClinicSettings(current=>({...current,...settingsResult.value.settings}));
@@ -216,7 +233,7 @@ export default function HomePage() {
     const dayStart = new Date(date + 'T00:00:00+03:00');
     const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
     try {
-      const response = await fetch('/api/appointments?from=' + encodeURIComponent(dayStart.toISOString()) + '&to=' + encodeURIComponent(dayEnd.toISOString()), { cache: 'no-store' });
+      const response = await workspaceFetch('/api/appointments?from=' + encodeURIComponent(dayStart.toISOString()) + '&to=' + encodeURIComponent(dayEnd.toISOString()), { cache: 'no-store' });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'تعذر تحميل المواعيد.');
       setScheduleAppointments(Array.isArray(body.appointments) ? body.appointments : []);
@@ -225,7 +242,7 @@ export default function HomePage() {
 
   async function bootstrapOrganization() {
     try {
-      const response = await fetch('/api/organizations', { cache: 'no-store' }); const body = await response.json().catch(()=>({}));
+      const response = await workspaceFetch('/api/organizations', { cache: 'no-store' }); const body = await response.json().catch(()=>({}));
       if (!response.ok) throw new Error(body.error || 'تعذر تحميل العيادات.');
       const options: any[] = Array.isArray(body.organizations) ? body.organizations : [];
       setOrganizations(options);
@@ -234,7 +251,7 @@ export default function HomePage() {
       if (!selectedId || !options.some(item=>item.organization_id===selectedId)) {
         if (options.length > 1) { setLoadError('اختر مساحة العيادة التي تريد فتحها.'); setShowOrganizationPicker(true); return; }
         selectedId = options[0].organization_id;
-        const selectedResponse = await fetch('/api/organizations', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({organization_id:selectedId}) });
+        const selectedResponse = await workspaceFetch('/api/organizations', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({organization_id:selectedId}) });
         if (!selectedResponse.ok) throw new Error('تعذر اختيار مساحة العيادة.');
       }
       setActiveOrganizationId(selectedId);
@@ -249,7 +266,7 @@ export default function HomePage() {
     if (active !== 'settings' || demoMode || !activeOrganizationId) return;
     let cancelled=false;
     setBookingLoading(true);
-    fetch('/api/clinic/booking-settings',{cache:'no-store'})
+    workspaceFetch('/api/clinic/booking-settings',{cache:'no-store'})
       .then(async response=>{const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.error||'تعذر تحميل إعدادات الحجز.');return body;})
       .then(body=>{if(!cancelled){setBookingSettings(current=>({...current,...body.settings}));setBookingHours(Array.isArray(body.hours)?body.hours:defaultBookingHours());setBookingLoaded(true);}})
       .catch(error=>{if(!cancelled)notify(error instanceof Error?error.message:'تعذر تحميل إعدادات الحجز.');})
@@ -306,18 +323,18 @@ export default function HomePage() {
   }, [testWorkspaceToken]);
   useEffect(() => {
     if (demoMode || active !== 'odontogram' || !selectedPatient?.id) return;
-    let cancelled=false; fetch(`/api/patients/${selectedPatient.id}/odontogram`,{cache:'no-store'}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'تعذر تحميل مخطط الأسنان.');return b;}).then(b=>{if(!cancelled)setToothEntries(Array.isArray(b.entries)?b.entries:[])}).catch(e=>{if(!cancelled)notify(e instanceof Error?e.message:'تعذر تحميل مخطط الأسنان.')});
+    let cancelled=false; workspaceFetch(`/api/patients/${selectedPatient.id}/odontogram`,{cache:'no-store'}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'تعذر تحميل مخطط الأسنان.');return b;}).then(b=>{if(!cancelled)setToothEntries(Array.isArray(b.entries)?b.entries:[])}).catch(e=>{if(!cancelled)notify(e instanceof Error?e.message:'تعذر تحميل مخطط الأسنان.')});
     return()=>{cancelled=true};
   },[active,selectedPatient?.id]);
   useEffect(() => {
     if (demoMode || active !== 'endodontics' || !selectedPatient?.id) return;
-    let cancelled=false; fetch(`/api/patients/${selectedPatient.id}/endodontics`,{cache:'no-store'}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'تعذر تحميل ملفات علاج العصب.');return b;}).then(b=>{if(!cancelled)setEndodonticCases(Array.isArray(b.cases)?b.cases:[])}).catch(e=>{if(!cancelled)notify(e instanceof Error?e.message:'تعذر تحميل ملفات علاج العصب.')});
+    let cancelled=false; workspaceFetch(`/api/patients/${selectedPatient.id}/endodontics`,{cache:'no-store'}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'تعذر تحميل ملفات علاج العصب.');return b;}).then(b=>{if(!cancelled)setEndodonticCases(Array.isArray(b.cases)?b.cases:[])}).catch(e=>{if(!cancelled)notify(e instanceof Error?e.message:'تعذر تحميل ملفات علاج العصب.')});
     return()=>{cancelled=true};
   },[active,selectedPatient?.id]);
   useEffect(() => {
     if (demoMode || active !== 'patients' || !selectedPatient?.id) return;
     let cancelled=false;
-    fetch(`/api/patients/${selectedPatient.id}`,{cache:'no-store'}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'تعذر تحميل ملف المريض.');return b;}).then(b=>{if(!cancelled){setPatientDetails(b);setHistoryItems(Array.isArray(b.history)?b.history:[])}}).catch(e=>{if(!cancelled)notify(e instanceof Error?e.message:'تعذر تحميل التاريخ الصحي.')});
+    workspaceFetch(`/api/patients/${selectedPatient.id}`,{cache:'no-store'}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'تعذر تحميل ملف المريض.');return b;}).then(b=>{if(!cancelled){setPatientDetails(b);setHistoryItems(Array.isArray(b.history)?b.history:[])}}).catch(e=>{if(!cancelled)notify(e instanceof Error?e.message:'تعذر تحميل التاريخ الصحي.')});
     return()=>{cancelled=true};
   },[active,selectedPatient?.id]);
   useEffect(() => {
@@ -325,7 +342,7 @@ export default function HomePage() {
     let cancelled = false;
     setReviewQueueLoading(true);
     setReviewQueueAccessDenied(false);
-    fetch('/api/review-queue', { cache: 'no-store' })
+    workspaceFetch('/api/review-queue', { cache: 'no-store' })
       .then(async response => {
         const body = await response.json().catch(() => ({}));
         if (response.status === 403) return { items: [], accessDenied: true };
@@ -339,7 +356,7 @@ export default function HomePage() {
   }, [active, activeOrganizationId]);
   useEffect(() => {
     if (demoMode || active !== 'reports') return;
-    let cancelled=false; fetch('/api/reports',{cache:'no-store'}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'تعذر تحميل التقارير.');return b;}).then(b=>{if(!cancelled)setSavedReports(Array.isArray(b.reports)?b.reports:[])}).catch(e=>{if(!cancelled)notify(e instanceof Error?e.message:'تعذر تحميل التقارير.')});return()=>{cancelled=true};
+    let cancelled=false; workspaceFetch('/api/reports',{cache:'no-store'}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'تعذر تحميل التقارير.');return b;}).then(b=>{if(!cancelled)setSavedReports(Array.isArray(b.reports)?b.reports:[])}).catch(e=>{if(!cancelled)notify(e instanceof Error?e.message:'تعذر تحميل التقارير.')});return()=>{cancelled=true};
   },[active]);
   const filtered = useMemo(() => patients.filter(p => `${p.name} ${p.id} ${p.reason}`.toLowerCase().includes(search.toLowerCase())), [patients, search]);
   const currentToothEntry = toothEntries.find(entry => entry.patient_id === selectedPatient?.id && String(entry.tooth_number) === String(selectedTooth)) || null;
@@ -387,7 +404,7 @@ export default function HomePage() {
       const ageValue=patientAgeYears.trim()?Number(patientAgeYears):null; if(ageValue!==null&&(!Number.isInteger(ageValue)||ageValue<1||ageValue>120)){notify('أدخل عمراً بين سنة و120 سنة.');return;} const next: Patient = { id: `SN-${1050 + patients.length}`, displayId: `SN-${1050 + patients.length}`, name: name.trim(), age: ageValue!==null?`${ageValue} سنة`:'العمر غير مسجل', phone: '—', visit: 'لم يحدد موعد', reason: complaint.trim() || 'لم تسجل الشكوى بعد', state: 'مسودة', initials: getInitials(name.trim()), color: 'mint' };
       setPatients([next, ...patients]); setSelectedPatient(next); setName(''); setPatientAgeYears(''); setComplaint(''); setShowNewPatient(false); setActive('patients'); notify('تمت إضافة الملف إلى مساحة العمل الحالية. الحفظ الدائم يتطلب اتصال قاعدة البيانات.'); return;
     }
-    try { const response = await fetch('/api/patients', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-sinan-test-workspace': testWorkspaceToken }, body: JSON.stringify({ full_name: name.trim(), reported_age_years: patientAgeYears.trim()?Number(patientAgeYears):null, chief_complaint: complaint.trim() || null }) }); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || 'تعذر إنشاء ملف المريض.'); const p = body.patient; const next: Patient = { id: p.id, displayId: p.patient_number || String(p.id).slice(0,8), name: p.full_name, age: p.date_of_birth?`${Math.max(0,new Date().getFullYear()-new Date(p.date_of_birth).getFullYear())} سنة`:p.reported_age_years?`${p.reported_age_years} سنة`:'العمر غير مسجل', phone: maskPhoneForDisplay(p.phone), visit: 'لا توجد زيارة مسجلة', reason: p.chief_complaint || 'لم تسجل الشكوى بعد', state: 'مسودة', initials: getInitials(p.full_name || 'م'), color: 'mint' }; setPatients([next,...patients]); setSelectedPatient(next); setName(''); setPatientAgeYears(''); setComplaint(''); setShowNewPatient(false); setActive('patients'); notify('تم إنشاء ملف المريض في قاعدة البيانات.'); } catch (error) { notify(error instanceof Error ? error.message : 'تعذر إنشاء ملف المريض.'); }
+    try { const response = await workspaceFetch('/api/patients', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-sinan-test-workspace': testWorkspaceToken }, body: JSON.stringify({ full_name: name.trim(), reported_age_years: patientAgeYears.trim()?Number(patientAgeYears):null, chief_complaint: complaint.trim() || null }) }); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || 'تعذر إنشاء ملف المريض.'); const p = body.patient; const next: Patient = { id: p.id, displayId: p.patient_number || String(p.id).slice(0,8), name: p.full_name, age: p.date_of_birth?`${Math.max(0,new Date().getFullYear()-new Date(p.date_of_birth).getFullYear())} سنة`:p.reported_age_years?`${p.reported_age_years} سنة`:'العمر غير مسجل', phone: maskPhoneForDisplay(p.phone), visit: 'لا توجد زيارة مسجلة', reason: p.chief_complaint || 'لم تسجل الشكوى بعد', state: 'مسودة', initials: getInitials(p.full_name || 'م'), color: 'mint' }; setPatients([next,...patients]); setSelectedPatient(next); setName(''); setPatientAgeYears(''); setComplaint(''); setShowNewPatient(false); setActive('patients'); notify('تم إنشاء ملف المريض في قاعدة البيانات.'); } catch (error) { notify(error instanceof Error ? error.message : 'تعذر إنشاء ملف المريض.'); }
   }
 
   function openPatientEdit() {
@@ -433,7 +450,7 @@ export default function HomePage() {
 
     setPatientSaving(true);
     try {
-      const response = await fetch('/api/patients/' + selectedPatient.id, {
+      const response = await workspaceFetch('/api/patients/' + selectedPatient.id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -464,7 +481,7 @@ export default function HomePage() {
     if (demoMode) { notify('إنشاء الزيارة غير متاح حتى تتصل قاعدة بيانات العيادة.'); return; }
     setManualSaving(true);
     try {
-      const response = await fetch(`/api/patients/${selectedPatient.id}/encounters`, {
+      const response = await workspaceFetch(`/api/patients/${selectedPatient.id}/encounters`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chief_complaint: manualComplaint.trim() || null, encounter_type: 'dental_visit' }),
@@ -472,6 +489,7 @@ export default function HomePage() {
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'تعذر إنشاء الزيارة اليدوية.');
       setShowManualVisit(false); setManualComplaint('');
+      if (testWorkspaceToken) { setActive('patients'); notify('تم حفظ الزيارة في قاعدة بيانات مساحة الاختبار.'); return; }
       window.location.assign(`/encounters/${body.encounter.id}`);
     } catch (error) {
       notify(error instanceof Error ? error.message : 'تعذر إنشاء الزيارة اليدوية.');
@@ -480,7 +498,7 @@ export default function HomePage() {
 
   async function selectOrganization(organizationId: string) {
     try {
-      const response = await fetch('/api/organizations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ organization_id: organizationId }) });
+      const response = await workspaceFetch('/api/organizations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ organization_id: organizationId }) });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'تعذر اختيار العيادة.');
       setActiveOrganizationId(organizationId);
@@ -496,7 +514,7 @@ export default function HomePage() {
     if (demoMode || !activeOrganizationId) { setBookingRequests([]); return; }
     setBookingRequestsLoading(true);
     try {
-      const response = await fetch('/api/appointments/booking-requests', { cache: 'no-store' });
+      const response = await workspaceFetch('/api/appointments/booking-requests', { cache: 'no-store' });
       const body = await response.json().catch(() => ({}));
       if (response.status === 403) { setBookingRequests([]); return; }
       if (!response.ok) throw new Error(body.error || 'تعذر تحميل طلبات الحجز الواردة.');
@@ -512,7 +530,7 @@ export default function HomePage() {
     if (demoMode) { notify('يلزم اتصال قاعدة بيانات العيادة لحفظ ساعات العمل ورابط الحجز.'); return; }
     setBookingSaving(true);
     try {
-      const response=await fetch('/api/clinic/booking-settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({...bookingSettings,hours:bookingHours})});
+      const response=await workspaceFetch('/api/clinic/booking-settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({...bookingSettings,hours:bookingHours})});
       const body=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(body.error||'تعذر حفظ إعدادات الحجز.');
       setBookingSettings(current=>({...current,...(body.settings||bookingSettings)}));
@@ -531,7 +549,7 @@ export default function HomePage() {
     if(action==='decline'&&!window.confirm('هل تريد رفض طلب الحجز وإتاحة الوقت لمريض آخر؟'))return;
     setBookingDecisionBusyId(appointmentId);
     try {
-      const response=await fetch('/api/appointments/'+appointmentId+'/review-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});
+      const response=await workspaceFetch('/api/appointments/'+appointmentId+'/review-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});
       const body=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(body.error||'تعذر تحديث طلب الحجز.');
       notify(action==='confirm'?'تم تأكيد الحجز وإنشاء ملف المريض.':'تم رفض الطلب وإتاحة الوقت من جديد.');
@@ -546,7 +564,7 @@ export default function HomePage() {
     setSettingsBusy(true);
     try {
       const payload = { ...clinicSettings, clinic_name_ar: clinicSettings.clinic_name_ar.trim() || clinicName, clinic_name_en: clinicSettings.clinic_name_en.trim() || null, address_ar: clinicSettings.address_ar.trim() || null, address_en: clinicSettings.address_en.trim() || null, phone: clinicSettings.phone.trim() || null, email: clinicSettings.email.trim() || null, website: clinicSettings.website.trim() || null };
-      const response = await fetch('/api/clinic/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const response = await workspaceFetch('/api/clinic/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || 'تعذر حفظ إعدادات العيادة.');
       setClinicSettings(current => ({ ...current, ...body.settings })); setClinicName(body.settings.clinic_name_ar); setSettingsDirty(false); notify('تم حفظ إعدادات العيادة.');
     } catch (error) { notify(error instanceof Error ? error.message : 'تعذر حفظ الإعدادات.'); }
@@ -561,7 +579,7 @@ export default function HomePage() {
     }
     setToothSaving(true);
     try {
-      const response = await fetch(`/api/patients/${selectedPatient.id}/odontogram`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tooth_number: String(selectedTooth), notation_system: 'FDI', status: toothStatus.trim(), surfaces: toothSurfaces, note: toothNote.trim() || null, state: toothEntryState }) });
+      const response = await workspaceFetch(`/api/patients/${selectedPatient.id}/odontogram`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tooth_number: String(selectedTooth), notation_system: 'FDI', status: toothStatus.trim(), surfaces: toothSurfaces, note: toothNote.trim() || null, state: toothEntryState }) });
       const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || 'تعذر حفظ حالة السن.');
       setToothEntries(current => [body.entry, ...current]); setShowToothEntry(false); setToothStatus(''); setToothNote(''); setToothSurfaces([]); notify('تم حفظ حالة السن.');
     } catch (error) { notify(error instanceof Error ? error.message : 'تعذر حفظ حالة السن.'); }
@@ -578,7 +596,7 @@ export default function HomePage() {
     }
     setEndoSaving(true);
     try {
-      const response = await fetch(`/api/patients/${selectedPatient.id}/endodontics`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tooth_number: endoTooth, notation_system: 'FDI', diagnosis: endoDiagnosis.trim() || null, diagnosis_state: 'needs_review', stage: endoStage, follow_up_at: endoFollowUp ? new Date(`${endoFollowUp}T12:00:00`).toISOString() : null, follow_up_note: null, note: null, canals }) });
+      const response = await workspaceFetch(`/api/patients/${selectedPatient.id}/endodontics`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tooth_number: endoTooth, notation_system: 'FDI', diagnosis: endoDiagnosis.trim() || null, diagnosis_state: 'needs_review', stage: endoStage, follow_up_at: endoFollowUp ? new Date(`${endoFollowUp}T12:00:00`).toISOString() : null, follow_up_note: null, note: null, canals }) });
       const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || 'تعذر حفظ ملف علاج العصب.');
       setEndodonticCases(current => [body.case, ...current]); setShowEndoForm(false); setEndoDiagnosis(''); notify('تم حفظ ملف علاج العصب وقياسات القنوات.');
     } catch (error) { notify(error instanceof Error ? error.message : 'تعذر حفظ ملف علاج العصب.'); }
@@ -595,7 +613,7 @@ export default function HomePage() {
       return;
     }
     try {
-      const response = await fetch('/api/appointments/' + appointmentId, {
+      const response = await workspaceFetch('/api/appointments/' + appointmentId, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
@@ -627,7 +645,7 @@ export default function HomePage() {
     }
     setAppointmentSaving(true);
     try {
-      const response = await fetch('/api/appointments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ patient_id: appointmentPatientId, scheduled_start: start.toISOString(), scheduled_end: end.toISOString(), timezone: 'Asia/Aden', appointment_type: 'dental_visit', note: appointmentNote.trim() || null }) });
+      const response = await workspaceFetch('/api/appointments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ patient_id: appointmentPatientId, scheduled_start: start.toISOString(), scheduled_end: end.toISOString(), timezone: 'Asia/Aden', appointment_type: 'dental_visit', note: appointmentNote.trim() || null }) });
       const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || 'تعذر حفظ الموعد.');
       const savedAppointment = { ...body.appointment, patients: { full_name: patients.find(p=>p.id===appointmentPatientId)?.name || 'مريض' } };
       if (appointmentDate === dateInputForAden()) setTodayAppointments(current => [...current, savedAppointment].sort((a,b)=>Date.parse(a.scheduled_start)-Date.parse(b.scheduled_start)));
@@ -642,7 +660,7 @@ export default function HomePage() {
     if (!selectedPatient || historyTitle.trim().length < 1) { notify('أدخل عنوان المعلومة الصحية.'); return; }
     if (demoMode) { setHistoryItems(current=>[{id:`workspace-${Date.now()}`,patient_id:selectedPatient.id,category:historyCategory,title:historyTitle.trim(),value:historyValue.trim()||null,state:historyState,created_at:new Date().toISOString()},...current]); setShowHistoryForm(false);setHistoryTitle('');setHistoryValue('');notify('تمت إضافة المعلومة إلى ملف العمل الحالي. الحفظ الدائم يتطلب اتصال قاعدة البيانات.');return; }
     setHistorySaving(true);
-    try { const response=await fetch(`/api/patients/${selectedPatient.id}/history`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category:historyCategory,title:historyTitle.trim(),value:historyValue.trim()||null,state:historyState,source:'إدخال يدوي بواسطة مستخدم العيادة'})}); const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.error||'تعذر حفظ التاريخ الصحي.');setHistoryItems(current=>[body.item,...current]);setShowHistoryForm(false);setHistoryTitle('');setHistoryValue('');notify('تم حفظ المعلومة الصحية.'); }
+    try { const response=await workspaceFetch(`/api/patients/${selectedPatient.id}/history`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category:historyCategory,title:historyTitle.trim(),value:historyValue.trim()||null,state:historyState,source:'إدخال يدوي بواسطة مستخدم العيادة'})}); const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.error||'تعذر حفظ التاريخ الصحي.');setHistoryItems(current=>[body.item,...current]);setShowHistoryForm(false);setHistoryTitle('');setHistoryValue('');notify('تم حفظ المعلومة الصحية.'); }
     catch(error){notify(error instanceof Error?error.message:'تعذر حفظ التاريخ الصحي.');} finally{setHistorySaving(false)}
   }
 
@@ -872,7 +890,7 @@ export default function HomePage() {
 
     {showManualVisit && <div className="modal-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget&&!manualSaving)setShowManualVisit(false)}}><div className="modal" role="dialog" aria-modal="true" aria-labelledby="manual-visit-title"><div className="modal-head"><div><div className="eyebrow">سجل سريري جديد</div><h2 id="manual-visit-title">توثيق زيارة يدوياً</h2></div><button className="icon-button" onClick={()=>setShowManualVisit(false)} aria-label="إغلاق" disabled={manualSaving}><X size={18}/></button></div><div className="scribe-patient"><div className={`avatar ${selectedPatient?.color||'mint'}`}>{selectedPatient?.initials||'؟'}</div><div><strong>{selectedPatient?.name||'لم يتم اختيار مريض'}</strong><span>{selectedPatient?.displayId||selectedPatient?.id||'اختر مريضاً أولاً'}</span></div></div><p className="modal-intro">تنشئ هذه الخطوة مسودة محفوظة في العيادة. ستفتح شاشة المراجعة لإدخال التاريخ الصحي والفحص والخطة. لا يصبح السجل نهائياً قبل اعتماد الطبيب.</p><label className="form-field">الشكوى الرئيسية كما ذكرها المريض<textarea value={manualComplaint} onChange={e=>setManualComplaint(e.target.value)} rows={3} maxLength={2000} placeholder="اكتب ما ذكره المريض دون استنتاج تشخيص"/></label><div className="modal-warning"><ShieldCheck size={16}/> ستظل الحساسية والأدوية ونتائج الفحص غير مسجلة حتى تدخلها وتتحقق منها.</div><div className="modal-actions"><button className="secondary-button" onClick={()=>setShowManualVisit(false)} disabled={manualSaving}>إلغاء</button><button className="primary-button" onClick={createManualVisit} disabled={manualSaving||!selectedPatient}><FilePlus2 size={16}/>{manualSaving?'جارٍ إنشاء المسودة...':'إنشاء المسودة اليدوية'}</button></div></div></div>}
 
-    {showScribe && <ScribeModal patient={selectedPatient} isDemo={demoMode} onClose={()=>setShowScribe(false)} onManual={()=>{setShowScribe(false);setManualComplaint('');setShowManualVisit(true)}} notify={notify}/>}
+    {showScribe && <ScribeModal patient={selectedPatient} isDemo={demoMode || Boolean(testWorkspaceToken)} onClose={()=>setShowScribe(false)} onManual={()=>{setShowScribe(false);setManualComplaint('');setShowManualVisit(true)}} notify={notify}/>}
     {toast && <div className="toast"><CircleCheck size={17}/>{toast}</div>}
   </div></Localized>;
 }
@@ -984,7 +1002,7 @@ function ScribeModal({patient,onClose,onManual,notify,isDemo}:{patient:Patient|n
     const form=new FormData();
     form.append('file',blob,`chunk-${index}.webm`);
     form.append('chunk_index',String(index));
-    const response=await fetch(`/api/recordings/${sessionId}/chunks`,{method:'POST',body:form});
+    const response=await workspaceFetch(`/api/recordings/${sessionId}/chunks`,{method:'POST',body:form});
     const body=await response.json().catch(()=>({}));
     if(!response.ok) throw new Error(body.error||`تعذر رفع المقطع ${index+1}.`);
   }
@@ -999,7 +1017,7 @@ function ScribeModal({patient,onClose,onManual,notify,isDemo}:{patient:Patient|n
     try {
       st=await navigator.mediaDevices.getUserMedia({audio:true});
       const rec=new MediaRecorder(st);
-      const response=await fetch('/api/recordings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patient_id:patient.id,content_type:rec.mimeType||'audio/webm',consent_confirmed:consent})});
+      const response=await workspaceFetch('/api/recordings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patient_id:patient.id,content_type:rec.mimeType||'audio/webm',consent_confirmed:consent})});
       const body=await response.json().catch(()=>({}));
       if(!response.ok) throw new Error(body.error||'تعذر إنشاء جلسة التسجيل.');
       const sessionId=String(body.recording_id||'');
@@ -1030,7 +1048,7 @@ function ScribeModal({patient,onClose,onManual,notify,isDemo}:{patient:Patient|n
     const sessionId=recordingIdRef.current;
     if(!sessionId) return;
     try {
-      const response=await fetch(`/api/recordings/${sessionId}/${next}`,{method:'POST'});
+      const response=await workspaceFetch(`/api/recordings/${sessionId}/${next}`,{method:'POST'});
       const body=await response.json().catch(()=>({}));
       if(!response.ok) throw new Error(body.error||'تعذر تحديث حالة التسجيل على الخادم.');
     } catch(error) {
@@ -1043,7 +1061,7 @@ function ScribeModal({patient,onClose,onManual,notify,isDemo}:{patient:Patient|n
   async function processExistingJob() {
     const sessionId=recordingIdRef.current;const jobId=jobIdRef.current;
     if(!sessionId||!jobId) throw new Error('لا توجد مهمة محفوظة قابلة لإعادة المعالجة.');
-    const response=await fetch('/api/ai/process-recording',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recording_id:sessionId,job_id:jobId})});
+    const response=await workspaceFetch('/api/ai/process-recording',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recording_id:sessionId,job_id:jobId})});
     const result=await response.json().catch(()=>({}));
     if(!response.ok) throw new Error(result.error||'حُفظ التسجيل لكن تعذرت معالجته؛ أعد المحاولة بعد التحقق من الإعدادات.');
     setDraft(result.warning||'تم إنشاء مسودة سريرية محفوظة؛ راجع كل معلومة قبل الاعتماد.');
@@ -1064,7 +1082,7 @@ function ScribeModal({patient,onClose,onManual,notify,isDemo}:{patient:Patient|n
       }
       if(pendingChunksRef.current.size>0){setCapture('upload_failed');throw new Error('بعض المقاطع لم تصل إلى التخزين الآمن. أبقِ النافذة مفتوحة وحاول إعادة الرفع.');}
       if(!finishedCaptureRef.current){
-        const doneRes=await fetch(`/api/recordings/${sessionId}/finish`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recording_id:sessionId})});
+        const doneRes=await workspaceFetch(`/api/recordings/${sessionId}/finish`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recording_id:sessionId})});
         const result=await doneRes.json().catch(()=>({}));
         if(!doneRes.ok)throw new Error(result.error||'تم رفع المقاطع لكن تعذر إنهاء التسجيل خادمياً.');
         jobIdRef.current=String(result.job_id||'');
@@ -1104,6 +1122,6 @@ function ScribeModal({patient,onClose,onManual,notify,isDemo}:{patient:Patient|n
     if(pendingChunksRef.current.size>0){setRecordingError('توجد مقاطع لم تُرفع بعد. أعد محاولة الرفع قبل إغلاق نافذة التسجيل.');return;}
     streamRef.current?.getTracks().forEach(track=>track.stop());onClose();
   }
-  return <Localized><div className="modal-backdrop high" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)close()}}><div className="modal scribe-modal" role="dialog" aria-modal="true" aria-labelledby="scribe-title"><div className="modal-head"><div><div className="eyebrow">مساحة التوثيق السريرية</div><h2 id="scribe-title">تسجيل الزيارة</h2></div><button className="icon-button" onClick={close} aria-label="إغلاق"><X size={18}/></button></div><div className="scribe-patient"><div className={`avatar ${patient?.color||'mint'}`}>{patient?.initials||'؟'}</div><div><strong>{patient?.name||'لم يتم اختيار مريض'}</strong><span>{patient?.id||'أنشئ أو اختر ملفاً قبل التسجيل'}</span></div><span className="state-pill neutral">مسودة</span></div><div className="consent-check"><input id="record-consent" type="checkbox" checked={consent} disabled={capture!=='idle'} onChange={e=>setConsent(e.target.checked)}/><label htmlFor="record-consent"><strong>تم التحقق من الموافقة اللازمة على التسجيل.</strong><span>أؤكد أن الموافقة جرى أخذها وتوثيقها وفق سياسة العيادة والقانون المنطبق قبل التقاط أي صوت.</span></label></div><div id="record-consent-help" className="scribe-guardrail">{isDemo ? "التسجيل غير متاح قبل ربط قاعدة بيانات العيادة وخدمة التوثيق." : !patient?.id ? "اختر ملف مريض أولاً." : !consent ? "يلزم تأكيد الموافقة قبل تشغيل الميكروفون." : "تم تأكيد الموافقة؛ لن يبدأ التسجيل إلا بعد توفر ملف مريض صالح."}</div><div className={`recording-console ${capture==='recording'?'recording-on':''}`}><div className="microphone-circle">{capture==='recording'?<span className="rec-dot"/>:<Mic size={28}/>}</div><strong>{capture==='recording'?'جارٍ تسجيل الصوت':capture==='paused'?'التسجيل متوقف مؤقتاً':capture==='upload_failed'?'هناك مقاطع تنتظر الرفع':capture==='processing_failed'?'حُفظ التسجيل وتحتاج المعالجة إلى إعادة محاولة':capture==='processing'?'جارٍ حفظ ومعالجة التسجيل':isDemo?'يتطلب اتصال قاعدة البيانات':!patient?.id?'اختر ملف مريض أولاً':'جاهز للتحقق من الموافقة'}</strong><span className="record-timer">{elapsed}</span><div className="record-state-caption">{capture==='recording'?'يتم التقاط الصوت من الميكروفون الفعلي ورفع المقاطع كل ٥ ثوانٍ':capture==='paused'?'يمكنك استئناف التسجيل أو إنهاؤه':capture==='processing'?'لن يُعتمد أي سجل تلقائياً':capture==='upload_failed'?'لن يبدأ التفريغ قبل التأكد من وصول جميع المقاطع':'المسودة لا تصبح سجلاً نهائياً إلا بعد مراجعة الطبيب'}</div></div>{recordingError&&<div className="inline-error"><AlertCircle size={16}/>{recordingError}</div>}{draft&&<div className="inline-success"><Check size={16}/>{draft}</div>}{reviewUrl&&<a className="primary-button" href={reviewUrl}>فتح المسودة ومراجعتها <ChevronLeft size={15}/></a>}<div className="recording-actions">{capture==='idle'?<button className="primary-button record-primary" onClick={start} disabled={!consent || !patient?.id || isDemo} aria-describedby="record-consent-help"><Mic size={18}/> بدء الاستماع</button>:capture==='recording'?<><button className="secondary-button" onClick={pause}>إيقاف مؤقت</button><button className="danger-button" onClick={finish}><SquareIcon/> إنهاء الاستماع</button></>:capture==='paused'?<><button className="primary-button" onClick={resume}><Play size={16}/> استئناف</button><button className="danger-button" onClick={finish}>إنهاء الاستماع</button></>:capture==='processing'?<button className="secondary-button" disabled>جارٍ الحفظ...</button>:<button className="primary-button record-primary" onClick={retry}><Activity size={16}/> {capture==='upload_failed'?'إعادة رفع المقاطع':'إعادة محاولة المعالجة'}</button>}</div><div className="scribe-guardrail"><ShieldCheck size={16}/><span>إنهاء الاستماع لا يعتمد السجل؛ النسخة المستخرجة تبقى مسودة حتى مراجعة الطبيب واعتماده. عدد مقاطع الصوت الملتقطة: {chunks}. لا تُحذف المقاطع من الذاكرة حتى التأكد من رفعها.</span></div><div className="modal-actions"><button className="text-link" onClick={onManual}>متابعة بكتابة يدوية</button><button className="secondary-button" onClick={close}>إغلاق المساحة</button></div></div></div></Localized>;
+  return <Localized><div className="modal-backdrop high" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)close()}}><div className="modal scribe-modal" role="dialog" aria-modal="true" aria-labelledby="scribe-title"><div className="modal-head"><div><div className="eyebrow">مساحة التوثيق السريرية</div><h2 id="scribe-title">تسجيل الزيارة</h2></div><button className="icon-button" onClick={close} aria-label="إغلاق"><X size={18}/></button></div><div className="scribe-patient"><div className={`avatar ${patient?.color||'mint'}`}>{patient?.initials||'؟'}</div><div><strong>{patient?.name||'لم يتم اختيار مريض'}</strong><span>{patient?.id||'أنشئ أو اختر ملفاً قبل التسجيل'}</span></div><span className="state-pill neutral">مسودة</span></div><div className="consent-check"><input id="record-consent" type="checkbox" checked={consent} disabled={capture!=='idle'} onChange={e=>setConsent(e.target.checked)}/><label htmlFor="record-consent"><strong>تم التحقق من الموافقة اللازمة على التسجيل.</strong><span>أؤكد أن الموافقة جرى أخذها وتوثيقها وفق سياسة العيادة والقانون المنطبق قبل التقاط أي صوت.</span></label></div><div id="record-consent-help" className="scribe-guardrail">{isDemo ? "التسجيل الصوتي غير مفعّل في مساحة الاختبار حتى يُربط بتخزين آمن ومعالجة سريرية." : !patient?.id ? "اختر ملف مريض أولاً." : !consent ? "يلزم تأكيد الموافقة قبل تشغيل الميكروفون." : "تم تأكيد الموافقة؛ لن يبدأ التسجيل إلا بعد توفر ملف مريض صالح."}</div><div className={`recording-console ${capture==='recording'?'recording-on':''}`}><div className="microphone-circle">{capture==='recording'?<span className="rec-dot"/>:<Mic size={28}/>}</div><strong>{capture==='recording'?'جارٍ تسجيل الصوت':capture==='paused'?'التسجيل متوقف مؤقتاً':capture==='upload_failed'?'هناك مقاطع تنتظر الرفع':capture==='processing_failed'?'حُفظ التسجيل وتحتاج المعالجة إلى إعادة محاولة':capture==='processing'?'جارٍ حفظ ومعالجة التسجيل':isDemo?'التسجيل الصوتي غير مفعّل في مساحة الاختبار':!patient?.id?'اختر ملف مريض أولاً':'جاهز للتحقق من الموافقة'}</strong><span className="record-timer">{elapsed}</span><div className="record-state-caption">{capture==='recording'?'يتم التقاط الصوت من الميكروفون الفعلي ورفع المقاطع كل ٥ ثوانٍ':capture==='paused'?'يمكنك استئناف التسجيل أو إنهاؤه':capture==='processing'?'لن يُعتمد أي سجل تلقائياً':capture==='upload_failed'?'لن يبدأ التفريغ قبل التأكد من وصول جميع المقاطع':'المسودة لا تصبح سجلاً نهائياً إلا بعد مراجعة الطبيب'}</div></div>{recordingError&&<div className="inline-error"><AlertCircle size={16}/>{recordingError}</div>}{draft&&<div className="inline-success"><Check size={16}/>{draft}</div>}{reviewUrl&&<a className="primary-button" href={reviewUrl}>فتح المسودة ومراجعتها <ChevronLeft size={15}/></a>}<div className="recording-actions">{capture==='idle'?<button className="primary-button record-primary" onClick={start} disabled={!consent || !patient?.id || isDemo} aria-describedby="record-consent-help"><Mic size={18}/> بدء الاستماع</button>:capture==='recording'?<><button className="secondary-button" onClick={pause}>إيقاف مؤقت</button><button className="danger-button" onClick={finish}><SquareIcon/> إنهاء الاستماع</button></>:capture==='paused'?<><button className="primary-button" onClick={resume}><Play size={16}/> استئناف</button><button className="danger-button" onClick={finish}>إنهاء الاستماع</button></>:capture==='processing'?<button className="secondary-button" disabled>جارٍ الحفظ...</button>:<button className="primary-button record-primary" onClick={retry}><Activity size={16}/> {capture==='upload_failed'?'إعادة رفع المقاطع':'إعادة محاولة المعالجة'}</button>}</div><div className="scribe-guardrail"><ShieldCheck size={16}/><span>إنهاء الاستماع لا يعتمد السجل؛ النسخة المستخرجة تبقى مسودة حتى مراجعة الطبيب واعتماده. عدد مقاطع الصوت الملتقطة: {chunks}. لا تُحذف المقاطع من الذاكرة حتى التأكد من رفعها.</span></div><div className="modal-actions"><button className="text-link" onClick={onManual}>متابعة بكتابة يدوية</button><button className="secondary-button" onClick={close}>إغلاق المساحة</button></div></div></div></Localized>;
 }
 function SquareIcon(){return <span className="square-stop"/>}
