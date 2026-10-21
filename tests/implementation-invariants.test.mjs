@@ -9,6 +9,9 @@ const pauseRoute = await readFile(new URL('../app/api/recordings/[recordingId]/p
 const resumeRoute = await readFile(new URL('../app/api/recordings/[recordingId]/resume/route.ts', import.meta.url), 'utf8');
 const aiRoute = await readFile(new URL('../app/api/ai/process-recording/route.ts', import.meta.url), 'utf8');
 const grantsMigration = await readFile(new URL('../supabase/migrations/20261020125256_sinan_scope_authenticated_table_grants.sql', import.meta.url), 'utf8');
+const anonymousWorkspaceMigration = await readFile(new URL('../supabase/migrations/20261021090000_sinan_direct_test_workspace.sql', import.meta.url), 'utf8');
+const signInPage = await readFile(new URL('../app/sign-in/page.tsx', import.meta.url), 'utf8');
+const signUpPage = await readFile(new URL('../app/sign-up/page.tsx', import.meta.url), 'utf8');
 
 
 test('authenticated API grants enable clinical writes without exposing protected direct-write paths', () => {
@@ -561,4 +564,16 @@ test('Gemini credentials are read from Cloudflare bindings when process.env is u
   assert.match(runtimeEnv, /process\.env\[name\]/);
   assert.match(aiRoute, /getGeminiApiKey\(\)/);
   assert.match(ready, /getGeminiApiKey\(\)/);
+});
+
+test('direct Sinan entry uses persistent isolated workspace data without exposing clinical tables', () => {
+  assert.match(app, /sinan-test-workspace-v1/);
+  assert.match(app, /x-sinan-test-workspace/);
+  assert.match(patientRoute, /sinan_test_list_patients/);
+  assert.match(patientRoute, /sinan_test_create_patient/);
+  assert.match(anonymousWorkspaceMigration, /alter table public\.sinan_test_patients enable row level security/i);
+  assert.match(anonymousWorkspaceMigration, /revoke all on table public\.sinan_test_patients from anon, authenticated/i);
+  assert.match(anonymousWorkspaceMigration, /grant execute on function public\.sinan_test_list_patients\(uuid\) to anon, authenticated/i);
+  assert.match(signInPage, /redirect\('\/'\)/);
+  assert.match(signUpPage, /redirect\('\/'\)/);
 });
