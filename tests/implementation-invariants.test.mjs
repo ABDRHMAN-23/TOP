@@ -49,7 +49,7 @@ test('clinical record cannot be treated as final without a clinician approval tr
 
 test('recording UI creates a server session before capture and streams fragments instead of waiting until stop', () => {
   const serverSessionAt = app.indexOf("workspaceFetch('/api/recordings'");
-  const recorderStartAt = app.indexOf('rec.start(5000)');
+  const recorderStartAt = app.indexOf('rec.start(2000)');
   assert.ok(serverSessionAt >= 0 && recorderStartAt > serverSessionAt, 'server session should be created before MediaRecorder starts');
   assert.match(app, /ondataavailable=/);
   assert.match(app, /uploadQueueRef\.current/);
