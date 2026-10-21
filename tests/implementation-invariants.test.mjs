@@ -9,6 +9,9 @@ const pauseRoute = await readFile(new URL('../app/api/recordings/[recordingId]/p
 const resumeRoute = await readFile(new URL('../app/api/recordings/[recordingId]/resume/route.ts', import.meta.url), 'utf8');
 const aiRoute = await readFile(new URL('../app/api/ai/process-recording/route.ts', import.meta.url), 'utf8');
 const grantsMigration = await readFile(new URL('../supabase/migrations/20261020125256_sinan_scope_authenticated_table_grants.sql', import.meta.url), 'utf8');
+const anonymousWorkspaceMigration = await readFile(new URL('../supabase/migrations/20261021090000_sinan_direct_test_workspace.sql', import.meta.url), 'utf8');
+const signInPage = await readFile(new URL('../app/sign-in/page.tsx', import.meta.url), 'utf8');
+const signUpPage = await readFile(new URL('../app/sign-up/page.tsx', import.meta.url), 'utf8');
 
 
 test('authenticated API grants enable clinical writes without exposing protected direct-write paths', () => {
@@ -310,24 +313,19 @@ test('clinic booking settings validate the whole weekly schedule and save throug
   assert.match(bookingSettingsRoute, /supabase\.rpc\('save_clinic_booking_settings'/);
 });
 
-test('first-time doctor registration supports email confirmation and safe clinic onboarding redirect', () => {
-  assert.match(signInUi, /href="\/sign-up"/);
-  assert.match(signUpUi, /supabase\.auth\.signUp/);
-  assert.match(signUpUi, /emailRedirectTo:redirectTo/);
-  assert.match(signUpUi, /router\.replace\('\/onboarding'\)/);
-  assert.match(signUpUi, /setConfirmationEmail\(email\.trim\(\)\)/);
-  assert.match(authCallback, /NEXT_PUBLIC_SUPABASE_ANON_KEY \|\| process\.env\.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
-  assert.match(authCallback, /safeInternalPath/);
-  assert.match(authCallback, /exchangeCodeForSession\(code\)/);
+test('account creation and sign-in are removed from the direct-entry flow', () => {
+  assert.match(signInUi, /redirect\('\/'\)/);
+  assert.match(signUpUi, /router\.replace\('\/'\)/);
+  assert.doesNotMatch(signInUi, /signInWithPassword/);
+  assert.doesNotMatch(signUpUi, /supabase\.auth\.signUp/);
+  assert.match(app, /sinan-test-workspace-v1/);
 });
 
 
-test('signup maps current Supabase email authorization, invalid-address, and rate-limit codes to actionable guidance', () => {
-  assert.match(signUpUi, /email_address_not_authorized/);
-  assert.match(signUpUi, /email_address_invalid/);
-  assert.match(signUpUi, /over_email_send_rate_limit/);
-  assert.match(signUpUi, /email_rate_limit/);
-  assert.match(signUpUi, /redirect_uri_not_allowed/);
+test('retired signup routes contain no account form or password handling', () => {
+  assert.doesNotMatch(signUpUi, /email_address_not_authorized|email_address_invalid|over_email_send_rate_limit/);
+  assert.doesNotMatch(signUpUi, /password|signUp/);
+  assert.match(signUpUi, /router\.replace\('\/'\)/);
 });
 
 test('booking settings responses expose only editable fields so save can be repeated safely', () => {
@@ -495,8 +493,8 @@ test('Sinan dental emblem is used as the primary brand and browser icon', async 
   assert.ok(icon.byteLength > 1000);
   assert.match(layout, /sinan-icon\.webp/);
   assert.match(app, /brand-symbol brand-symbol-image/);
-  assert.match(signIn, /sinan-icon\.webp/);
-  assert.match(signUp, /sinan-icon\.webp/);
+  assert.match(signIn, /redirect\('\/'\)/);
+  assert.match(signUp, /router\.replace\('\/'\)/);
   assert.match(onboarding, /sinan-icon\.webp/);
   assert.match(reports, /sinan-icon\.webp/);
 });
@@ -561,4 +559,16 @@ test('Gemini credentials are read from Cloudflare bindings when process.env is u
   assert.match(runtimeEnv, /process\.env\[name\]/);
   assert.match(aiRoute, /getGeminiApiKey\(\)/);
   assert.match(ready, /getGeminiApiKey\(\)/);
+});
+
+test('direct Sinan entry uses persistent isolated workspace data without exposing clinical tables', () => {
+  assert.match(app, /sinan-test-workspace-v1/);
+  assert.match(app, /x-sinan-test-workspace/);
+  assert.match(patientRoute, /sinan_test_list_patients/);
+  assert.match(patientRoute, /sinan_test_create_patient/);
+  assert.match(anonymousWorkspaceMigration, /alter table public\.sinan_test_patients enable row level security/i);
+  assert.match(anonymousWorkspaceMigration, /revoke all on table public\.sinan_test_patients from anon, authenticated/i);
+  assert.match(anonymousWorkspaceMigration, /grant execute on function public\.sinan_test_list_patients\(uuid\) to anon, authenticated/i);
+  assert.match(signInPage, /redirect\('\/'\)/);
+  assert.match(signUpPage, /router\.replace\('\/'\)/);
 });
