@@ -48,7 +48,7 @@ test('clinical record cannot be treated as final without a clinician approval tr
 });
 
 test('recording UI creates a server session before capture and streams fragments instead of waiting until stop', () => {
-  const serverSessionAt = app.indexOf("fetch('/api/recordings'");
+  const serverSessionAt = app.indexOf("workspaceFetch('/api/recordings'");
   const recorderStartAt = app.indexOf('rec.start(5000)');
   assert.ok(serverSessionAt >= 0 && recorderStartAt > serverSessionAt, 'server session should be created before MediaRecorder starts');
   assert.match(app, /ondataavailable=/);
@@ -519,9 +519,10 @@ test('selected clinic cookie is honored by API tenant resolution after the clini
   assert.match(resolver, /if \(!requested && data\.length > 1\)/);
 });
 
-test('live workspace exposes a direct signup link when an unauthenticated user lands on the app', () => {
-  assert.match(app, /href="\/sign-up" className="sign-in-link">إنشاء حساب/);
-  assert.match(app, /className="text-link" href="\/sign-up">إنشاء حساب/);
+test('direct-entry workspace does not expose login or signup links', () => {
+  assert.doesNotMatch(app, /href="\/sign-up" className="sign-in-link">إنشاء حساب/);
+  assert.doesNotMatch(app, /className="text-link" href="\/sign-up">إنشاء حساب/);
+  assert.doesNotMatch(app, /href="\/sign-in" className="sign-in-link">تسجيل الدخول/);
 });
 
 test('approved report snapshots preserve the saved transcript for the printable clinical report', async () => {
