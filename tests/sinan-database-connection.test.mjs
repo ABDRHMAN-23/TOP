@@ -33,26 +33,26 @@ test('production defaults to database mode and patient form never claims local-o
 });
 
 test('other direct-workspace modules persist in a separate RLS-protected test table', () => {
-  assert.match(modulesMigration, /create table if not exists public\\.sinan_test_workspace_records/i);
-  assert.match(modulesMigration, /enable row level security/i);
-  assert.match(modulesMigration, /revoke all on table public\\.sinan_test_workspace_records from public, anon, authenticated/i);
+  assert.ok(modulesMigration.includes('create table if not exists public.sinan_test_workspace_records'));
+  assert.ok(modulesMigration.includes('enable row level security'));
+  assert.ok(modulesMigration.includes('revoke all on table public.sinan_test_workspace_records from public, anon, authenticated'));
   assert.match(modulesMigration, /security definer/i);
-  assert.match(modulesMigration, /grant execute on function public\\.sinan_test_upsert_record\\(uuid, text, uuid, uuid, jsonb\\) to anon, authenticated/i);
+  assert.ok(modulesMigration.includes('grant execute on function public.sinan_test_upsert_record(uuid, text, uuid, uuid, jsonb) to anon, authenticated;'));
   assert.match(workspaceRoute, /sinan_test_list_records/);
   assert.match(workspaceRoute, /sinan_test_upsert_record/);
-  assert.match(workspaceRoute, /findPatient\\(payload\\.patient_id\\)/);
+  assert.ok(workspaceRoute.includes('findPatient(payload.patient_id)'));
 });
 
 test('only explicit token-bearing supported API paths are rewritten into test-workspace handlers', () => {
   assert.match(middleware, /x-sinan-test-workspace/);
   assert.match(middleware, /supportedTestWorkspaceRoute/);
-  assert.match(middleware, /NextResponse\\.rewrite/);
-  assert.match(middleware, /pathname !== '\\/api\\/patients'/);
-  assert.match(homePage, /headers\\.set\\('x-sinan-test-workspace', token\\)/);
+  assert.ok(middleware.includes('NextResponse.rewrite'));
+  assert.ok(middleware.includes("pathname !== '/api/patients'"));
+  assert.ok(homePage.includes("headers.set('x-sinan-test-workspace', token)"));
 });
 
 test('anonymous workspace refuses to simulate clinical report generation and disables unsecured audio capture', () => {
   assert.match(workspaceRoute, /لا يُنشئ سِنان تقريراً وهمياً/);
-  assert.match(homePage, /isDemo=\\{demoMode \\|\\| Boolean\\(testWorkspaceToken\\)\\}/);
-  assert.match(homePage, /التسجيل الصوتي غير مفعّل في مساحة الاختبار حتى يُربط بتخزين آمن ومعالجة سريرية/);
+  assert.ok(homePage.includes('isDemo={demoMode || Boolean(testWorkspaceToken)}'));
+  assert.ok(homePage.includes('التسجيل الصوتي غير مفعّل في مساحة الاختبار حتى يُربط بتخزين آمن ومعالجة سريرية'));
 });
