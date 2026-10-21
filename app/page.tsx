@@ -799,12 +799,12 @@ export default function HomePage() {
           {testWorkspaceToken && <div className="booking-connection-notice"><AlertCircle size={17}/><span>إعدادات هذه الصفحة محفوظة لمساحة الاختبار الحالية فقط؛ لن تنشر رابط حجز عام ولن تستقبل حجوزات من مرضى حقيقيين.</span></div>}
           <div className="booking-settings-heading">
             <div><span className="section-kicker">المواعيد والحجز</span><h2>رابط حجز المرضى</h2><p>حدد ساعات العيادة وسعة كل موعد، ثم شارك الرابط مع المرضى.</p></div>
-            <span className={'booking-publish-status '+(bookingSettings.booking_enabled?'published':'unpublished')}><i/>{bookingSettings.booking_enabled?'الرابط مفعّل':'الرابط متوقف'}</span>
+            <span className={'booking-publish-status '+(bookingSettings.booking_enabled?'published':'unpublished')}><i/>{testWorkspaceToken?'اختبار خاص — غير منشور':bookingSettings.booking_enabled?'الرابط مفعّل':'الرابط متوقف'}</span>
           </div>
           {demoMode && <div className="booking-connection-notice"><AlertCircle size={17}/><span>إعدادات الحجز تحتاج اتصال قاعدة البيانات لتُحفظ وتُشارك مع المرضى.</span></div>}
           {bookingLoading && <div className="booking-loading-line"><LoaderCircle className="spin" size={17}/> جارٍ تحميل إعدادات الحجز</div>}
           <div className="booking-publish-toggle">
-            <div><strong>استقبال طلبات الحجز عبر الإنترنت</strong><span>عند التفعيل، سيظهر الرابط للمرضى وتُحجز السعة فور إرسال الطلب حتى تراجعه العيادة.</span></div>
+            <div><strong>استقبال طلبات الحجز عبر الإنترنت</strong><span>{testWorkspaceToken?'هذه إعدادات تجريبية خاصة بهذا المتصفح، ولا تنشئ رابط حجز عاماً.':'عند التفعيل، سيظهر الرابط للمرضى وتُحجز السعة فور إرسال الطلب حتى تراجعه العيادة.'}</span></div>
             <label className="booking-switch"><input type="checkbox" checked={bookingSettings.booking_enabled} disabled={demoMode||bookingLoading} onChange={e=>setBookingSettings(current=>({...current,booking_enabled:e.target.checked}))}/><span/></label>
           </div>
           <div className="booking-config-grid">
