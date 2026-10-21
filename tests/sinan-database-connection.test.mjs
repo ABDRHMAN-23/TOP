@@ -52,8 +52,23 @@ test('only explicit token-bearing supported API paths are rewritten into test-wo
   assert.ok(homePage.includes("headers.set('x-sinan-test-workspace', token)"));
 });
 
-test('anonymous workspace refuses to simulate clinical report generation and disables unsecured audio capture', () => {
+const voiceWorkspaceRoute = await readFile(new URL('app/api/test-workspace-recordings/[...resource]/route.ts', root), 'utf8');
+const voiceWorkspaceMigration = await readFile(new URL('supabase/migrations/20261021103758_sinan_test_workspace_audio_recordings.sql', root), 'utf8');
+
+test('anonymous workspace records audio only in isolated consent-gated test tables', () => {
   assert.ok(workspaceRoute.includes('لا يمكن إنشاء تقرير قبل وجود مسودة سريرية محفوظة ومعتمدة.'));
-  assert.ok(homePage.includes('isDemo={demoMode || Boolean(testWorkspaceToken)}'));
-  assert.ok(homePage.includes('التسجيل الصوتي غير مفعّل في مساحة العمل الحالية قبل توصيل التخزين الآمن والمعالجة السريرية'));
+  assert.ok(homePage.includes('isDemo={demoMode}'));
+  assert.ok(homePage.includes('isTestWorkspace={Boolean(testWorkspaceToken)}'));
+  assert.ok(homePage.includes('تنبيه خصوصية: هذه المساحة تعمل بدون تسجيل دخول'));
+  assert.match(homePage, /disabled=\{!consent \|\| !patient\?\.id \|\| isDemo\}/);
+  assert.ok(voiceWorkspaceRoute.includes("sinan_test_start_recording"));
+  assert.ok(voiceWorkspaceRoute.includes("sinan_test_save_recording_chunk"));
+  assert.ok(voiceWorkspaceRoute.includes("sinan_test_save_recording_result"));
+  assert.doesNotMatch(voiceWorkspaceRoute, /requireUser\(|resolveOrganization\(/);
+  assert.ok(voiceWorkspaceMigration.includes('create table if not exists public.sinan_test_recordings'));
+  assert.ok(voiceWorkspaceMigration.includes('create table if not exists public.sinan_test_recording_chunks'));
+  assert.ok(voiceWorkspaceMigration.includes('grant execute on function public.sinan_test_start_recording(uuid,uuid,text,boolean,text) to anon, authenticated'));
+  assert.match(middleware, /audioWorkspaceRoute/);
+  assert.ok(middleware.includes('/api/test-workspace-recordings/start'));
+  assert.ok(middleware.includes('/api/test-workspace-recordings/process'));
 });
