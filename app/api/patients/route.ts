@@ -1,45 +1,80 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { patientCreateSchema } from '@/lib/clinical/validators';
+import { requireUser } from '@/lib/supabase/server';
+import { resolveOrganization } from '@/lib/supabase/organization';
 
-export const dynamic = 'force-dynamic';
-
-function getWorkspaceToken(request: Request) {
+function getTestWorkspaceToken(request: Request) {
   const token = request.headers.get('x-sinan-test-workspace')?.trim() || '';
   return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token) ? token : null;
 }
-
-function getSupabase() {
+function getTestWorkspaceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return null;
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
 }
-
-export async function GET(request: Request) {
-  const workspaceToken = getWorkspaceToken(request);
-  if (!workspaceToken) return NextResponse.json({ error: 'تعذر تهيئة مساحة العمل على هذا الجهاز. أعد تحميل الصفحة.' }, { status: 400 });
-  const supabase = getSupabase();
+async function listTestWorkspacePatients(token: string) {
+  const supabase = getTestWorkspaceSupabase();
   if (!supabase) return NextResponse.json({ error: 'اتصال قاعدة البيانات غير مهيأ.' }, { status: 503 });
-  const { data, error } = await supabase.rpc('sinan_test_list_patients', { p_workspace_token: workspaceToken });
+  const { data, error } = await supabase.rpc('sinan_test_list_patients', { p_workspace_token: token });
   if (error) return NextResponse.json({ error: 'تعذر تحميل ملفات المرضى من قاعدة البيانات.' }, { status: 503 });
   return NextResponse.json({ patients: data ?? [] }, { headers: { 'Cache-Control': 'no-store' } });
 }
-
-export async function POST(request: Request) {
-  const workspaceToken = getWorkspaceToken(request);
-  if (!workspaceToken) return NextResponse.json({ error: 'تعذر تهيئة مساحة العمل على هذا الجهاز. أعد تحميل الصفحة.' }, { status: 400 });
-  const supabase = getSupabase();
+async function createTestWorkspacePatient(token: string, request: Request) {
+  const supabase = getTestWorkspaceSupabase();
   if (!supabase) return NextResponse.json({ error: 'اتصال قاعدة البيانات غير مهيأ.' }, { status: 503 });
   const json = await request.json().catch(() => null);
   const parsed = patientCreateSchema.safeParse(json);
   if (!parsed.success) return NextResponse.json({ error: 'تحقق من اسم المريض والعمر والشكوى.' }, { status: 400 });
   const { data, error } = await supabase.rpc('sinan_test_create_patient', {
-    p_workspace_token: workspaceToken,
+    p_workspace_token: token,
     p_full_name: parsed.data.full_name,
     p_reported_age_years: parsed.data.reported_age_years ?? null,
     p_chief_complaint: parsed.data.chief_complaint ?? null,
   });
   if (error || !data || typeof data !== 'object') return NextResponse.json({ error: 'تعذر حفظ ملف المريض في قاعدة البيانات.' }, { status: 503 });
   return NextResponse.json({ patient: data }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
+}
+
+
+export async function GET(request: Request) {
+  const testToken = getTestWorkspaceToken(request);
+  if (testToken) return listTestWorkspacePatients(testToken);
+  const { supabase, user } = await requireUser();
+  if (!supabase) return NextResponse.json({ error: 'خدمة قاعدة البيانات غير مهيأة.' }, { status: 503 });
+  if (!user) return NextResponse.json({ error: 'سجّل الدخول للوصول إلى ملفات المرضى.' }, { status: 401 });
+  const { context, error } = await resolveOrganization(supabase, user, request);
+  if (!context) return NextResponse.json({ error }, { status: error?.includes('حدد العيادة') ? 400 : 403 });
+  const q = new URL(request.url).searchParams.get('q')?.trim();
+  const canReadClinicalFields = ['owner','clinic_admin','dentist','clinician','assistant'].includes(context.role);
+  const table = canReadClinicalFields ? 'patients' : 'patient_directory';
+  const columns = canReadClinicalFields
+    ? 'id,patient_number,full_name,date_of_birth,reported_age_years,sex,phone,chief_complaint,created_at,updated_at,record_status'
+    : 'id,patient_number,full_name,date_of_birth,reported_age_years,phone,created_at,updated_at,record_status';
+  let query = supabase.from(table).select(columns)
+    .eq('organization_id', context.organizationId).order('updated_at', { ascending: false }).limit(100);
+  if (q) query = query.or(`full_name.ilike.%${q.replace(/[,%()]/g, '')}%,patient_number.ilike.%${q.replace(/[,%()]/g, '')}%`);
+  const { data, error: dbError } = await query;
+  if (dbError) return NextResponse.json({ error: 'تعذر تحميل قائمة المرضى.' }, { status: 500 });
+  return NextResponse.json({ patients: data ?? [] });
+}
+
+export async function POST(request: Request) {
+  const testToken = getTestWorkspaceToken(request);
+  if (testToken) return createTestWorkspacePatient(testToken, request);
+  const { supabase, user } = await requireUser();
+  if (!supabase) return NextResponse.json({ error: 'خدمة قاعدة البيانات غير مهيأة.' }, { status: 503 });
+  if (!user) return NextResponse.json({ error: 'سجّل الدخول لإنشاء ملف مريض.' }, { status: 401 });
+  const { context, error } = await resolveOrganization(supabase, user, request);
+  if (!context) return NextResponse.json({ error }, { status: error?.includes('حدد العيادة') ? 400 : 403 });
+  if (!['owner', 'clinic_admin', 'dentist', 'clinician'].includes(context.role)) return NextResponse.json({ error: 'دور الحساب لا يسمح بإنشاء ملفات المرضى.' }, { status: 403 });
+  const json = await request.json().catch(() => null);
+  const parsed = patientCreateSchema.safeParse(json);
+  if (!parsed.success) return NextResponse.json({ error: 'تحقق من الحقول المدخلة.', issues: parsed.error.flatten() }, { status: 400 });
+  const values = { ...parsed.data, organization_id: context.organizationId, created_by: user.id, updated_by: user.id };
+  const { data, error: insertError } = await supabase.from('patients').insert(values).select('id,patient_number,full_name,date_of_birth,reported_age_years,sex,phone,chief_complaint,created_at,record_status').single();
+  if (insertError) return NextResponse.json({ error: insertError.code === '23505' ? 'رقم الملف مستخدم من قبل.' : 'تعذر إنشاء الملف. تحقق من البيانات وصلاحيات العيادة.' }, { status: insertError.code === '23505' ? 409 : 400 });
+  await supabase.from('audit_events').insert({ organization_id: context.organizationId, actor_user_id: user.id, action: 'patient.created', resource_type: 'patient', resource_id: data.id, metadata: { origin: 'api' } });
+  return NextResponse.json({ patient: data }, { status: 201 });
 }
