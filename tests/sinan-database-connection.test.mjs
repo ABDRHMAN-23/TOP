@@ -10,7 +10,7 @@ const patientRoute = await readFile(new URL('app/api/patients/route.ts', root), 
 const homePage = await readFile(new URL('app/page.tsx', root), 'utf8');
 
 test('Supabase URL normalization strips one or more PostgREST path suffixes', () => {
-  assert.match(urlHelper, /replace\(\/\(\?:\\\/rest\\\/v1\)\+\\\/?\$\/i, ''\)/);
+  assert.ok(urlHelper.includes(".replace(/(?:\\/rest\\/v1)+\\/?$/i, '')"));
   assert.match(urlHelper, /parsed\.search = ''/);
   assert.match(urlHelper, /parsed\.hash = ''/);
 });
