@@ -45,7 +45,8 @@ export async function DELETE(request: Request, context: { params: Promise<{ reso
 
 async function handle(request: Request, context: { params: Promise<{ resource: string[] }> }, method: string) {
   const token = getTestWorkspaceToken(request);
-  if (!token) return errorResponse('مساحة الاختبار غير معرّفة. أعد تحميل الصفحة.', 401);
+  if (!token) return errorResponse('مساحة العمل غير معرّفة. أعد تحميل الصفحة.', 401);
+  const workspaceToken: string = token;
   const resolvedClient = getTestWorkspaceClient();
   if (!resolvedClient) return errorResponse('اتصال قاعدة البيانات غير مهيأ.', 503);
   const client = resolvedClient;
@@ -57,12 +58,12 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
   const input: Record<string, any> = payload ?? {};
 
   async function records(type: TestWorkspaceResource) {
-    const result = await listTestWorkspaceRecords(client, token, type);
+    const result = await listTestWorkspaceRecords(client, workspaceToken, type);
     if (result.error) throw new Error('تعذر قراءة مساحة الاختبار من قاعدة البيانات.');
     return result.data;
   }
   async function patientRows() {
-    const result = await client.rpc('sinan_test_list_patients', { p_workspace_token: token });
+    const result = await client.rpc('sinan_test_list_patients', { p_workspace_token: workspaceToken });
     if (result.error) throw new Error('تعذر قراءة ملفات المرضى من قاعدة البيانات.');
     return Array.isArray(result.data) ? result.data : [];
   }
@@ -71,12 +72,12 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
     return (await patientRows()).find((item: any) => item.id === id) || null;
   }
   async function put(type: TestWorkspaceResource, row: Record<string, any>, options: { id?: string | null; patientId?: string | null } = {}) {
-    const result = await upsertTestWorkspaceRecord(client, token, type, row, { recordId: options.id ?? row.id ?? null, patientId: options.patientId ?? row.patient_id ?? null });
+    const result = await upsertTestWorkspaceRecord(client, workspaceToken, type, row, { recordId: options.id ?? row.id ?? null, patientId: options.patientId ?? row.patient_id ?? null });
     if (result.error || !result.data) throw new Error('تعذر حفظ التغييرات في قاعدة البيانات.');
     return result.data;
   }
   async function get(type: TestWorkspaceResource, id: string) {
-    const result = await client.rpc('sinan_test_get_record', { p_workspace_token: token, p_resource_type: type, p_record_id: id });
+    const result = await client.rpc('sinan_test_get_record', { p_workspace_token: workspaceToken, p_resource_type: type, p_record_id: id });
     if (result.error) throw new Error('تعذر قراءة السجل من قاعدة البيانات.');
     return result.data && typeof result.data === 'object' ? result.data as Record<string, any> : null;
   }
@@ -211,7 +212,7 @@ async function handle(request: Request, context: { params: Promise<{ resource: s
         const complaint = Object.prototype.hasOwnProperty.call(input, 'chief_complaint') ? input.chief_complaint : patient.chief_complaint;
         if (fullName.length < 2 || fullName.length > 180 || (age != null && (!Number.isInteger(Number(age)) || Number(age) < 1 || Number(age) > 120))) return errorResponse('تحقق من اسم المريض والعمر.');
         const result = await client.rpc('sinan_test_update_patient', {
-          p_workspace_token: token, p_patient_id: second, p_full_name: fullName,
+          p_workspace_token: workspaceToken, p_patient_id: second, p_full_name: fullName,
           p_reported_age_years: age == null ? null : Number(age),
           p_chief_complaint: complaint == null ? null : String(complaint).slice(0, 2000),
         });
