@@ -1225,16 +1225,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 /* Quiet operational connection status replaces promotional mode badges. */
 .connection-text{display:inline-flex;align-items:center;min-height:30px;padding-inline:4px;color:#8593a7;font-size:9px;font-weight:600;white-space:nowrap}
-.system-notice{position:relative;display:flex;align-items:center;gap:12px;padding:11px 15px;margin:16px 0 0;border:1px solid #e3eaf4;border-radius:13px;background:#f7f9fc;color:#70839d}
-.system-notice:before{content:"";align-self:stretch;width:3px;min-height:29px;border-radius:5px;background:#9db5db}
-.system-notice>svg{color:#6482b5}
-.system-notice>div{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
-.system-notice strong{color:#425a7c;font-size:10px;font-weight:750}
-.system-notice span{color:#7e8fa7;font-size:9px;line-height:1.7}
-.system-notice button{display:grid;place-items:center;border:0;background:transparent;color:#6f84a3}
-@media(max-width:760px){.connection-text{font-size:8px}.system-notice{gap:8px;padding:10px;margin-top:12px}.system-notice strong{font-size:9px}.system-notice span{font-size:8px}}
-
-/* Connection status remains available on mobile; responsive wrapping is defined below. */
+/* The system-notice styles are defined once below, next to their responsive rules. */
 
 /* Clear, actionable empty states and subtle non-mode connection status */
 .patient-list-empty{min-height:185px;margin:10px 0}
@@ -1720,4 +1711,20 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
  .attention-row>.state-pill,.workbench-patient-card>.state-pill{font-size:10px;max-width:100px}
  .workbench-patient-tools>.primary-button{font-size:12px}
  .jaw-midline{font-size:10px}
+}
+
+
+/* Dialog ergonomics: keep scroll gestures inside overlays rather than the page behind them. */
+.modal,.modal-card,.command-palette,.scribe-modal{
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.modal-backdrop,.command-backdrop{
+  overscroll-behavior:contain;
+  touch-action:pan-y;
+}
+@media(max-width:760px){
+  .modal-backdrop{align-items:flex-end;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .modal,.modal-card{width:100%;max-height:calc(92dvh - env(safe-area-inset-bottom));border-radius:20px 20px 16px 16px;padding:18px 15px}
+  .scribe-modal{max-height:calc(92dvh - env(safe-area-inset-bottom))}
 }
