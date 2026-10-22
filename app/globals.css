@@ -279,7 +279,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .patient-history-section .panel-heading{align-items:flex-start}
 .visit-history-item{transition:border-color .15s,background .15s}
 .visit-history-item:hover{border-color:#c9dbc0;background:#fafbf3}
-.primary-button,.secondary-button,.danger-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 15px;border:1px solid transparent;border-radius:12px;font-size:10px;font-weight:700;transition:transform .18s,background .18s,border-color .18s,box-shadow .18s}
+.primary-button,.secondary-button,.danger-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 15px;border:1px solid transparent;border-radius:12px;font-size:14px;font-weight:700;transition:transform .18s,background .18s,border-color .18s,box-shadow .18s}
 .primary-button{background:var(--forest);color:#fffdf4;box-shadow:0 6px 14px #143d3320}
 .primary-button:hover{transform:translateY(-1px);background:#205449;box-shadow:0 10px 19px #143d3330}
 .secondary-button{border-color:#dce2d6;background:#fffefa;color:#4a6555}
@@ -350,15 +350,15 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .empty-endo-state>div{display:flex;flex:1;min-width:0;flex-direction:column;align-items:flex-start;gap:8px}
 .empty-endo-state .primary-button{margin-top:6px;white-space:normal;text-align:center}
 .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.settings-grid label,.form-field{display:flex;flex-direction:column;gap:7px;color:#647a6b;font-size:10px;font-weight:600}
+.settings-grid label,.form-field{display:flex;flex-direction:column;gap:7px;color:#647a6b;font-size:12px;font-weight:600}
 .settings-grid input,.settings-grid select,.form-field input,.form-field textarea,.form-field select{width:100%;min-height:42px;padding:10px 12px;border:1px solid #dbe2d5;border-radius:11px;background:#fbfbf5;color:#29483c;outline:0;transition:border-color .15s,box-shadow .15s}
 .settings-grid input:focus,.settings-grid select:focus,.form-field input:focus,.form-field textarea:focus,.form-field select:focus{border-color:#96b886;box-shadow:0 0 0 3px #d8e9cd70}
 .settings-grid input::placeholder,.form-field input::placeholder,.form-field textarea::placeholder{color:#a1aba0}
 .settings-footnote{display:flex;align-items:flex-start;gap:9px;padding:12px;margin-top:17px;border:1px solid #dce7d6;border-radius:12px;background:#f2f6e9;color:#74866f;font-size:10px;line-height:1.8}
-.settings-sticky-save{position:fixed;z-index:35;right:278px;left:24px;bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 16px;border:1px solid #d4e0cf;border-radius:16px;background:rgba(255,254,250,.97);box-shadow:var(--shadow-float);backdrop-filter:blur(10px)}
+.settings-sticky-save{position:fixed;z-index:35;right:24px;left:24px;bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 16px;border:1px solid #d4e0cf;border-radius:16px;background:rgba(23,52,94,.98);color:#fff;box-shadow:var(--shadow-float);backdrop-filter:blur(10px)}
 .settings-sticky-save>div{display:flex;flex-direction:column;gap:4px;min-width:0}
-.settings-sticky-save strong{color:#29483c;font-size:11px}
-.settings-sticky-save span{color:#7d8e81;font-size:9px;line-height:1.5}
+.settings-sticky-save strong{color:#fff;font-size:13px}
+.settings-sticky-save span{color:#e0e9f7;font-size:12px;line-height:1.5}
 .settings-sticky-save .primary-button{flex:none}
 .scribe-launch{display:flex;flex-direction:column;align-items:flex-start;gap:13px;min-height:310px;padding:34px}
 .scribe-orb{display:grid;place-items:center;width:68px;height:68px;border:1px solid #dce5ce;border-radius:22px;background:var(--acid);color:#244335}
@@ -723,7 +723,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .primary-button:hover{background:#1949ad;border-color:#1949ad;box-shadow:0 7px 20px #2458c82a}
 .secondary-button{background:#fff;border-color:#dce5f1;color:#385372;border-radius:12px}
 .secondary-button:hover{background:#f2f6fd;border-color:#c6d7f2;color:#2458c8}
-.danger-button{background:#c44750;border-color:#c44750;border-radius:12px}
+.danger-button{background:#c44750;border-color:#c44750;color:#fff;border-radius:12px}.danger-button:hover{background:#a92f3a;border-color:#a92f3a;color:#fff}
 .workspace-page{padding-top:25px}
 .patient-workspace{gap:16px;align-items:start}
 .patient-list-panel{padding:17px}
@@ -1134,7 +1134,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .command-empty span{font-size:10px}
 .command-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;border-top:1px solid #e9eef6;background:#fafcff;color:#8b99ad;font-size:9px}
 .command-footer kbd{padding:3px 5px;border:1px solid #dfe7f1;border-radius:5px;background:white;color:#6a7f9b;font:9px 'DM Sans',sans-serif}
-[dir="ltr"] .workbench-title,.workbench-section-heading,[dir="ltr"] .workbench-section-heading,[dir="ltr"] .workbench-action,[dir="ltr"] .workbench-metric,[dir="ltr"] .workbench-patient-card,[dir="ltr"] .attention-row,[dir="ltr"] .command-result{text-align:left}
+[dir="ltr"] .workbench-title,[dir="ltr"] .workbench-section-heading,[dir="ltr"] .workbench-action,[dir="ltr"] .workbench-metric,[dir="ltr"] .workbench-patient-card,[dir="ltr"] .attention-row,[dir="ltr"] .command-result{text-align:left}
 [dir="ltr"] .workbench-heading,[dir="ltr"] .workbench-heading-actions{direction:ltr}
 [dir="ltr"] .workbench-title .eyebrow{flex-direction:row}
 [dir="ltr"] .workbench-panel-footer,[dir="ltr"] .workbench-link-row{direction:ltr}
@@ -1234,7 +1234,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .system-notice button{display:grid;place-items:center;border:0;background:transparent;color:#6f84a3}
 @media(max-width:760px){.connection-text{font-size:8px}.system-notice{gap:8px;padding:10px;margin-top:12px}.system-notice strong{font-size:9px}.system-notice span{font-size:8px}}
 
-@media(max-width:760px){.connection-text{display:none}}
+/* Connection status remains available on mobile; responsive wrapping is defined below. */
 
 /* Clear, actionable empty states and subtle non-mode connection status */
 .patient-list-empty{min-height:185px;margin:10px 0}
@@ -1370,7 +1370,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .tooth.flagged .anatomical-tooth-glyph .tooth-root-shape{stroke:#be9a61}
 .tooth.recorded .anatomical-tooth-glyph .tooth-crown-shape{fill:#dff4ea;stroke:#4d9b7e}
 .tooth.recorded .anatomical-tooth-glyph .tooth-root-shape{stroke:#6fa68f}
-.jaw-midline{display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0;color:#8b9cb2;font-size:7px}
+.jaw-midline{display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0;color:#687d98;font-size:11px}
 .jaw-midline i{height:1px;width:12%;background:#dce5f1}
 .tooth-detail.anatomical-tooth-detail{align-items:flex-start;padding:17px;margin-top:15px;border:1px solid #dbe6f3;border-radius:14px;background:#fff}
 .anatomical-tooth-detail>div{flex:1;min-width:0}
@@ -1686,8 +1686,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .teeth-row.anatomical-teeth .tooth:nth-child(7),.teeth-row.anatomical-teeth .tooth:nth-child(10){padding-top:0}
 .teeth-row.anatomical-teeth .tooth:nth-child(8),.teeth-row.anatomical-teeth .tooth:nth-child(9){padding-top:0}
 .tooth-surface-picker{padding-top:6px}
-.chart-scroll-hint{display:none;align-items:center;gap:6px;margin:9px 0 0;color:#7a91af;font-size:9px}
+.chart-scroll-hint{display:none;align-items:center;gap:6px;margin:9px 0 0;color:#526f99;font-size:11px}
 .chart-scroll-hint svg{color:#5a83c6}
+@media(max-width:760px){.chart-scroll-hint{display:flex}}
+[dir="ltr"] .primary-button svg.lucide-chevron-left,[dir="ltr"] .secondary-button svg.lucide-chevron-left,[dir="ltr"] a svg.lucide-chevron-left{transform:scaleX(-1)}
 @media(max-width:760px){
  .tooth{min-height:106px;padding:5px 0 4px}
  .tooth .tooth-glyph{height:76px}
