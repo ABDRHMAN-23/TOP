@@ -1728,3 +1728,25 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .modal,.modal-card{width:100%;max-height:calc(92dvh - env(safe-area-inset-bottom));border-radius:20px 20px 16px 16px;padding:18px 15px}
   .scribe-modal{max-height:calc(92dvh - env(safe-area-inset-bottom))}
 }
+
+
+/* Final clinical readability pass: avoid tiny labels on touch devices. */
+@media(max-width:760px){
+  .workbench-timeline .appointment-info strong{font-size:12px}
+  .workbench-timeline .appointment-info span,
+  .workbench-timeline .appointment-info small,
+  .attention-copy small,
+  .workbench-patient-main small,
+  .workbench-patient-main em{font-size:11px}
+  .workbench-shortcut-grid button span,
+  .mobile-dock button{font-size:12px}
+  .tooth small{font-size:10px}
+  .jaw-midline{font-size:10px}
+  .form-field input,.form-field select,.form-field textarea,
+  .settings-grid input,.settings-grid select,
+  .search-box input{font-size:16px}
+}
+:where(button,a,input,select,textarea,[tabindex]):focus-visible{
+  outline:3px solid #79a7f5;
+  outline-offset:2px;
+}
