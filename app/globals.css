@@ -1552,7 +1552,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 }
 .modal-backdrop,.command-backdrop{
   overscroll-behavior:contain;
-  touch-action:pan-y;
 }
 @media(max-width:760px){
   .modal-backdrop{align-items:flex-end;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
