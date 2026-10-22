@@ -50,7 +50,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .brand-symbol{width:44px;height:44px;display:grid;place-items:center;border-radius:15px;background:var(--acid);color:var(--forest-deep);box-shadow:0 8px 24px #0a211d80}
 .brand-name{font-size:24px;line-height:1;font-weight:700;letter-spacing:-.7px;color:#fffdf3}
 .brand-sub{font-size:10px;line-height:1.5;color:#abc0b1;margin-top:7px}
-.brand-dot{width:7px;height:7px;background:var(--acid);border-radius:50%;margin-right:auto;margin-left:3px}
 .clinic-switch{display:flex;align-items:center;gap:10px;width:100%;padding:11px;margin:0 0 27px;border:1px solid #34564c;border-radius:15px;background:#1a4039;text-align:right;transition:background .2s,border-color .2s}
 .clinic-switch:hover{background:#214940;border-color:#4e7564}
 .clinic-mark{width:38px;height:38px;display:grid;place-items:center;flex:none;border-radius:12px;background:#dcebe0;color:var(--forest);font-weight:700;font-size:17px}
@@ -100,8 +99,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .top-divider{width:1px;height:25px;background:#dce0d5}
 .top-date{display:flex;align-items:center;gap:7px;color:#71847a;font-size:10px;white-space:nowrap}
 .top-date svg{color:var(--forest)}
-.sign-in-link{color:#6a8175;font-size:10px;white-space:nowrap}
-.sign-in-link:hover{color:var(--forest)}
 .icon-button{position:relative;display:grid;place-items:center;flex:none;width:38px;height:38px;border:1px solid #e0e4d9;border-radius:12px;background:var(--surface);color:#536d61;transition:background .18s,border-color .18s,color .18s}
 .icon-button:hover{border-color:#bacbb9;background:#eff3e7;color:var(--forest)}
 .icon-button.subtle{border-color:transparent;background:transparent;color:#b2c5b7}
@@ -112,32 +109,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .system-notice strong{color:#87662e;font-size:10px;font-weight:700}
 .system-notice span{color:#99835a;font-size:9px;line-height:1.7}
 .system-notice button{display:grid;place-items:center;border:0;background:transparent;color:#a98a50}
-.welcome-row{position:relative;isolation:isolate;display:flex;align-items:flex-end;justify-content:space-between;gap:25px;min-height:222px;overflow:hidden;padding:31px 34px;margin:23px 0 20px;border:1px solid #1d4740;border-radius:27px;background:linear-gradient(113deg,#102f2d 0%,#16433b 53%,#1b4a3d 100%);box-shadow:0 15px 34px #173d3420}
-.welcome-row:before{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse at 8% 12%,#d8f07813 0,transparent 34%),linear-gradient(90deg,transparent 50%,#ffffff03 100%);pointer-events:none}
-.welcome-row:after{content:"";position:absolute;z-index:-1;left:-45px;bottom:-170px;width:300px;height:300px;border:1px solid #d8f07822;border-radius:50%;box-shadow:0 0 0 24px #d8f07808,0 0 0 52px #d8f07807,0 0 0 82px #d8f07805;pointer-events:none}
-.welcome-copy{position:relative;z-index:2;max-width:66%;min-width:0}
-.welcome-row .eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:12px;color:var(--acid);font-size:10px;font-weight:600;letter-spacing:.2px}
-.hero-eyebrow-mark{display:inline-block;width:17px;height:2px;border-radius:2px;background:var(--acid)}
-.welcome-row h1{margin:0;color:#fffef7;font-size:clamp(26px,2.8vw,38px);font-weight:600;letter-spacing:-1px;line-height:1.45}
-.wave{display:inline-block;margin-right:5px;color:var(--acid);font-size:.78em;animation:sinan-star-turn 18s linear infinite}
 @keyframes sinan-star-turn{to{transform:rotate(180deg)}}
-.welcome-row p{max-width:470px;margin:10px 0 0;color:#c0d3c3;font-size:11px;line-height:2}
-.hero-meta{display:flex;align-items:center;gap:10px;margin-top:20px;color:#a9c0af;font-size:9px}
-.hero-meta>span{display:flex;align-items:center;gap:7px}
-.hero-meta>i{width:3px;height:3px;border-radius:50%;background:#759386}
-.hero-live-dot{width:6px;height:6px;border-radius:50%;background:var(--acid);box-shadow:0 0 0 4px #d8f07818}
-.hero-cta{position:relative;z-index:3;display:flex;align-items:center;gap:11px;min-height:55px;padding:7px 9px 7px 17px;border-radius:15px;background:var(--acid);color:#18352e;box-shadow:0 11px 25px #091f1940;white-space:nowrap}
-.hero-cta:hover{background:#e6fa9d;transform:translateY(-2px);box-shadow:0 14px 28px #091f194c}
-.hero-cta-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:#193f36;color:var(--acid)}
-.hero-cta-arrow{margin-right:4px}
-.hero-art{position:absolute;z-index:0;left:13%;top:50%;width:220px;height:220px;transform:translateY(-50%);pointer-events:none;opacity:.68}
-.hero-art-ring{position:absolute;inset:17px;border:1px solid #d8f07825;border-radius:50%}
-.hero-art-ring.ring-two{inset:37px;border-color:#d8f07834}
-.hero-art-core{position:absolute;top:50%;left:50%;display:grid;place-items:center;width:98px;height:98px;transform:translate(-50%,-50%) rotate(-12deg);border:1px solid #d8f07836;border-radius:31px;background:linear-gradient(145deg,#d8f07817,#d8f07804);color:#d8f07880}
-.hero-art-spark{position:absolute;color:var(--acid)}
-.spark-one{top:24px;right:32px;font-size:19px}
-.spark-two{bottom:23px;left:38px;font-size:32px}
-.stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:0 0 19px}
 .stat-card{position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;min-width:0;min-height:162px;overflow:hidden;padding:19px 19px 16px;border:1px solid #e3e5da;border-radius:19px;background:var(--surface);box-shadow:var(--shadow);transition:transform .2s,border-color .2s,box-shadow .2s}
 .stat-card:hover{transform:translateY(-3px);border-color:#c6d4ba;box-shadow:var(--shadow-hover)}
 .stat-card:before{content:"";position:absolute;z-index:-1;left:-25px;bottom:-56px;width:118px;height:118px;border:1px solid #e4e9dc;border-radius:50%;box-shadow:0 0 0 13px #e8ecdf35,0 0 0 29px #e8ecdf22}
@@ -152,18 +124,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .stat-number.alert-number{color:#9b6a24}
 .stat-foot{position:relative;z-index:1;display:flex;align-items:center;gap:5px;margin-top:7px;color:#8b9689;font-size:9px;line-height:1.6}
 .tiny-alert{display:inline-block;width:5px;height:5px;border-radius:50%;background:#d1a04b}
-.dashboard-grid{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(310px,.82fr);gap:16px;align-items:start;margin-bottom:19px}
-.panel,.appointments-panel,.review-panel,.patients-panel,.settings-panel,.patient-list-panel,.patient-detail,.odontogram-panel,.endo-panel{min-width:0;border:1px solid #e1e4d9;border-radius:21px;background:var(--surface);box-shadow:var(--shadow)}
-.appointments-panel,.review-panel,.patients-panel{padding:21px 22px}
+.panel,.settings-panel,.patient-list-panel,.patient-detail,.odontogram-panel,.endo-panel{min-width:0;border:1px solid #e1e4d9;border-radius:21px;background:var(--surface);box-shadow:var(--shadow)}
 .panel{padding:22px}
 .panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:17px}
 .panel-heading h2,.settings-panel h2{margin:0;color:#1c3934;font-size:14px;font-weight:700;letter-spacing:-.2px}
 .panel-heading p{margin:5px 0 0;color:#829087;font-size:10px;line-height:1.7}
 .text-link{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:0;background:transparent;color:#43715b;font-size:10px;font-weight:700}
 .text-link:hover{color:#173d34}
-.full-link{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:14px 0 0;margin-top:13px;border:0;border-top:1px solid #e9eae1;background:transparent;color:#647c6e;font-size:10px;font-weight:600;text-align:right}
-.full-link:hover{color:var(--forest)}
-.count-badge{display:inline-grid;place-items:center;min-width:25px;height:25px;padding:0 7px;border-radius:9px;background:#f8edcf;color:#986e2c;font-size:10px;font-weight:700}
 .timeline-list{display:flex;flex-direction:column;min-width:0}
 .timeline-item{display:grid;grid-template-areas:"time track avatar info status";grid-template-columns:minmax(48px,58px) 12px 34px minmax(0,1fr) max-content;align-items:center;gap:10px;min-width:0;padding:13px 0;border-bottom:1px solid #ebeee5}
 .timeline-item:last-child{border-bottom:0}
@@ -186,7 +153,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .appointment-state.waiting{background:#fff1d3;color:#996b2b}
 .active-appointment{position:relative}
 .active-appointment:after{position:absolute;top:12px;right:-22px;bottom:12px;width:3px;border-radius:4px;background:var(--acid-deep);content:""}
-.review-list{display:flex;flex-direction:column;gap:5px}
 .review-item{display:flex;align-items:center;gap:11px;width:100%;padding:11px 7px;border:1px solid transparent;border-radius:14px;background:transparent;text-align:right;transition:background .18s,border-color .18s}
 .review-item:hover{border-color:#e5eadb;background:#f8f8f0}
 .review-item .avatar{width:35px;height:35px}
@@ -196,27 +162,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .review-info small{display:flex;align-items:center;gap:5px;color:#a37431;font-size:9px}
 .review-item>svg:last-child{color:#8b9c8f}
 .patient-tools{display:flex;align-items:center;gap:9px}
-.patients-heading{align-items:flex-start}
 .search-box{display:flex;align-items:center;gap:9px;min-width:0;min-height:40px;padding:0 11px;border:1px solid #e0e5d9;border-radius:12px;background:#fbfaf5;color:#8b9a8f;transition:border-color .15s,box-shadow .15s,background .15s}
 .search-box:focus-within{border-color:#9dbb94;background:#fffefa;box-shadow:0 0 0 3px #dbe9d42e}
 .search-box svg{color:#82988a}
 .search-box input{width:100%;min-width:0;padding:9px 0;border:0;outline:0;background:transparent;color:#2b4840;font-size:10px}
 .search-box input::placeholder{color:#a0a99d}
-.search-box.wide{width:100%;margin-bottom:10px}
-.patient-table-wrap,.table-wrap{width:100%;overflow-x:auto;border:1px solid #e5e8de;border-radius:14px}
-.patient-table{width:100%;min-width:620px;border-collapse:separate;border-spacing:0}
-.patient-table th{padding:13px 12px;border-bottom:1px solid #e4e8dd;background:#f7f7ef;color:#809086;font-size:9px;font-weight:700;text-align:right}
-.patient-table th:first-child{border-radius:0 12px 0 0}
-.patient-table th:last-child{border-radius:12px 0 0 0}
-.patient-table td{padding:13px 12px;border-bottom:1px solid #eef0e7;color:#697d71;font-size:10px;vertical-align:middle}
-.patient-table tbody tr{transition:background .16s;cursor:pointer}
-.patient-table tbody tr:hover{background:#f8f8f0}
-.patient-table tbody tr:last-child td{border-bottom:0}
-.patient-cell{display:flex;align-items:center;gap:10px;min-width:165px}
-.patient-cell strong{display:block;color:#2c4941;font-size:10px;font-weight:700}
-.patient-cell span{display:block;margin-top:4px;color:#8a978e;font-size:9px}
-.row-arrow{display:grid;place-items:center;border:0;background:transparent;color:#8da092}
-.row-arrow:hover{color:#244d40}
+.search-box.wide{width:100%;margin-bottom:10px}.table-wrap{width:100%;overflow-x:auto;border:1px solid #e5e8de;border-radius:14px}
 .state-pill{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:5px 9px;border:1px solid transparent;border-radius:999px;font-size:9px;font-weight:700;line-height:1.4;white-space:nowrap}
 .state-pill.approved{border-color:#d8e8d4;background:#e9f2e2;color:#42704c}
 .state-pill.draft{border-color:#dbe2f8;background:#edf0fc;color:#5b6dba}
@@ -266,11 +217,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .missing-notice>svg{margin-top:2px;flex:none}
 .missing-notice strong{display:block;color:#89632e;font-size:10px}
 .missing-notice span{display:block;margin-top:5px;color:#a1875d;font-size:9px;line-height:1.8}
-.record-line{display:flex;align-items:center;gap:11px;padding:12px;border:1px solid #e6e9df;border-radius:13px;background:#fafaf4}
 .record-icon{display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:12px;background:#e1eee3;color:#356d55}
-.record-line>div:nth-child(2){flex:1;min-width:0}
-.record-line strong{color:#2d4a40;font-size:10px}
-.record-line span{display:block;margin-top:4px;color:#849288;font-size:9px;line-height:1.6}
 .history-list{display:flex;flex-direction:column;gap:8px}
 .history-item{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid #e6e9df;border-radius:13px;background:#fffefa}
 .history-item-main{display:flex;flex:1;flex-direction:column;gap:5px;min-width:0}
@@ -286,21 +233,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .secondary-button:hover{border-color:#c4d4bc;background:#f3f6eb;color:#224b3c}
 .danger-button{border-color:#efd6d4;background:#fbebea;color:#a7474d}
 .danger-button:hover{background:#f7dddb}
-.welcome-row .primary-button{box-shadow:none}
 .search-box.wide{width:100%}
 .patient-list-panel .patient-select+.patient-select{margin-top:3px}
 .patient-list-panel,.patient-detail{box-shadow:var(--shadow)}
 .patient-list-panel .patient-select.selected:after{content:"";width:5px;height:5px;margin-right:auto;border-radius:50%;background:#739b57}
 .page-heading>.primary-button{flex:none}
-.appointments-panel .timeline-list{padding-inline:2px}
 .timeline-list.roomy .timeline-item{padding:17px 0}
-.live-empty,.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;padding:34px 20px;color:#859188;text-align:center}
+.live-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;padding:34px 20px;color:#859188;text-align:center}
 .live-empty>svg{color:#5d896a}
 .live-empty strong{color:#355548;font-size:11px}
 .live-empty span,.live-empty p{max-width:340px;margin:0;color:#86948a;font-size:10px;line-height:1.9}
-.empty-state{padding:25px}
-.patient-table-wrap{width:100%}
-.patients-panel{margin-top:0}
 .patient-tools .search-box{width:min(260px,28vw)}
 .patient-tools>.secondary-button{flex:none}
 .reports-list-panel{padding:10px 21px}
@@ -317,7 +259,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .saved-report-row>svg{color:#8a9a8e}
 .odontogram-panel,.endo-panel,.settings-panel{padding:22px}
 .dental-chart{padding:25px 19px;border:1px solid #e4e9de;border-radius:18px;background:radial-gradient(ellipse at center,#fffef8 0,#f7f7ee 72%)}
-.chart-label{margin:0 0 11px;color:#849188;font-size:10px;font-weight:700}
 .teeth-row{display:flex;justify-content:center;gap:5px;min-width:0}
 .tooth{display:flex;flex:1;flex-direction:column;align-items:center;gap:7px;min-width:0;padding:8px 2px;border:1px solid transparent;border-radius:10px;background:transparent;transition:background .15s,border-color .15s,transform .15s}
 .tooth:hover{transform:translateY(-2px);border-color:#e0e8d6;background:#f2f5e8}
@@ -325,8 +266,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .tooth.picked span,.tooth.selected span{border-color:#a8c66b;background:var(--acid);color:#203e31;box-shadow:0 0 0 3px #d8f07835}
 .tooth small{color:#87958b;font-size:9px;font-weight:600}
 .tooth.flagged span{border-color:#d7a653;background:#fbf0d7;color:#976728}
-.jaw-divider{display:flex;align-items:center;gap:11px;margin:15px 0;color:#8b998c;font-size:9px}
-.jaw-divider i{height:1px;flex:1;background:#dfe5d8}
 .tooth-detail{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:17px;margin-top:15px;border:1px solid #dfe7d8;border-radius:15px;background:#f8faf1}
 .tooth-detail>div{min-width:0}
 .detail-kicker{color:#85958a;font-size:9px}
@@ -366,7 +305,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .scribe-launch p{max-width:550px;margin:0;color:#7f8f83;font-size:11px;line-height:2}
 .modal-backdrop{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;background:#102a25b3;backdrop-filter:blur(8px)}
 .modal-backdrop.high{z-index:90}
-.modal,.modal-card{width:min(100%,620px);max-height:min(88dvh,900px);overflow:auto;padding:25px;border:1px solid #dce5d8;border-radius:23px;background:var(--surface);box-shadow:var(--shadow-float)}
+.modal{width:min(100%,620px);max-height:min(88dvh,900px);overflow:auto;padding:25px;border:1px solid #dce5d8;border-radius:23px;background:var(--surface);box-shadow:var(--shadow-float)}
 .modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:20px}
 .modal-head h2{margin:0;color:#214438;font-size:19px;font-weight:700}
 .modal-head .eyebrow{margin-bottom:7px;color:#6c9365;font-size:9px}
@@ -403,12 +342,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .auth-page{display:grid;place-items:center;min-height:100vh;padding:25px;background:radial-gradient(ellipse at 10% 10%,#e2ebd7 0,transparent 32%),radial-gradient(ellipse at 90% 90%,#e4eadc 0,transparent 35%),var(--paper)}
 .auth-card{width:min(100%,460px);padding:34px;border:1px solid #e2e5d9;border-radius:25px;background:var(--surface);box-shadow:0 25px 75px #1a382413}
 .auth-brand span,.auth-sub,.auth-note{color:#809087}
-.auth-eyebrow,.auth-back,.sign-in-link{color:#4d7659}
+.auth-eyebrow,.auth-back{color:#4d7659}
 .auth-card h1{color:#1b3c32;font-weight:700;letter-spacing:-.5px}
 .auth-submit{border-radius:13px}
-.password-field{display:flex;align-items:center;overflow:hidden;border:1px solid #dbe2d5;border-radius:12px;background:#fbfbf5}
-.password-field input{flex:1;min-width:0;border:0!important;box-shadow:none!important}
-.password-field button{padding:10px;border:0;background:transparent;color:#73877a}
 .app-loading,.app-error{display:grid;place-content:center;justify-items:center;gap:12px;min-height:100vh;padding:25px;background:var(--paper);color:#214237;text-align:center}
 .app-loading-brand small,.app-loading-body,.app-error-card>p,.app-error-footnote{color:#819087}
 .app-error-card{width:min(100%,520px);padding:30px;border:1px solid var(--line);border-radius:21px;background:var(--surface);box-shadow:var(--shadow)}
@@ -416,9 +352,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .mobile-menu-trigger{display:none}
 .sidebar-backdrop{display:none}
 .mobile-dock{display:none}
-@media(min-width:1500px){.main-content{padding-inline:44px}.stats-grid{gap:16px}.dashboard-grid{gap:19px}.stat-card{padding:21px}}
-@media(max-width:1250px){.sidebar{width:236px;min-width:236px}.main-content{padding-inline:23px}.dashboard-grid{grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr)}.stat-card{padding:16px}.welcome-row{padding:29px}.hero-art{left:9%}}
-@media(max-width:1050px){.dashboard-grid{grid-template-columns:minmax(0,1fr)}.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.welcome-row{min-height:205px}.welcome-copy{max-width:70%}.hero-art{left:13%;opacity:.4}}
+@media(min-width:1500px){.main-content{padding-inline:44px}.stat-card{padding:21px}}
+@media(max-width:1250px){.sidebar{width:236px;min-width:236px}.main-content{padding-inline:23px}.stat-card{padding:16px}}
+@media(max-width:1050px){}
 @media(max-width:760px){
  .app-shell{display:block;padding-bottom:88px}
  .sidebar{position:fixed;top:0;right:0;bottom:0;z-index:70;width:min(86vw,310px);min-width:0;height:100dvh;transform:translateX(105%);transition:transform .24s ease;box-shadow:none}
@@ -431,33 +367,19 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
  .breadcrumb>span{max-width:96px}
  .breadcrumb strong{font-size:10px}
  .top-actions{gap:6px}
- .top-date,.top-divider,.sign-in-link{display:none}
+ .top-date,.top-divider{display:none}
  .status-pill{padding:6px 8px;font-size:8px}
  .top-actions .icon-button{width:34px;height:34px}
  .system-notice{gap:8px;padding:10px;margin-top:12px}
  .system-notice strong{font-size:9px}
  .system-notice span{font-size:8px}
- .welcome-row{display:flex;flex-direction:column;align-items:flex-start;gap:17px;min-height:0;padding:23px 20px 20px;margin:14px 0 13px;border-radius:22px}
- .welcome-row:after{left:-91px;bottom:-211px;width:250px;height:250px}
- .welcome-copy{max-width:100%;width:100%}
- .welcome-row .eyebrow{margin-bottom:9px;font-size:9px}
- .welcome-row h1{max-width:100%;font-size:27px;line-height:1.55;letter-spacing:-.5px}
- .welcome-row p{max-width:310px;margin-top:7px;font-size:10px;line-height:1.9}
- .hero-meta{gap:8px;margin-top:14px;font-size:8px}
- .hero-cta{align-self:stretch;justify-content:flex-start;width:100%;min-height:51px;padding:6px 8px 6px 13px;font-size:10px}
- .hero-cta-arrow{margin-right:auto}
- .hero-art{top:25%;left:-26px;width:150px;height:150px;transform:none;opacity:.18}
- .hero-art-core{width:68px;height:68px;border-radius:23px}
- .hero-art-core svg{width:29px;height:29px}
- .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:12px}
  .stat-card{min-height:137px;padding:13px 12px;border-radius:16px}
  .stat-card:before{left:-46px;bottom:-67px}
  .stat-icon{width:34px;height:34px;margin-bottom:11px;border-radius:11px}
  .stat-number{font-size:27px;margin-top:5px}
  .stat-label{font-size:9px}
  .stat-foot{margin-top:5px;font-size:8px;line-height:1.55}
- .dashboard-grid{grid-template-columns:minmax(0,1fr);gap:11px;margin-bottom:12px}
- .panel,.appointments-panel,.review-panel,.patients-panel{padding:15px 12px;border-radius:17px}
+ .panel{padding:15px 12px;border-radius:17px}
  .panel-heading{align-items:flex-start;gap:8px;margin-bottom:12px}
  .panel-heading h2{font-size:12px}
  .panel-heading p{font-size:9px}
@@ -478,11 +400,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
  .review-item .avatar{width:31px;height:31px}
  .review-info strong{font-size:9px}
  .review-info span,.review-info small{font-size:8px}
- .patients-heading{flex-direction:column}
  .patient-tools{width:100%;flex-wrap:wrap}
  .patient-tools .search-box{flex:1;width:auto;min-width:140px}
  .patient-tools>.secondary-button{font-size:9px;padding-inline:10px}
- .patient-table{min-width:590px}
  .app-footer{display:none}
  .mobile-dock{position:fixed;right:10px;left:10px;bottom:calc(9px + env(safe-area-inset-bottom));z-index:55;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;padding:7px;border:1px solid #dbe2d4;border-radius:19px;background:rgba(255,254,250,.96);box-shadow:0 13px 40px #17392a20;backdrop-filter:blur(15px)}
  .mobile-dock button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:49px;padding:5px 2px;border:0;border-radius:12px;background:transparent;color:#7b8b7e;font-size:8px;font-weight:600}
@@ -514,7 +434,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
  .tooth{padding:7px 0;gap:5px}
  .tooth span{width:21px;height:28px;border-radius:8px;font-size:10px}
  .tooth small{font-size:7px}
- .jaw-divider{gap:6px;font-size:8px}
  .tooth-detail{align-items:flex-start;flex-direction:column;padding:12px}
  .tooth-detail .secondary-button{width:100%}
  .legend{gap:9px;font-size:8px}
@@ -531,7 +450,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
  .scribe-launch h2{font-size:17px}
  .scribe-launch p{font-size:10px}
  .modal-backdrop{align-items:flex-end;padding:8px}
- .modal,.modal-card{width:100%;max-height:92dvh;padding:18px;border-radius:21px 21px 13px 13px}
+ .modal{width:100%;max-height:92dvh;padding:18px;border-radius:21px 21px 13px 13px}
  .modal-head h2{font-size:17px}
  .recording-console{padding:19px 12px}
  .recording-actions{gap:7px}
@@ -542,13 +461,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 }
 @media(max-width:370px){
  .main-content{padding-inline:10px}
- .welcome-row{padding-inline:16px}
- .welcome-row h1{font-size:24px}
- .stats-grid{gap:7px}
  .stat-card{padding:11px 10px}
  .stat-number{font-size:24px}
  .status-pill{max-width:107px;overflow:hidden;text-overflow:ellipsis}
- .hero-meta{flex-wrap:wrap}
 }
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}
@@ -600,7 +515,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .brand-symbol{width:44px;height:44px;border-radius:14px;background:#2458c8;color:#fff;box-shadow:0 8px 20px #2458c82b}
 .brand-name{color:#142642;font-size:24px;letter-spacing:-.6px}
 .brand-sub{color:#8492a8}
-.brand-dot{background:#46b6a1;box-shadow:0 0 0 4px #46b6a11d}
 .clinic-switch{background:#f7f9fd;border-color:#e1e8f2;border-radius:14px;margin-bottom:24px;text-align:start}
 .clinic-switch:hover{background:#eef4ff;border-color:#cbd9f5}
 .clinic-mark{background:#e1ebff;color:#2458c8;border-radius:11px}
@@ -644,25 +558,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .system-notice>svg{color:#b9852e}
 .system-notice strong{color:#855d1c;font-size:11px}
 .system-notice span{color:#997a45;font-size:10px}
-.welcome-row{min-height:202px;padding:27px 31px;margin:20px 0 17px;border:1px solid #254da4;border-radius:23px;background:linear-gradient(116deg,#163b83 0%,#2458c8 58%,#3b78e5 100%);box-shadow:0 15px 34px #2458c81f;color:#fff;isolation:isolate}
-.welcome-row:before{opacity:.28;background:radial-gradient(circle at center,transparent 0 34%,#fff2 35%,transparent 36% 54%,#fff2 55%,transparent 56%)}
-.welcome-row:after{background:linear-gradient(135deg,transparent 40%,#8ab6ff2d 40%,#8ab6ff2d 60%,transparent 60%);border-color:#fff2}
-.welcome-copy{max-width:660px}
-.welcome-row .eyebrow{color:#d4e2ff}
-.hero-eyebrow-mark{background:#95f0d0;box-shadow:0 0 0 4px #95f0d026}
-.welcome-row h1{font-size:clamp(25px,2.2vw,36px);line-height:1.35;color:#fff;letter-spacing:-.5px}
-.welcome-row p{color:#e0eaff;font-size:12px;max-width:480px}
-.hero-meta{color:#d2e0ff}
-.hero-meta i{background:#ffffff55}
-.hero-live-dot{background:#8be6c2;box-shadow:0 0 0 5px #8be6c21c}
-.hero-art{opacity:.22}
-.hero-art-ring{border-color:#dbe8ff}
-.hero-art-core{background:#dce8ff;color:#234fa7;box-shadow:0 0 50px #b5ceff30}
-.hero-cta{background:#fff;color:#1e4a9e;border:1px solid #fff;box-shadow:0 6px 18px #102f7055;min-width:225px;border-radius:14px}
-.hero-cta:hover{background:#edf4ff;color:#163b83}
-.hero-cta-icon{background:#e9f0ff;color:#2458c8;border-radius:10px}
-.hero-cta-arrow{color:#2458c8}
-.stats-grid{gap:14px;margin-bottom:17px}
 .stat-card{min-height:146px;padding:18px 19px;border:1px solid var(--line);border-radius:17px;background:#fff;box-shadow:0 3px 14px rgba(29,55,91,.025)}
 .stat-card:before{border-color:#e8eef8;background:linear-gradient(140deg,transparent,#f8faff)}
 .stat-icon{width:39px;height:39px;margin-bottom:12px;border-radius:12px}
@@ -674,15 +569,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .stat-label{color:#7d8ca2;font-size:11px}
 .stat-number{color:#172e52;font-size:31px}
 .stat-foot{color:#8c99ab;font-size:10px}
-.dashboard-grid{gap:16px;margin-bottom:17px}
-.panel,.appointments-panel,.review-panel,.patients-panel,.settings-panel,.patient-list-panel,.patient-detail,.odontogram-panel,.endo-panel{border-color:#e1e8f2;border-radius:19px;background:#fff;box-shadow:0 5px 20px rgba(29,55,91,.035)}
-.appointments-panel,.review-panel,.patients-panel{padding:20px 21px}
+.panel,.settings-panel,.patient-list-panel,.patient-detail,.odontogram-panel,.endo-panel{border-color:#e1e8f2;border-radius:19px;background:#fff;box-shadow:0 5px 20px rgba(29,55,91,.035)}
 .panel{padding:22px}
 .panel-heading{gap:13px;margin-bottom:16px}
 .panel-heading h2,.settings-panel h2{color:#1c3559;font-size:14px}
 .panel-heading p{color:#8795aa;font-size:10px}
-.text-link,.full-link{color:#2458c8}
-.text-link:hover,.full-link:hover{color:#153b87}
+.text-link{color:#2458c8}
+.text-link:hover{color:#153b87}
 .timeline-item{border-bottom-color:#edf1f7}
 .timeline-track:before{background:#dce5f2}
 .timeline-track i{background:#cbd8e9}
@@ -698,19 +591,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .review-info strong{color:#2a4261}
 .review-info span{color:#8090a7}
 .review-info small{color:#a46d20}
-.count-badge{background:#fff1da;color:#9d6a18}
 .patient-tools .search-box{border-color:#e1e8f2;background:#f9fbff}
 .search-box{border-color:#e0e8f2;background:#f9fbff;border-radius:12px}
 .search-box input{color:#243d60}
 .search-box input::placeholder{color:#9aa7b9}
-.search-box.wide{margin-bottom:12px}
-.patient-table-wrap,.table-wrap{overflow-x:auto;border-color:#e3eaf3;border-radius:14px}
-.patient-table{min-width:540px}
-.patient-table th{border-bottom-color:#e2e9f3;background:#f5f8fd;color:#71839c;font-size:10px}
-.patient-table td{border-bottom-color:#edf1f6;color:#61738d;font-size:11px}
-.patient-table tbody tr:hover{background:#f5f8ff}
-.patient-cell strong{color:#263f60;font-size:11px}
-.patient-cell span{color:#8a99af;font-size:10px}
+.search-box.wide{margin-bottom:12px}.table-wrap{overflow-x:auto;border-color:#e3eaf3;border-radius:14px}
 .state-pill.approved{border-color:#d2eddf;background:#eaf8f0;color:#287454}
 .state-pill.draft{border-color:#d9e4ff;background:#edf3ff;color:#3c64b7}
 .state-pill.review{border-color:#f2e1bc;background:#fff6e2;color:#986719}
@@ -737,7 +622,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .detail-field>span{color:#7c8ea7}
 .detail-field strong{color:#2e4666}
 .modal-backdrop{background:#1227479c;backdrop-filter:blur(10px);padding:18px}
-.modal,.modal-card{border-color:#e0e8f4;border-radius:21px;background:#fff;box-shadow:0 28px 80px #10274b30;padding:24px}
+.modal{border-color:#e0e8f4;border-radius:21px;background:#fff;box-shadow:0 28px 80px #10274b30;padding:24px}
 .modal-head h2{color:#1b3559}
 .modal-head .eyebrow{color:#3c6dcc}
 .modal-intro{color:#7f90a8;font-size:11px;line-height:1.9}
@@ -752,14 +637,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .recording-console{border-color:#e0e9f4;border-radius:18px;background:linear-gradient(145deg,#fbfdff,#f1f6fd)}
 .recording-console .record-primary{background:#2458c8;color:#fff}
 .recording-console .record-primary:disabled{background:#e0e7f2;border-color:#e0e7f2;color:#8a98ad;opacity:1}
-.recording-console .recording-time{color:#18365f}
-.recording-console .recording-orb{background:#dce8ff;color:#2458c8}
 .inline-error{background:#fff0f0;border-color:#f2d9d9;color:#b2434b;border-radius:12px}
 .inline-success{background:#eaf8f1;border-color:#d5eddf;color:#276f51;border-radius:12px}
 .toast{border:1px solid #dce6f3;border-radius:13px;background:#122b50;color:#fff;box-shadow:0 12px 35px #10284a2e}
 .odontogram-panel,.endo-panel,.settings-panel{padding:23px}
 .dental-chart{border-color:#e0e8f3;border-radius:17px;background:linear-gradient(145deg,#fbfdff,#f4f7fc)}
-.chart-label{color:#6e819d;font-size:11px}
 .teeth-row{gap:4px}
 .tooth{gap:5px;padding:8px 2px;border-radius:10px}
 .tooth:hover{border-color:#bdd1fa;background:#edf4ff}
@@ -768,14 +650,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .tooth.picked .tooth-glyph,.tooth.selected .tooth-glyph{border-color:#7099ed;background:#e5eeff;color:#2458c8;box-shadow:0 0 0 3px #bad0ff5c}
 .tooth small{color:#7185a0;font-size:10px}
 .tooth.flagged .tooth-glyph{border-color:#edc774;background:#fff2d4;color:#b07b20}
-.jaw-divider{color:#8797ad;font-size:10px}
-.jaw-divider i{background:#e0e8f2}
 .tooth-detail{border-color:#dfe8f4;background:#f7faff;border-radius:15px}
 .tooth-detail h3{color:#1f3d68}
 .tooth-detail p{color:#7285a0}
 .legend{color:#7c8da4;font-size:10px}
 .legend-dot{border-radius:3px}
-.endo-case,.endo-canal,.settings-section{border-color:#e2eaf4;background:#fff;border-radius:15px}
+.endo-case{border-color:#e2eaf4;background:#fff;border-radius:15px}
 .settings-grid label{color:#586e8a}
 .settings-sticky-save{background:#17345e;color:#fff;box-shadow:0 -8px 30px #17345e20}
 .mobile-menu-trigger{border-color:#dce5f1;background:#fff;color:#415a79;border-radius:11px}
@@ -827,15 +707,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 [dir="ltr"] .nav-lower{letter-spacing:0}
 [dir="ltr"] .main-content{text-align:left}
 [dir="ltr"] .breadcrumb,.main-content .breadcrumb{direction:inherit}
-[dir="ltr"] .welcome-row:after{left:auto;right:-90px}
-[dir="ltr"] .hero-art{left:auto;right:8%}
-[dir="ltr"] .hero-cta-arrow{margin-left:auto;margin-right:0}
 [dir="ltr"] .page-heading{text-align:left}
 [dir="ltr"] .timeline-track:before{right:auto;left:3px}
-[dir="ltr"] .patient-table th,[dir="ltr"] .patient-table td{text-align:left}
-[dir="ltr"] .patient-cell{text-align:left}
 [dir="ltr"] .tooth-detail{text-align:left}
-[dir="ltr"] .jaw-divider{direction:ltr}
 [dir="ltr"] .review-page{direction:ltr;text-align:left}
 [dir="ltr"] .review-back{direction:ltr}
 [dir="ltr"] .uncertainty-card ul{padding-right:0;padding-left:19px}
@@ -849,8 +723,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 [dir="ltr"] .mobile-dock{direction:ltr}
 @media(max-width:1050px){
   .sidebar{width:250px;min-width:250px}
-  .welcome-row{min-height:190px}
-  .welcome-copy{max-width:72%}
 }
 @media(max-width:760px){
   .app-shell{padding-bottom:104px}
@@ -865,29 +737,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .language-toggle-globe{width:17px;height:17px;font-size:10px}
   .status-pill{max-width:95px;padding:6px 7px;font-size:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .top-actions .icon-button{width:34px;height:34px}
-  .top-date,.top-divider,.sign-in-link{display:none}
+  .top-date,.top-divider{display:none}
   .system-notice{gap:8px;padding:11px 10px;margin-top:11px}
   .system-notice strong{font-size:9px;line-height:1.65}
   .system-notice span{font-size:8px;line-height:1.7}
-  .welcome-row{display:flex;flex-direction:column;align-items:stretch;gap:12px;min-height:0;padding:18px 17px 15px;margin:13px 0 12px;border-radius:19px}
-  .welcome-row:after{left:-100px;bottom:-200px;width:230px;height:230px}
-  .welcome-copy{max-width:100%;width:100%}
-  .welcome-row .eyebrow{font-size:8px;margin-bottom:7px}
-  .welcome-row h1{font-size:clamp(23px,6.6vw,29px);line-height:1.35;max-width:100%}
-  .welcome-row p{font-size:10px;line-height:1.75;margin-top:8px;max-width:100%}
-  .hero-meta{gap:7px;margin-top:10px;font-size:8px}
-  .hero-cta{width:100%;min-height:48px;padding:6px 11px;font-size:10px;border-radius:12px}
-  .hero-art{top:15%;left:-25px;width:120px;height:120px;opacity:.13}
-  .hero-art-core{width:57px;height:57px;border-radius:18px}
-  .hero-art-core svg{width:25px;height:25px}
-  .stats-grid{gap:9px;margin-bottom:11px}
   .stat-card{min-height:122px;padding:12px 12px;border-radius:14px}
   .stat-icon{width:32px;height:32px;margin-bottom:9px;border-radius:10px}
   .stat-number{font-size:25px;margin-top:4px}
   .stat-label{font-size:9px}
   .stat-foot{font-size:8px;line-height:1.5}
-  .dashboard-grid{gap:10px;margin-bottom:10px}
-  .panel,.appointments-panel,.review-panel,.patients-panel{padding:14px 12px;border-radius:15px}
+  .panel{padding:14px 12px;border-radius:15px}
   .panel-heading{margin-bottom:11px;gap:8px}
   .panel-heading h2{font-size:12px}
   .panel-heading p{font-size:9px}
@@ -898,20 +757,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .appointment-info strong{font-size:9px}
   .appointment-info span,.appointment-info small{font-size:8px;line-height:1.5}
   .appointment-state{font-size:8px;padding:4px 7px}
-  .patients-heading{flex-direction:column}
   .patient-tools{width:100%;gap:8px}
   .patient-tools .search-box{min-width:0;flex:1}
-  .patient-tools>.secondary-button{font-size:9px;padding-inline:8px}
-  .patient-table-wrap,.table-wrap{overflow:visible}
-  .patient-table{display:block;width:100%;min-width:0;table-layout:auto}
-  .patient-table thead{display:none}
-  .patient-table tbody{display:grid;gap:8px;padding:8px}
-  .patient-table tbody tr{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;padding:11px;border:1px solid #e6edf6;border-radius:12px;background:#fff}
-  .patient-table td{display:block;padding:4px 2px;border:0!important;font-size:10px}
-  .patient-table td:first-child{padding-bottom:6px}
-  .patient-cell{gap:8px;min-width:0}
-  .patient-cell strong{font-size:10px}
-  .patient-cell span{font-size:9px}
+  .patient-tools>.secondary-button{font-size:9px;padding-inline:8px}.table-wrap{overflow:visible}
   .workspace-page{padding-top:18px}
   .page-heading{align-items:flex-start;gap:12px;margin-bottom:15px}
   .page-heading h1{font-size:24px;line-height:1.4}
@@ -933,13 +781,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .tooth-glyph{width:clamp(20px,6.6vw,29px);height:31px;border-radius:7px}
   .tooth-glyph svg{width:19px;height:21px}
   .tooth small{font-size:8px}
-  .jaw-divider{gap:5px;font-size:8px;margin:12px 0}
   .odontogram-panel,.endo-panel,.settings-panel{padding:14px 11px}
   .tooth-detail{align-items:flex-start;flex-direction:column;padding:12px;gap:10px}
   .tooth-detail .secondary-button{width:100%}
   .legend{gap:8px;font-size:8px}
   .modal-backdrop{padding:10px;align-items:flex-end}
-  .modal,.modal-card{max-height:min(90dvh,900px);width:100%;padding:18px 15px;border-radius:20px 20px 12px 12px}
+  .modal{max-height:min(90dvh,900px);width:100%;padding:18px 15px;border-radius:20px 20px 12px 12px}
   .modal-head h2{font-size:17px}
   .modal-intro{font-size:10px}
   .form-field input,.form-field select,.form-field textarea,.settings-grid input,.settings-grid select,.settings-grid textarea{min-height:42px;font-size:12px}
@@ -1386,8 +1233,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .public-booking-brand{display:grid;place-items:center;flex:none;width:43px;height:43px;border:1px solid #d8e5f8;border-radius:14px;background:#e9f1ff;color:#2b62bd}
 .public-booking-topbar>strong,.public-booking-clinic-name strong{color:#1e3658;font-size:13px;font-weight:850}
 .public-booking-clinic-name{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
-.public-booking-clinic-name span{color:#8291a8;font-size:9px}
-.public-booking-topbar .language-button,.public-booking-topbar button{margin-inline-start:auto}
+.public-booking-clinic-name span{color:#8291a8;font-size:9px}.public-booking-topbar button{margin-inline-start:auto}
 .public-booking-layout{display:grid;grid-template-columns:minmax(0,.85fr) minmax(440px,1.15fr);align-items:start;gap:clamp(28px,5vw,72px);max-width:1180px;margin:42px auto 28px}
 .public-booking-intro{position:sticky;top:25px;padding:28px 2px}
 .booking-kicker{display:inline-flex;align-items:center;gap:7px;color:#3970c6;font-size:10px;font-weight:850;letter-spacing:.7px}
@@ -1563,23 +1409,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .surface-cell{min-height:43px;padding:5px 2px}
   .surface-cell>small{font-size:7px}
 }
-
-/* Account creation and email-verification states */
-.auth-switch-line{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;margin-top:17px;color:#829187;font-size:11px;text-align:center}
-.auth-switch-line a{color:#2e6b55;font-weight:750;text-decoration:none}
-.auth-switch-line a:hover{text-decoration:underline}
-.auth-success-mark{display:grid;place-items:center;width:58px;height:58px;margin:20px auto 16px;border:1px solid #d0ebde;border-radius:18px;background:#edf9f2;color:#2e8a61}
-.auth-link-button{display:flex;align-items:center;justify-content:center;margin-top:20px;text-decoration:none}
-.signup-card{max-width:500px}
-.signup-card .auth-sub{line-height:1.85}
-.signup-card .form-field{margin-bottom:14px}
-.signup-card .auth-note{margin-top:17px}
 @media(max-width:760px){
- .auth-switch-line{font-size:10px;line-height:1.8}
- .auth-success-mark{width:50px;height:50px;border-radius:15px}
- .signup-card{padding:24px 18px}
 }
-[dir="ltr"] .auth-switch-line{direction:ltr}
 
 
 /* One consistent drawer model on desktop and mobile: workspace remains full width. */
@@ -1715,7 +1546,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 
 /* Dialog ergonomics: keep scroll gestures inside overlays rather than the page behind them. */
-.modal,.modal-card,.command-palette,.scribe-modal{
+.modal,.command-palette,.scribe-modal{
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
 }
@@ -1725,7 +1556,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 }
 @media(max-width:760px){
   .modal-backdrop{align-items:flex-end;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
-  .modal,.modal-card{width:100%;max-height:calc(92dvh - env(safe-area-inset-bottom));border-radius:20px 20px 16px 16px;padding:18px 15px}
+  .modal{width:100%;max-height:calc(92dvh - env(safe-area-inset-bottom));border-radius:20px 20px 16px 16px;padding:18px 15px}
   .scribe-modal{max-height:calc(92dvh - env(safe-area-inset-bottom))}
 }
 
