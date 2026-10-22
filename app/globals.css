@@ -1707,3 +1707,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .brand-symbol.brand-symbol-image{background:transparent!important;box-shadow:none!important;padding:0;border-radius:12px;overflow:hidden;color:inherit}
 .brand-logo-image{display:block;width:44px;height:44px;object-fit:cover;border-radius:12px}
 .auth-brand .brand-symbol.brand-symbol-image{width:44px;height:44px;flex:0 0 44px}
+
+
+/* Accessibility corrections: readable controls and status labels across breakpoints. */
+.state-pill{font-size:11px}
+.settings-sticky-save strong{font-size:13px}
+.settings-sticky-save span{font-size:12px}
+@media(max-width:760px){
+ .settings-sticky-save strong{font-size:12px}
+ .settings-sticky-save span{font-size:11px}
+ .settings-sticky-save .primary-button{font-size:12px;min-height:40px}
+ .attention-row>.state-pill,.workbench-patient-card>.state-pill{font-size:10px;max-width:100px}
+ .workbench-patient-tools>.primary-button{font-size:12px}
+ .jaw-midline{font-size:10px}
+}
