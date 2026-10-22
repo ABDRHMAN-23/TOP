@@ -303,12 +303,21 @@ export default function HomePage() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
   useEffect(() => { if (showCommandPalette) commandInputRef.current?.focus(); }, [showCommandPalette]);
+  // Lock background scrolling whenever a modal, command palette, or mobile drawer is open.
+  // Preserve the previous inline value so nested UI and page cleanup do not leave scrolling disabled.
   useEffect(() => {
-    if (!sidebarOpen) return;
+    const overlayOpen = sidebarOpen || showCommandPalette || showNewPatient || showEditPatient ||
+      showScribe || showManualVisit || showNewAppointment || showToothEntry;
+    if (!overlayOpen) return;
     const previousOverflow = document.body.style.overflow;
+    const previousOverscrollBehavior = document.body.style.overscrollBehavior;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = previousOverflow; };
-  }, [sidebarOpen]);
+    document.body.style.overscrollBehavior = 'contain';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.overscrollBehavior = previousOverscrollBehavior;
+    };
+  }, [sidebarOpen, showCommandPalette, showNewPatient, showEditPatient, showScribe, showManualVisit, showNewAppointment, showToothEntry]);
   useEffect(() => {
     try {
       let token = window.localStorage.getItem('sinan-test-workspace-v1') || '';
