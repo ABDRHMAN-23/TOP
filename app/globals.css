@@ -1732,6 +1732,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 /* Final clinical readability pass: avoid tiny labels on touch devices. */
 @media(max-width:760px){
+  .primary-button,.secondary-button,.danger-button{font-size:13px}
   .workbench-timeline .appointment-info strong{font-size:12px}
   .workbench-timeline .appointment-info span,
   .workbench-timeline .appointment-info small,
